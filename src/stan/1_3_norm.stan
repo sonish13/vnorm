@@ -14,6 +14,7 @@ transformed parameters{
   real dgx = bx + 2*bx2 * x + 3 * bx3 * x^2;
   real ndg = sqrt(dgx ^ 2);
 }
+
 model {
   target += normal_lpdf(0.00 | g/ndg, si);
 }

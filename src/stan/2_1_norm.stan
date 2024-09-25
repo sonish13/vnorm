@@ -9,10 +9,13 @@ parameters {
   real<lower=-w,upper=w> y;
 }
 
-model {
+transformed parameters{
   real g = b0 + bx*x + by*y;
   real dgx = bx;
   real dgy = by;
   real ndg = sqrt(dgx^2 + dgy^2);
+}
+
+model {
   target += normal_lpdf(0.00 | g/ndg, si);
 }

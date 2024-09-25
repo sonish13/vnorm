@@ -131,8 +131,8 @@ p <- mpoly::mp("x^2 + y^2 - 1")
 as.function(p)(x0_proj)
 sqrt(2)/2
 
-cbind(t(x0), t(x0_proj)) \%>\%
-  as.data.frame() \%>\% tibble::as_tibble() \%>\%
+cbind(t(x0), t(x0_proj)) |>
+  as.data.frame() |> tibble::as_tibble() |>
   purrr::set_names(c("x", "y", "x_proj", "y_proj")) -> df
 
 \dontrun{ requires ggvariety
@@ -196,8 +196,8 @@ ggvariety(p, c(-2, 2), n = 201) + coord_equal()
 x0 <- c(.025, .30)
 (x0_proj <- project_onto_variety(x0, p))
 
-cbind(t(x0), t(x0_proj)) \%>\%
-  as.data.frame() \%>\% tibble::as_tibble() \%>\%
+cbind(t(x0), t(x0_proj)) |>
+  as.data.frame() |> tibble::as_tibble() |>
   purrr::set_names(c("x", "y", "x_proj", "y_proj")) -> df
 \dontrun{ requires ggvariety
 ggvariety(p, c(-2, 2)) + coord_equal() +
@@ -256,10 +256,10 @@ grid_proj_newton <- project_onto_variety_newton(grid, p)
 names(grid_proj_newton) <- c("x_proj", "y_proj")
 
 df <- bind_rows(
-  bind_cols(grid, grid_proj) \%>\% mutate(method = "gradient descent homotopy"),
-  bind_cols(grid, grid_proj_gd) \%>\% mutate(method = "optimal gradient descent"),
-  bind_cols(grid, grid_proj_newton) \%>\% mutate(method = "newton"),
-  bind_cols(grid, grid_proj_lagrange) \%>\% mutate(method = "newton on lagrangian")
+  bind_cols(grid, grid_proj) |> mutate(method = "gradient descent homotopy"),
+  bind_cols(grid, grid_proj_gd) |> mutate(method = "optimal gradient descent"),
+  bind_cols(grid, grid_proj_newton) |> mutate(method = "newton"),
+  bind_cols(grid, grid_proj_lagrange) |> mutate(method = "newton on lagrangian")
 )
 
 \dontrun{ requires ggvariety
@@ -298,16 +298,16 @@ ggplot(samps, aes(x, y)) +
   coord_equal()
 
 # cut down on draws for time
-subsamps <- samps \%>\% sample_n(500)
+subsamps <- samps |> sample_n(500)
 ggplot(subsamps, aes(x, y)) + geom_point() + coord_equal()
 
-subsamps \%>\%
-  select(x, y) \%>\%
-  as.matrix() \%>\%
-  #apply(1, function(x0) project_onto_variety(x0, p, dt = .025, n_correct = 3)) \%>\% t() \%>\%
-  apply(1, function(x0) project_onto_variety_lagrange(x0, p)) \%>\% t() \%>\%
-  as.data.frame() \%>\% tibble::as_tibble() \%>\%
-  purrr::set_names(c("x_proj", "y_proj")) \%>\%
+subsamps |>
+  select(x, y) |>
+  as.matrix() |>
+  #apply(1, function(x0) project_onto_variety(x0, p, dt = .025, n_correct = 3)) |> t() |>
+  apply(1, function(x0) project_onto_variety_lagrange(x0, p)) |> t() |>
+  as.data.frame() |> tibble::as_tibble() |>
+  purrr::set_names(c("x_proj", "y_proj")) |>
   bind_cols(subsamps, .) ->
   subsamps
 

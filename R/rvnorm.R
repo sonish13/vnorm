@@ -38,34 +38,34 @@
 #'   variables.
 #' @param refresh The \code{refresh} argument of [stan()], which governs how
 #'   much information is provided to the user while sampling.
+#' @param pre_compiled Whether to use pre-compiled stan models or not. Available
+#'   for polynomials with three indeterminates and three degrees. Defaults to
+#'   \code{TRUE}.
 #' @param code_only If \code{TRUE}, will only formulate and return Stan code.
 #' @param ... Additional parameters to pass to [stan()].
 #' @name rvnorm
-#' @pre_compiled Whether to use pre-compiled stan models or not. Available for
-#'  polynomials with three indeterminates and three degrees. Defaults to TRUE.
 #' @return Either (1) matrix whose rows are the individual draws from the
 #'   distribution, (2) a [tbl_df-class] object with the draws along with
 #'   additional information, or (3) an object of class [stanfit-class].
 #' @author David Kahle
 #' @examples
 #'
-#' \dontrun{ runs rstan
+#' \dontrun{
 #'
 #' library("tidyverse")
-#' rstan::rstan_options(auto_write = TRUE) # helps avoid recompiles
 #'
 #' ## basic usage
 #' ########################################
 #'
 #' # single polynomial
 #' p <- mp("x^2 + y^2 - 1")
-#' samps <- rvnorm(2000, p, sd = .1)
+#' samps <- rvnorm(2000, p, sd = .05, w = 2)
 #' head(samps)
 #' str(samps) # 2000 * (4 chains)
 #' plot(samps, asp = 1)
 #'
 #' # returning a data frame
-#' (samps <- rvnorm(2000, p, sd = .1, output = "tibble"))
+#' (samps <- rvnorm(2000, p, sd = .05, w = 2, output = "tibble"))
 #' ggplot(samps, aes(x, y)) + geom_point(size = .5) + coord_equal()
 #'
 #' ggplot(samps, aes(x, y, color = g)) +
@@ -81,9 +81,8 @@
 #'   coord_equal()
 #'
 #' library("ggdensity")
-#' ggvariety(p) + coord_equal()
 #' ggplot(samps, aes(x, y)) +
-#'   geom_hdr() +
+#'   geom_hdr(xlim = c(-2,2), ylim = c(-2,2)) +
 #'   coord_equal()
 #'
 #'
@@ -108,9 +107,9 @@
 #' p <- mp(c("3 x", "3 y", "2 x + 2 y", "3 (x^2 + y)", "3 (x^2 - y)"))
 #' (samps <- rvnorm(500, p, sd = .1, output = "tibble"))
 #'
-#' samps %>%
-#'   select(x, y, starts_with("g")) %>%
-#'   pivot_longer(starts_with("g"), "equation", "value") %>%
+#' samps |>
+#'   select(x, y, starts_with("g")) |>
+#'   pivot_longer(starts_with("g"), "equation", "value") |>
 #'   ggplot(aes(x, y, color = value)) + geom_point() +
 #'     scale_color_gradient2(mid = "gray80") + coord_equal() +
 #'     facet_wrap(~ equation)
@@ -271,9 +270,9 @@
 #' )
 #'
 #' bind_rows(
-#'   samps_normd  %>% mutate(normd = TRUE),
-#'   samps_unormd %>% mutate(normd = FALSE)
-#' ) %>%
+#'   samps_normd  |> mutate(normd = TRUE),
+#'   samps_unormd |> mutate(normd = FALSE)
+#' ) |>
 #'   ggplot(aes(x, y)) +
 #'     geom_bin2d(binwidth = .05*c(1,1)) +
 #'     facet_grid(normd ~ chain) +
@@ -338,7 +337,8 @@ rvnorm <- function(
   if (n_eqs > 1 | length(mpoly::vars(poly)) > 2 | mpoly::totaldeg(poly) > 3) pre_compiled = FALSE
   if(code_only) return(create_stan_code(poly, sd, n_eqs, w, normalized))
   #if(!normalized) pre_compiled = FALSE # This line will be removed after normalized stan files are added
-  if(pre_compiled){
+
+  if (pre_compiled) {
     list_for_transformation <- check_and_replace_vars(poly)
     if(!(list_for_transformation$mapping |> unlist() |> is.null())) {
       poly <- list_for_transformation$polynomial
@@ -350,16 +350,17 @@ rvnorm <- function(
     } else {
       stan_file_name <- paste(num_of_vars, deg, sep = "_")
     }
+    model <- instantiate::stan_package_model(name = stan_file_name, package = "vnorm")
+    stan_data <- make_coeficients_data(poly, num_of_vars, deg)
+    stan_data <- c(stan_data, "w" = w, "si" = sd)
 
-  model <- instantiate::stan_package_model(name = stan_file_name, package = "vnorm")
-  stan_data <- make_coefficients_data(poly, num_of_vars, deg)
-  stan_data <- c(stan_data, "w" = w, "si" = sd)
-  }else{
-  stan_code <- create_stan_code(poly, sd, n_eqs, w, normalized, vars)
-  stan_file <- write_stan_file(stan_code)
-  model <- cmdstan_model(stan_file)
-  stan_data <- list("si" = sd)
-}
+  } else {
+    stan_code <- create_stan_code(poly, sd, n_eqs, w, normalized, vars)
+    stan_file <- write_stan_file(stan_code)
+    model <- cmdstan_model(stan_file)
+    stan_data <- list("si" = sd)
+  }
+
   # run stan sampler ---------------------------------------------------------
   samps <- model$sample(
     data = stan_data,
@@ -370,31 +371,29 @@ rvnorm <- function(
     parallel_chains = cores,
     adapt_delta = .999,
     max_treedepth = 20L,
-
   )
+
   # parse output and return -------------------------------------------------
+
+  if(output == "simple") {
+    df <- samps$draws(format = "df") |> as.data.frame()
+    return( df[mpoly::vars(poly)] )
+  }
+
+  if (output == "tibble") {
+    return( samps$draws(format = "df") |> tibble::as_tibble() )
+  }
 
   if (output == "stanfit") return(samps)
 
-  if (output == "tibble") {
-    return(samps$draws(format = "df") |>
-             as.matrix() |>
-             tibble::as_tibble())
-  }
-  if(output == "simple") {
-    if(pre_compiled){
-    return(samps$draws(format = "df") |>
-             tibble::as_tibble() |>
-             dplyr::select(-lp__, -.chain, -.iteration, -.draw) |>
-             as.matrix())
-    }else{
-      return(samps$draws(format = "df") |>
-               tibble::as_tibble() |>
-               dplyr::select(-lp__, -g, -ndg, -.chain, -.iteration, -.draw) |>
-               as.matrix())
-    }
-  }
 }
+
+
+
+
+
+
+
 
 
 mpoly_to_stan <- function (mpoly) {
@@ -485,7 +484,11 @@ model {
 }
       ", .open = "{{", .close = "}}"
     )
-  }else{
+
+
+  } else {
+
+
     # multiple polynomials provided
 
     vars <- mpoly::vars(poly)
@@ -570,36 +573,42 @@ model {
       ",  .open = "{{", .close = "}}"
     )
   }
-return(stan_code)
+
+
+  stan_code
 }
 
-make_coefficients_data <- function(poly, num_of_vars ,deg, basis = c("x", "y","z")) {
-  required_coeffs<- basis_monomials(basis[seq_along(1:num_of_vars)], deg) |>
+
+
+make_coeficients_data <- function(poly, num_of_vars ,deg, basis = c("x", "y","z")) {
+  required_coefs<- basis_monomials(basis[seq_along(1:num_of_vars)], deg) |>
     lapply(reorder,varorder = basis) |>
     lapply(coef) |>
     unlist() |>
-    get_listed_coefficients() |>
+    get_listed_coeficients() |>
     lapply(function(x) 0)
-  available_coeff <- get_listed_coefficients(mpoly:::coef.mpoly(poly))
-  required_coeffs[names(available_coeff)] <- available_coeff
-  required_coeffs
+  available_coef <- get_listed_coeficients( coef(poly) )
+  required_coefs[names(available_coef)] <- available_coef
+  required_coefs
 }
 
-get_listed_coefficients <- function(coeffs) {
+
+
+get_listed_coeficients <- function(coefs) {
   convert_names <- function(term) {
-    term <- gsub("\\s+", "", term)           # Remove spaces
-    if (term == "1") {
-      return("b0")  # Constant term should be "b0"
-    }
-    term <- gsub("\\^", "", term)            # Remove power symbol (^)
-    return(paste0("b", term))                # Add "b" at the beginning
+    term <- gsub("\\s+", "", term)  # Remove spaces
+    if (term == "1") return("b0")   # Constant term should be "b0"
+    term <- gsub("\\^", "", term)   # Remove power symbol (^)
+    return(paste0("b", term))       # Add "b" at the beginning
   }
-  names(coeffs) <- sapply(names(coeffs), convert_names)
-  as.list(coeffs)
+  names(coefs) <- sapply(names(coefs), convert_names)
+  as.list(coefs)
 }
+
+
 
 check_and_replace_vars <- function(p) {
-  current_vars <- mpoly::vars(p)
+  current_vars <- vars(p)
   num_vars <- length(current_vars)
   target_vars <- list(
     c("x"),           # for 1 indeterminate
@@ -629,7 +638,7 @@ check_and_replace_vars <- function(p) {
     var_mapping[[temp_vars[i]]] <- NULL  # Remove temp mapping
   }
 
-  return(list(polynomial = p, mapping = var_mapping))
+  list(polynomial = p, mapping = var_mapping)
 }
 
 

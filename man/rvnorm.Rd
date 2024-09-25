@@ -72,6 +72,10 @@ much information is provided to the user while sampling.}
 
 \item{code_only}{If \code{TRUE}, will only formulate and return Stan code.}
 
+\item{pre_compiled}{Whether to use pre-compiled stan models or not. Available
+for polynomials with three indeterminates and three degrees. Defaults to
+\code{TRUE}.}
+
 \item{...}{Additional parameters to pass to \code{\link[=stan]{stan()}}.}
 }
 \value{
@@ -95,25 +99,25 @@ varieties of varying dimensions?
 }
 \examples{
 
-\dontrun{ runs rstan
+\dontrun{
 
 library("tidyverse")
-rstan::rstan_options(auto_write = TRUE) # helps avoid recompiles
 
 ## basic usage
 ########################################
 
 # single polynomial
 p <- mp("x^2 + y^2 - 1")
-samps <- rvnorm(2000, p, sd = .1)
+samps <- rvnorm(2000, p, sd = .025, w = 2)
 head(samps)
 str(samps) # 2000 * (4 chains)
 plot(samps, asp = 1)
 
 # returning a data frame
-(samps <- rvnorm(2000, p, sd = .1, output = "tibble"))
+(samps <- rvnorm(2000, p, sd = .025, w = 2, output = "tibble"))
 ggplot(samps, aes(x, y)) + geom_point(size = .5) + coord_equal()
 
+pf <- as.function(p)
 ggplot(samps, aes(x, y, color = g)) +
   geom_point(size = .5) +
   scale_color_gradient2() +
@@ -127,9 +131,8 @@ ggplot(samps, aes(x, y)) +
   coord_equal()
 
 library("ggdensity")
-ggvariety(p) + coord_equal()
 ggplot(samps, aes(x, y)) +
-  geom_hdr() +
+  geom_hdr(xlim = c(-2,2), ylim = c(-2,2)) +
   coord_equal()
 
 
@@ -154,9 +157,9 @@ ggplot(samps, aes(x, z, color = `g[1]`)) + geom_point() +
 p <- mp(c("3 x", "3 y", "2 x + 2 y", "3 (x^2 + y)", "3 (x^2 - y)"))
 (samps <- rvnorm(500, p, sd = .1, output = "tibble"))
 
-samps \%>\%
-  select(x, y, starts_with("g")) \%>\%
-  pivot_longer(starts_with("g"), "equation", "value") \%>\%
+samps |>
+  select(x, y, starts_with("g")) |>
+  pivot_longer(starts_with("g"), "equation", "value") |>
   ggplot(aes(x, y, color = value)) + geom_point() +
     scale_color_gradient2(mid = "gray80") + coord_equal() +
     facet_wrap(~ equation)
@@ -317,9 +320,9 @@ samps_unormd <- rvnorm(1e4, p + mp("s^2"), sd = .01, "tibble", chains = 8,
 )
 
 bind_rows(
-  samps_normd  \%>\% mutate(normd = TRUE),
-  samps_unormd \%>\% mutate(normd = FALSE)
-) \%>\%
+  samps_normd  |> mutate(normd = TRUE),
+  samps_unormd |> mutate(normd = FALSE)
+) |>
   ggplot(aes(x, y)) +
     geom_bin2d(binwidth = .05*c(1,1)) +
     facet_grid(normd ~ chain) +
