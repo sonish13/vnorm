@@ -65,11 +65,20 @@
 #' plot(samps, asp = 1)
 #'
 #' # returning a data frame
-#' (samps <- rvnorm(2000, p, sd = .05, w = 2, output = "tibble"))
-#' ggplot(samps, aes(x, y)) + geom_point(size = .5) + coord_equal()
+#' (samps <- rvnorm(2000, p, sd = .05, w = 2, output = "tibble", cores = 4))
+#'
+#' ggplot(samps, aes(x, y)) +
+#'   geom_point(size = .5) +
+#'   coord_equal()
+#'
+#' ggplot(samps, aes(x, y)) +
+#'   geom_point(size = .5) +
+#'   geom_variety(poly = p) +
+#'   coord_equal()
 #'
 #' ggplot(samps, aes(x, y, color = g)) +
 #'   geom_point(size = .5) +
+#'   geom_variety(poly = p) +
 #'   scale_color_gradient2() +
 #'   coord_equal()
 #'
@@ -78,11 +87,13 @@
 #'     aes(fill = stat(density)),
 #'     geom = "raster", contour = FALSE
 #'    ) +
+#'   geom_variety(poly = p) +
 #'   coord_equal()
 #'
 #' library("ggdensity")
 #' ggplot(samps, aes(x, y)) +
 #'   geom_hdr(xlim = c(-2,2), ylim = c(-2,2)) +
+#'   geom_variety(poly = p) +
 #'   coord_equal()
 #'
 #'
@@ -246,27 +257,32 @@
 #' (p <- lissajous(3, 3,  0, 0))
 #' (p <- lissajous(5, 5,  0, 0))
 #' (p <- lissajous(7, 7,  0, 0))
-#' ggvariety(p, n = 201) + coord_equal()
+#' ggplot() +
+#'   geom_variety(poly = p, xlim = c(-1,1), ylim = c(-1,1)) +
+#'   coord_equal()
 #'
 #' p <- plug(p, "x", mp(".5 x"))
 #' p <- plug(p, "y", mp(".5 y"))
 #'
 #' # algebraic set
-#' samps <- rvnorm(5e3, p, sd = .01, "tibble", chains = 8, refresh = 100)
-#' ggplot(samps, aes(x, y, color = factor(chain))) +
-#'   geom_point(size = .5) + coord_equal()
-#' ggplot(samps, aes(x, y)) + geom_bin2d(binwidth = .02*c(1,1)) + coord_equal()
+#' samps <- rvnorm(5e3, p, sd = .01, "tibble", chains = 8, cores = 8)
+#' ggplot(samps, aes(x, y, color = factor(.chain))) +
+#'   geom_point(size = .5) +
+#'   coord_equal()
 #'
-#' ggplot(samps, aes(x, y, color = factor(chain))) +
-#'   geom_point(size = .5) + coord_equal() +
-#'   facet_wrap(~ factor(chain))
+#' ggplot(samps, aes(x, y)) + geom_hdr() + coord_equal()
+#'
+#' ggplot(samps, aes(x, y, color = factor(.chain))) +
+#'   geom_point(size = .5) +
+#'   coord_equal() +
+#'   facet_wrap(~ factor(.chain))
 #'
 #' # semi-algebraic set
 #' samps_normd <- rvnorm(1e4, p + mp("s^2"), sd = .01, "tibble", chains = 8,
-#'   normalized = TRUE, refresh = 100
+#'   cores = 8, normalized = TRUE
 #' )
 #' samps_unormd <- rvnorm(1e4, p + mp("s^2"), sd = .01, "tibble", chains = 8,
-#'   normalized = FALSE, refresh = 100
+#'   cores = 8, normalized = FALSE
 #' )
 #'
 #' bind_rows(
@@ -274,8 +290,9 @@
 #'   samps_unormd |> mutate(normd = FALSE)
 #' ) |>
 #'   ggplot(aes(x, y)) +
-#'     geom_bin2d(binwidth = .05*c(1,1)) +
-#'     facet_grid(normd ~ chain) +
+#'     geom_point(size = .5) +
+#'     # geom_bin2d(binwidth = .05*c(1,1)) +
+#'     facet_grid(normd ~ .chain) +
 #'     coord_equal()
 #'
 #'
@@ -350,7 +367,7 @@ rvnorm <- function(
     } else {
       stan_file_name <- paste(num_of_vars, deg, sep = "_")
     }
-    model <- instantiate::stan_package_model(name = stan_file_name, package = "vnorm")
+    model <- stan_package_model(name = stan_file_name, package = "vnorm")
     stan_data <- make_coeficients_data(poly, num_of_vars, deg)
     stan_data <- c(stan_data, "w" = w, "si" = sd)
 

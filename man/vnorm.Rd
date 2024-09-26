@@ -13,7 +13,7 @@ What the package does (one paragraph).
 
 Authors:
 \itemize{
-  \item Sonish Lamsal \email{sonish-lamsal1@baylor.edu} (\href{https://orcid.org/0009-0007-1098-2211}{ORCID})
+  \item Sonish Lamsal \email{sonish_lamsal1@baylor.edu} (\href{https://orcid.org/0009-0007-1098-2211}{ORCID})
 }
 
 }

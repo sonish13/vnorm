@@ -108,18 +108,26 @@ library("tidyverse")
 
 # single polynomial
 p <- mp("x^2 + y^2 - 1")
-samps <- rvnorm(2000, p, sd = .025, w = 2)
+samps <- rvnorm(2000, p, sd = .05, w = 2)
 head(samps)
 str(samps) # 2000 * (4 chains)
 plot(samps, asp = 1)
 
 # returning a data frame
-(samps <- rvnorm(2000, p, sd = .025, w = 2, output = "tibble"))
-ggplot(samps, aes(x, y)) + geom_point(size = .5) + coord_equal()
+(samps <- rvnorm(2000, p, sd = .05, w = 2, output = "tibble", cores = 4))
 
-pf <- as.function(p)
+ggplot(samps, aes(x, y)) +
+  geom_point(size = .5) +
+  coord_equal()
+
+ggplot(samps, aes(x, y)) +
+  geom_point(size = .5) +
+  geom_variety(poly = p) +
+  coord_equal()
+
 ggplot(samps, aes(x, y, color = g)) +
   geom_point(size = .5) +
+  geom_variety(poly = p) +
   scale_color_gradient2() +
   coord_equal()
 
@@ -128,11 +136,13 @@ ggplot(samps, aes(x, y)) +
     aes(fill = stat(density)),
     geom = "raster", contour = FALSE
    ) +
+  geom_variety(poly = p) +
   coord_equal()
 
 library("ggdensity")
 ggplot(samps, aes(x, y)) +
   geom_hdr(xlim = c(-2,2), ylim = c(-2,2)) +
+  geom_variety(poly = p) +
   coord_equal()
 
 
@@ -296,13 +306,15 @@ ggplot(samps, aes(x, y, color = g < 0)) +
 (p <- lissajous(3, 3,  0, 0))
 (p <- lissajous(5, 5,  0, 0))
 (p <- lissajous(7, 7,  0, 0))
-ggvariety(p, n = 201) + coord_equal()
+ggplot() +
+  geom_variety(poly = p, xlim = c(-1,1), ylim = c(-1,1)) +
+  coord_equal()
 
 p <- plug(p, "x", mp(".5 x"))
 p <- plug(p, "y", mp(".5 y"))
 
 # algebraic set
-samps <- rvnorm(5e3, p, sd = .01, "tibble", chains = 8, refresh = 100)
+samps <- rvnorm(5e3, p, sd = .01, "tibble", chains = 8)
 ggplot(samps, aes(x, y, color = factor(chain))) +
   geom_point(size = .5) + coord_equal()
 ggplot(samps, aes(x, y)) + geom_bin2d(binwidth = .02*c(1,1)) + coord_equal()
