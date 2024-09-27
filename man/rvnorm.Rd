@@ -10,12 +10,12 @@ rvnorm(
   sd,
   output = "simple",
   chains = 4L,
-  warmup = floor(n/2),
-  keep_warmup = FALSE,
+  warmup = max(500, floor(n/2)),
+  inc_warmup = FALSE,
   thin = 1L,
   inject_direct = FALSE,
   verbose = FALSE,
-  cores = getOption("mc.cores", 1L),
+  cores = min(chains, getOption("mc.cores", 1L)),
   normalized = TRUE,
   w,
   vars,
@@ -41,7 +41,7 @@ see \code{\link[=stan]{stan()}}.}
 
 \item{warmup}{Number of warmup iterations in \code{\link[=stan]{stan()}}.}
 
-\item{keep_warmup}{If \code{TRUE}, the MCMC warmup steps are included in the
+\item{inc_warmup}{If \code{TRUE}, the MCMC warmup steps are included in the
 output.}
 
 \item{thin}{\code{\link[=stan]{stan()}} \code{thin} parameter.}
@@ -102,19 +102,21 @@ varieties of varying dimensions?
 \dontrun{
 
 library("tidyverse")
+options("mc.cores" = parallel::detectCores() - 1)
 
 ## basic usage
 ########################################
 
 # single polynomial
-p <- mp("x^2 + y^2 - 1")
-samps <- rvnorm(2000, p, sd = .05, w = 2)
+p <- mpoly::mp("x^2 + y^2 - 1")
+samps <- rvnorm(1000, p, sd = .05, w = 2)
 head(samps)
-str(samps) # 2000 * (4 chains)
+str(samps)
 plot(samps, asp = 1)
+plot(p, add = TRUE)
 
 # returning a data frame
-(samps <- rvnorm(2000, p, sd = .05, w = 2, output = "tibble", cores = 4))
+(samps <- rvnorm(5000, p, sd = .05, w = 2, output = "tibble"))
 
 ggplot(samps, aes(x, y)) +
   geom_point(size = .5) +
@@ -125,15 +127,15 @@ ggplot(samps, aes(x, y)) +
   geom_variety(poly = p) +
   coord_equal()
 
-ggplot(samps, aes(x, y, color = g)) +
-  geom_point(size = .5) +
+ggplot(samps, aes(x, y)) +
+  geom_point(aes(color = g), size = .5) +
   geom_variety(poly = p) +
   scale_color_gradient2() +
   coord_equal()
 
 ggplot(samps, aes(x, y)) +
   stat_density2d(
-    aes(fill = stat(density)),
+    aes(fill = after_stat(density)),
     geom = "raster", contour = FALSE
    ) +
   geom_variety(poly = p) +
@@ -145,6 +147,10 @@ ggplot(samps, aes(x, y)) +
   geom_variety(poly = p) +
   coord_equal()
 
+
+# in three variables
+(samps <- rvnorm(20, mp("x^2 + y^2 + z^2 - 1"), sd = .05, w = 2))
+apply(samps, 1, function(v) sqrt(sum(v^2)))
 
 
 # more than one polynomial, # vars > # eqns, underdetermined system
@@ -266,12 +272,12 @@ ggvariety(p, xlim = c(-3,3)) + coord_equal()
 
 # notice the migration of chains initialized away from the distribution
 # (it helps to make the graphic large on your screen)
-samps <- rvnorm(500, p, sd = .05, "tibble", chains = 8, keep_warmup = TRUE)
+samps <- rvnorm(500, p, sd = .05, "tibble", chains = 8, inc_warmup = TRUE)
 ggplot(samps, aes(x, y, color = iter)) +
   geom_point(size = 1, alpha = .5) + geom_path(alpha = .2) +
   coord_equal() + facet_wrap(~ factor(chain))
 
-samps <- rvnorm(2500, p, sd = .05, "tibble", chains = 8, keep_warmup = TRUE)
+samps <- rvnorm(2500, p, sd = .05, "tibble", chains = 8, inc_warmup = TRUE)
 ggplot(samps, aes(x, y)) + geom_bin2d(binwidth = .05*c(1,1)) +
   coord_equal() + facet_wrap(~ factor(chain))
 
@@ -314,21 +320,24 @@ p <- plug(p, "x", mp(".5 x"))
 p <- plug(p, "y", mp(".5 y"))
 
 # algebraic set
-samps <- rvnorm(5e3, p, sd = .01, "tibble", chains = 8)
-ggplot(samps, aes(x, y, color = factor(chain))) +
-  geom_point(size = .5) + coord_equal()
-ggplot(samps, aes(x, y)) + geom_bin2d(binwidth = .02*c(1,1)) + coord_equal()
+samps <- rvnorm(5e3, p, sd = .01, "tibble", chains = 8, cores = 8)
+ggplot(samps, aes(x, y, color = factor(.chain))) +
+  geom_point(size = .5) +
+  coord_equal()
 
-ggplot(samps, aes(x, y, color = factor(chain))) +
-  geom_point(size = .5) + coord_equal() +
-  facet_wrap(~ factor(chain))
+ggplot(samps, aes(x, y)) + geom_hdr() + coord_equal()
+
+ggplot(samps, aes(x, y, color = factor(.chain))) +
+  geom_point(size = .5) +
+  coord_equal() +
+  facet_wrap(~ factor(.chain))
 
 # semi-algebraic set
 samps_normd <- rvnorm(1e4, p + mp("s^2"), sd = .01, "tibble", chains = 8,
-  normalized = TRUE, refresh = 100
+  cores = 8, normalized = TRUE
 )
 samps_unormd <- rvnorm(1e4, p + mp("s^2"), sd = .01, "tibble", chains = 8,
-  normalized = FALSE, refresh = 100
+  cores = 8, normalized = FALSE
 )
 
 bind_rows(
@@ -336,8 +345,9 @@ bind_rows(
   samps_unormd |> mutate(normd = FALSE)
 ) |>
   ggplot(aes(x, y)) +
-    geom_bin2d(binwidth = .05*c(1,1)) +
-    facet_grid(normd ~ chain) +
+    geom_point(size = .5) +
+    # geom_bin2d(binwidth = .05*c(1,1)) +
+    facet_grid(normd ~ .chain) +
     coord_equal()
 
 

@@ -21,7 +21,7 @@
 #' @param cores The number of CPU cores to distribute the chains across, see
 #'   [stan()].
 #' @param warmup Number of warmup iterations in [stan()].
-#' @param keep_warmup If \code{TRUE}, the MCMC warmup steps are included in the
+#' @param inc_warmup If \code{TRUE}, the MCMC warmup steps are included in the
 #'   output.
 #' @param thin [stan()] \code{thin} parameter.
 #' @param normalized If \code{TRUE}, the polynomial is gradient-normalized. This
@@ -53,19 +53,21 @@
 #' \dontrun{
 #'
 #' library("tidyverse")
+#' options("mc.cores" = parallel::detectCores() - 1)
 #'
 #' ## basic usage
 #' ########################################
 #'
 #' # single polynomial
-#' p <- mp("x^2 + y^2 - 1")
-#' samps <- rvnorm(2000, p, sd = .05, w = 2)
+#' p <- mpoly::mp("x^2 + y^2 - 1")
+#' samps <- rvnorm(1000, p, sd = .05, w = 2)
 #' head(samps)
-#' str(samps) # 2000 * (4 chains)
+#' str(samps)
 #' plot(samps, asp = 1)
+#' plot(p, add = TRUE)
 #'
 #' # returning a data frame
-#' (samps <- rvnorm(2000, p, sd = .05, w = 2, output = "tibble", cores = 4))
+#' (samps <- rvnorm(5000, p, sd = .05, w = 2, output = "tibble"))
 #'
 #' ggplot(samps, aes(x, y)) +
 #'   geom_point(size = .5) +
@@ -76,15 +78,15 @@
 #'   geom_variety(poly = p) +
 #'   coord_equal()
 #'
-#' ggplot(samps, aes(x, y, color = g)) +
-#'   geom_point(size = .5) +
+#' ggplot(samps, aes(x, y)) +
+#'   geom_point(aes(color = g), size = .5) +
 #'   geom_variety(poly = p) +
 #'   scale_color_gradient2() +
 #'   coord_equal()
 #'
 #' ggplot(samps, aes(x, y)) +
 #'   stat_density2d(
-#'     aes(fill = stat(density)),
+#'     aes(fill = after_stat(density)),
 #'     geom = "raster", contour = FALSE
 #'    ) +
 #'   geom_variety(poly = p) +
@@ -96,6 +98,10 @@
 #'   geom_variety(poly = p) +
 #'   coord_equal()
 #'
+#'
+#' # in three variables
+#' (samps <- rvnorm(20, mp("x^2 + y^2 + z^2 - 1"), sd = .05, w = 2))
+#' apply(samps, 1, function(v) sqrt(sum(v^2)))
 #'
 #'
 #' # more than one polynomial, # vars > # eqns, underdetermined system
@@ -217,12 +223,12 @@
 #'
 #' # notice the migration of chains initialized away from the distribution
 #' # (it helps to make the graphic large on your screen)
-#' samps <- rvnorm(500, p, sd = .05, "tibble", chains = 8, keep_warmup = TRUE)
+#' samps <- rvnorm(500, p, sd = .05, "tibble", chains = 8, inc_warmup = TRUE)
 #' ggplot(samps, aes(x, y, color = iter)) +
 #'   geom_point(size = 1, alpha = .5) + geom_path(alpha = .2) +
 #'   coord_equal() + facet_wrap(~ factor(chain))
 #'
-#' samps <- rvnorm(2500, p, sd = .05, "tibble", chains = 8, keep_warmup = TRUE)
+#' samps <- rvnorm(2500, p, sd = .05, "tibble", chains = 8, inc_warmup = TRUE)
 #' ggplot(samps, aes(x, y)) + geom_bin2d(binwidth = .05*c(1,1)) +
 #'   coord_equal() + facet_wrap(~ factor(chain))
 #'
@@ -322,12 +328,12 @@ rvnorm <- function(
     sd,
     output = "simple",
     chains = 4L,
-    warmup = floor(n/2),
-    keep_warmup = FALSE,
+    warmup = max(500, floor(n/2)),
+    inc_warmup = FALSE,
     thin = 1L,
     inject_direct = FALSE,
     verbose = FALSE,
-    cores = getOption("mc.cores", 1L),
+    cores = min(chains, getOption("mc.cores", 1L)),
     normalized = TRUE,
     w,
     vars,
@@ -339,16 +345,17 @@ rvnorm <- function(
     ...
 ) {
 
-  if (mpoly::is.mpoly(poly)) {
+  if ( is.character(poly) ) poly <- mp(poly)
+  if ( is.mpoly(poly) ) {
     n_eqs <- 1L
-  } else if (is.character(poly) || mpoly::is.mpolyList(poly)) {
+  } else if ( is.mpolyList(poly) ) {
     n_eqs <- length(poly)
   } else {
     stop("`poly` should be either a character vector, mpoly, or mpolyList.", call. = FALSE)
   }
   deg <- mpoly::totaldeg(poly)
   num_of_vars <- length(mpoly::vars(poly))
-  if ((refresh)) if (verbose) refresh <- max(ceiling(n/10), 1L) else refresh <- 0L
+  if (refresh) if (verbose) refresh <- max(ceiling(n/10), 1L) else refresh <- 0L
   if (!missing(refresh)) stopifnot(is.numeric(refresh), length(refresh) == 1L)
 
   if (n_eqs > 1 | length(mpoly::vars(poly)) > 2 | mpoly::totaldeg(poly) > 3) pre_compiled = FALSE
@@ -383,7 +390,7 @@ rvnorm <- function(
     data = stan_data,
     refresh = refresh,
     iter_warmup = warmup,
-    iter_sampling = n + warmup,
+    iter_sampling = ceiling(n/chains),
     chains = chains,
     parallel_chains = cores,
     adapt_delta = .999,
@@ -393,12 +400,18 @@ rvnorm <- function(
   # parse output and return -------------------------------------------------
 
   if(output == "simple") {
-    df <- samps$draws(format = "df") |> as.data.frame()
-    return( df[mpoly::vars(poly)] )
+    df <- samps$draws(format = "df", inc_warmup = inc_warmup) |> as.data.frame()
+    df <- df[(nrow(df)-n+1):nrow(df), mpoly::vars(poly)]
+    row.names(df) <- NULL
+    return( df )
   }
 
   if (output == "tibble") {
-    return( samps$draws(format = "df") |> tibble::as_tibble() )
+    df <- samps$draws(format = "df", inc_warmup = inc_warmup) |> tibble::as_tibble()
+    df <- df[(nrow(df)-n+1):nrow(df),]
+    row.names(df) <- NULL
+    df <- cbind(df[,-1], df[,1]) # move lp__ to last column
+    return( as_tibble(df) )
   }
 
   if (output == "stanfit") return(samps)

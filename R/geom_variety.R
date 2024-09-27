@@ -95,7 +95,7 @@ StatVariety <- ggproto(
 
   compute_group = function(
     self, data, scales, na.rm = FALSE,
-    poly, n = 100, nx = n, ny = n, xlim = NULL, ylim = NULL
+    poly, n = 101, nx = n, ny = n, xlim = NULL, ylim = NULL
   ) {
 
     rangex <- xlim %||% scales$x$dimension()
@@ -118,7 +118,7 @@ GeomVariety <- ggproto(
   "GeomVariety",
   GeomPath,
   default_aes = aes(
-    colour = "#3366FF",
+    colour = "red",
     linewidth = 0.5,
     linetype = 1,
     alpha = NA

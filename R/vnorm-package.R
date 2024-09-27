@@ -1,5 +1,5 @@
+#' @import mpoly
 #' @importFrom ggplot2 ggplot aes ggproto Stat GeomPath layer
-#' @importFrom mpoly mp is.mpoly vars
 #' @importFrom cmdstanr write_stan_file cmdstan_model
 #' @importFrom instantiate stan_package_model
 #' @name vnorm

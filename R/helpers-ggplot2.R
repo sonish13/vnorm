@@ -31,23 +31,6 @@ xyz_to_isolines <- function(data, breaks) {
   )
 }
 
-iso_to_polygon <- function(iso, group = 1) {
-  lengths <- vapply(iso, function(x) length(x$x), integer(1))
-  if (all(lengths == 0)) {
-    warning("Zero contours were generated")
-    return(tibble0())
-  }
-  levels <- names(iso)
-  xs <- unlist(lapply(iso, "[[", "x"), use.names = FALSE)
-  ys <- unlist(lapply(iso, "[[", "y"), use.names = FALSE)
-  ids <- unlist(lapply(iso, "[[", "id"), use.names = FALSE)
-  item_id <- rep(seq_along(iso), lengths)
-  groups <- paste(group, sprintf("%03d", item_id), sep = "-")
-  groups <- factor(groups)
-  tibble0(level = rep(levels, lengths), x = xs, y = ys,
-          piece = as.integer(groups), group = groups, subgroup = ids,
-          .size = length(xs))
-}
 
 iso_to_path <- function(iso, group = 1) {
   lengths <- vapply(iso, function(x) length(x$x), integer(1))
