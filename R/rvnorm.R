@@ -358,7 +358,8 @@ rvnorm <- function(
   if (refresh) if (verbose) refresh <- max(ceiling(n/10), 1L) else refresh <- 0L
   if (!missing(refresh)) stopifnot(is.numeric(refresh), length(refresh) == 1L)
 
-  if (n_eqs > 1 | length(mpoly::vars(poly)) > 2 | mpoly::totaldeg(poly) > 3) pre_compiled = FALSE
+  if (n_eqs > 1) pre_compiled = FALSE
+  if (n_eqs > 1 | length(mpoly::vars(poly)) > 2 | base::max(mpoly::totaldeg(poly)) > 3) pre_compiled = FALSE
   if(code_only) return(create_stan_code(poly, sd, n_eqs, w, normalized))
   #if(!normalized) pre_compiled = FALSE # This line will be removed after normalized stan files are added
 
@@ -540,10 +541,9 @@ model {
     }
     printed_jac <- printed_jac |>
       apply(1L, str_c, collapse = ", ") |>
-      str_c("      [", ., "]", collapse = ", \n") |>
-      str_c("[\n", ., "\n    ]") |>
+      (\(.) str_c("      [", ., "]", collapse = ", \n"))() |>
+      (\(.) str_c("[\n", ., "\n    ]"))() |>
       str_replace_all("\\*\\*", "^")
-
 
     # set variables
     if (missing(w)) {
