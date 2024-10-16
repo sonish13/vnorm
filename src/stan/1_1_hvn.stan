@@ -1,11 +1,10 @@
 data {
   real<lower=0> si;
   real b0; real bx;
-  real w;
 }
 
 parameters {
-  real <lower=-w, upper = w> x;
+  real x;
 }
 
 transformed parameters{
@@ -17,5 +16,3 @@ transformed parameters{
 model {
   target += normal_lpdf(0.00 | g/ndg, si);
 }
-
-
