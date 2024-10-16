@@ -24,8 +24,10 @@
 #' @param inc_warmup If \code{TRUE}, the MCMC warmup steps are included in the
 #'   output.
 #' @param thin [stan()] \code{thin} parameter.
+#' @param homo If \code{TRUE}, the sampling is done from homoskedastic variety
+#'  normal distribution.
 #' @param normalized If \code{TRUE}, the polynomial is gradient-normalized. This
-#'   is highly recommended.
+#'   is highly recommended. Set to \code{TRUE} if homo = \code{TRUE}
 #' @param inject_direct Directly specify printed polynomial to string inject
 #'   into the stan code. Requires you specify \code{vars}, \code{numerator}, and
 #'   \code{denominator}.
@@ -334,7 +336,8 @@ rvnorm <- function(
     inject_direct = FALSE,
     verbose = FALSE,
     cores = min(chains, getOption("mc.cores", 1L)),
-    normalized = TRUE,
+    homo = TRUE,
+    normalized = homo,
     w,
     vars,
     numerator,
@@ -359,9 +362,8 @@ rvnorm <- function(
   if (!missing(refresh)) stopifnot(is.numeric(refresh), length(refresh) == 1L)
 
   if (n_eqs > 1) pre_compiled = FALSE
-  if (n_eqs > 1 | length(mpoly::vars(poly)) > 2 | base::max(mpoly::totaldeg(poly)) > 3) pre_compiled = FALSE
+  if (n_eqs > 1 | length(mpoly::vars(poly)) > 3 | base::max(mpoly::totaldeg(poly)) > 3) pre_compiled = FALSE
   if(code_only) return(create_stan_code(poly, sd, n_eqs, w, normalized))
-  #if(!normalized) pre_compiled = FALSE # This line will be removed after normalized stan files are added
 
   if (pre_compiled) {
     list_for_transformation <- check_and_replace_vars(poly)
@@ -370,15 +372,21 @@ rvnorm <- function(
       var_info <- list_for_transformation$mapping
       output_needs_rewriting <- TRUE
     }
-    if (normalized) {
-      stan_file_name <- paste(num_of_vars, deg, "norm", sep = "_")
+    if (normalized | homo) {
+      stan_file_name <- paste(num_of_vars, deg, "hvn", sep = "_")
     } else {
-      stan_file_name <- paste(num_of_vars, deg, sep = "_")
+      stan_file_name <- paste(num_of_vars, deg, "vn", sep = "_")
     }
-    model <- stan_package_model(name = stan_file_name, package = "vnorm")
+    if (!missing(w)) {
+      stan_file_name <- paste(stan_file_name, "w", sep = "_")
+    }
+    model <- instantiate::stan_package_model(name = stan_file_name, package = "vnorm")
     stan_data <- make_coeficients_data(poly, num_of_vars, deg)
-    stan_data <- c(stan_data, "w" = w, "si" = sd)
-
+    if (missing(w)){
+      stan_data <- c(stan_data, "si" = sd)
+    } else {
+      stan_data <- c(stan_data, "w" = w, "si" = sd)
+      }
   } else {
     stan_code <- create_stan_code(poly, sd, n_eqs, w, normalized, vars)
     stan_file <- write_stan_file(stan_code)
@@ -404,7 +412,8 @@ rvnorm <- function(
     df <- samps$draws(format = "df", inc_warmup = inc_warmup) |> as.data.frame()
     df <- df[(nrow(df)-n+1):nrow(df), mpoly::vars(poly)]
     row.names(df) <- NULL
-    return( df )
+    if(output_needs_rewriting) df <- rename_output_df(df, replacement_list = var_info)
+    return(df)
   }
 
   if (output == "tibble") {
@@ -412,18 +421,13 @@ rvnorm <- function(
     df <- df[(nrow(df)-n+1):nrow(df),]
     row.names(df) <- NULL
     df <- cbind(df[,-1], df[,1]) # move lp__ to last column
+    if(output_needs_rewriting) df <- rename_output_df(df, replacement_list = var_info)
     return( as_tibble(df) )
   }
 
   if (output == "stanfit") return(samps)
 
 }
-
-
-
-
-
-
 
 
 
@@ -671,6 +675,16 @@ check_and_replace_vars <- function(p) {
   list(polynomial = p, mapping = var_mapping)
 }
 
+rename_output_df <- function(df, replacement_list) {
+  names(df) <- sapply(names(df), function(col) {
+    if (col %in% names(replacement_list)) {
+      replacement_list[[col]]
+    } else {
+      col
+    }
+  })
+  return(df)
+}
 
 
 

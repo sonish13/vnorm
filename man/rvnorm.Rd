@@ -16,7 +16,8 @@ rvnorm(
   inject_direct = FALSE,
   verbose = FALSE,
   cores = min(chains, getOption("mc.cores", 1L)),
-  normalized = TRUE,
+  homo = TRUE,
+  normalized = homo,
   w,
   vars,
   numerator,
@@ -55,8 +56,11 @@ into the stan code. Requires you specify \code{vars}, \code{numerator}, and
 \item{cores}{The number of CPU cores to distribute the chains across, see
 \code{\link[=stan]{stan()}}.}
 
+\item{homo}{If \code{TRUE}, the sampling is done from homoskedastic variety
+normal distribution.}
+
 \item{normalized}{If \code{TRUE}, the polynomial is gradient-normalized. This
-is highly recommended.}
+is highly recommended. Set to \code{TRUE} if homo = \code{TRUE}}
 
 \item{w}{A named list of box constraints for vectors to be passed to Stan,
 see examples. A If a single number, a box window (-w,w) is applied to all
