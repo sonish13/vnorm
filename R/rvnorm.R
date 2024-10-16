@@ -347,7 +347,7 @@ rvnorm <- function(
     pre_compiled = TRUE,
     ...
 ) {
-
+  output_needs_rewriting <- FALSE
   if ( is.character(poly) ) poly <- mp(poly)
   if ( is.mpoly(poly) ) {
     n_eqs <- 1L
