@@ -31,6 +31,7 @@ geom_variety(
   stat = "variety",
   position = "identity",
   ...,
+  poly,
   na.rm = FALSE,
   show.legend = NA,
   inherit.aes = TRUE
@@ -151,16 +152,34 @@ by \code{probs} argument.} }
 }
 
 \examples{
-# Basic plot
-p <- mp("x^2 + y^2 - 1")
+# Basic plots
+p <- mpoly::mp("y - x")
 ggplot() +
-  geom_variety(poly = p, xlim = c(-2,2), ylim = c(-2,2)) +
+ geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2))
+p <- mpoly::mp("y - x^2")
+ggplot() +
+ geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2))
+p <- mpoly::mp("x^2 + y^2 - 1")
+ggplot() +
+ geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2))
+p1 <- mp("x^2 + y^2 - 1")
+p2 <- mp("y - x")
+poly <- mpolyList(p1, p2)
+ggplot() +
+  geom_variety(poly = poly , xlim = c(-2, 2), ylim = c(-2, 2)) +
   coord_equal()
+(p <- lissajous(7, 7,  0, 0))
+ggplot() +
+  geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2), n=201)
 
-p <- mpoly::lissajous(5, 5, 0, 0)
+## setting limits
+p <- mpoly::mp("y - x^2")
 ggplot() +
-  geom_variety(poly = p, xlim = c(-2,2), ylim = c(-2,2), n = 251) +
-  coord_equal()
+ geom_variety(poly = p) +
+ coord_equal()
+ggplot() +
+ geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2)) +
+ coord_equal()
 
 }
 \seealso{

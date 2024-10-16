@@ -23,18 +23,37 @@
 #' @seealso [geom_path()]
 #' @name geom_variety
 #' @examples
-#' # Basic plot
-#' p <- mp("x^2 + y^2 - 1")
+#' # Basic plots
+#' p <- mpoly::mp("y - x")
 #' ggplot() +
-#'   geom_variety(poly = p, xlim = c(-2,2), ylim = c(-2,2)) +
-#'   coord_equal()
-#'
-#' p <- mpoly::lissajous(5, 5, 0, 0)
-#' ggplot() +
-#'   geom_variety(poly = p, xlim = c(-2,2), ylim = c(-2,2), n = 251) +
-#'   coord_equal()
-#'
+#'  geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2))
 
+#' p <- mpoly::mp("y - x^2")
+#' ggplot() +
+#'  geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2))
+#' p <- mpoly::mp("x^2 + y^2 - 1")
+#' ggplot() +
+#'  geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2))
+#' p1 <- mp("x^2 + y^2 - 1")
+#' p2 <- mp("y - x")
+#' poly <- mpolyList(p1, p2)
+#' ggplot() +
+#'   geom_variety(poly = poly , xlim = c(-2, 2), ylim = c(-2, 2)) +
+#'   coord_equal()
+#' (p <- lissajous(7, 7,  0, 0))
+#' ggplot() +
+#'   geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2), n=201)
+#'
+#' ## setting limits
+##################################################
+#' p <- mpoly::mp("y - x^2")
+#' ggplot() +
+#'  geom_variety(poly = p) +
+#'  coord_equal()
+#' ggplot() +
+#'  geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2)) +
+#'  coord_equal()
+#'
 
 
 
@@ -83,8 +102,6 @@ stat_variety <- function(
 }
 
 
-
-
 #' @rdname geom_variety
 #' @format NULL
 #' @usage NULL
@@ -97,17 +114,47 @@ StatVariety <- ggproto(
     self, data, scales, na.rm = FALSE,
     poly, n = 101, nx = n, ny = n, xlim = NULL, ylim = NULL
   ) {
+    if (is.null(xlim)) {
+      if (!is.null(scales$x)) {
+        rangex <- scales$x$dimension()
+      } else {
+        rangex <- c(-1, 1)  # Default value
+      }
+    } else {
+      rangex <- xlim
+    }
 
-    rangex <- xlim %||% scales$x$dimension()
-    rangey <- ylim %||% scales$y$dimension()
-    dfxyz <- poly_to_df(poly, rangex, rangey, nx, ny)
-    isolines <- xyz_to_isolines(dfxyz, 0)
-    iso_to_path(isolines, data$group[1])
+    if (is.null(ylim)) {
+      if (!is.null(scales$y)) {
+        rangey <- scales$y$dimension()
+      } else {
+        rangey <- c(-1, 1)  # Default value
+      }
+    } else {
+      rangey <- ylim
+    }
 
+    if (is.mpoly(poly)) {
+      dfxyz <- poly_to_df(poly, rangex, rangey, nx, ny)
+      isolines <- xyz_to_isolines(dfxyz, 0)
+      df <- iso_to_path(isolines, data$group[1])
+      df$variety_id <- as.factor(1)
+      return(df)
+    } else if (is.mpolyList(poly)) {
+      data_list <- lapply(seq_along(poly), function(i) {
+        dfxyz <- poly_to_df(poly[[i]], rangex, rangey, nx, ny)
+        isolines <- xyz_to_isolines(dfxyz, 0)
+        df <- iso_to_path(isolines, paste0(data$group[1], "_", i))
+        df$variety_id <- as.factor(i)
+        return(df)
+      })
+      combined_data <- dplyr::bind_rows(data_list)
+      return(combined_data)
+    } else {
+      stop("Input must be either an mpoly or mpolyList object.")
+    }
   }
 )
-
-
 
 
 #' @rdname geom_variety
@@ -126,9 +173,6 @@ GeomVariety <- ggproto(
 )
 
 
-
-
-
 #' @rdname geom_variety
 #' @export
 geom_variety <- function(
@@ -137,29 +181,34 @@ geom_variety <- function(
     stat = "variety",
     position = "identity",
     ...,
+    poly,
     na.rm = FALSE,
     show.legend = NA,
     inherit.aes = TRUE
 ) {
-
   if (is.null(data)) data <- ensure_nonempty_data
 
+  if (is.null(mapping)) {
+    mapping <- aes(group = after_stat(group), colour = after_stat(variety_id))
+  } else {
+    mapping <- modifyList(mapping, aes(group = after_stat(group), colour = after_stat(variety_id)))
+  }
+
   layer(
+    stat = stat,
     data = data,
     mapping = mapping,
-    stat = stat,
     geom = GeomVariety,
     position = position,
     show.legend = show.legend,
     inherit.aes = inherit.aes,
     params = list(
+      poly = poly,
       na.rm = na.rm,
       ...
     )
   )
 }
-
-
 
 
 poly_to_df <- function( poly, xlim, ylim, nx, ny ) {
