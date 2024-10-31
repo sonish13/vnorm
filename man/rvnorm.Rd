@@ -82,7 +82,7 @@ for polynomials with three indeterminates and three degrees. Defaults to
 \code{TRUE}.}
 
 \item{user_compiled}{If\code{TRUE}, user compiled stan program made using
-\link[vnorm]{compile_stan_program} is used. Defaults to \code{FALSE}}
+\link{compile_stan_code} is used. Defaults to \code{FALSE}}
 
 \item{...}{Additional parameters to pass to \code{\link[=stan]{stan()}}.}
 }

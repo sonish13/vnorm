@@ -4,13 +4,7 @@
 \alias{compile_stan_code}
 \title{Compile stan model for user-defined polynomials}
 \usage{
-compile_stan_code(
-  poly,
-  custom_stan_code = FALSE,
-  w = FALSE,
-  homo = TRUE,
-  overwrite = TRUE
-)
+compile_stan_code(poly, custom_stan_code = FALSE, w = FALSE, homo = TRUE)
 }
 \arguments{
 \item{poly}{An mpoly object.}
@@ -23,15 +17,14 @@ Defaults to \code{FALSE}.}
 \code{\link[=rvnorm]{rvnorm()}} examples. Defauls to \code{FALSE}.}
 
 \item{homo}{If \code{TRUE}, the sampling is done from homoskedastic variety
-normal distribution. Defaulst to \code{TRUE}.}
-
-\item{overwrite}{If \code{TRUE}, overwrites previously made stan model.
-Defaulst to \code{TRUE}
+normal distribution. Defaulst to \code{TRUE}.
 
 This function creates temporary stan model for the kind of polynomial user is
 interested in. This also creates a variable compiled_stan_info in the Global
 environmentcompiled stan models that is needed to run rvnorm using user
-defined stan codes.}
+defined stan codes.
+
+Usage}
 }
 \description{
 This function helps to avoid recompiling for polynomials

@@ -46,7 +46,7 @@
 #' @param code_only If \code{TRUE}, will only formulate and return Stan code.
 #' @param ... Additional parameters to pass to [stan()].
 #' @param user_compiled If\code{TRUE}, user compiled stan program made using
-#' \link[vnorm]{compile_stan_program} is used. Defaults to \code{FALSE}
+#' [compile_stan_code] is used. Defaults to \code{FALSE}
 #' @name rvnorm
 #' @return Either (1) matrix whose rows are the individual draws from the
 #'   distribution, (2) a [tbl_df-class] object with the draws along with

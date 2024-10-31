@@ -149,4 +149,36 @@ make_derivative <- function(var, num_of_vars, deg , basis = c("x","y","z")) {
   gsub("1\\*|\\*1", "", out)
 }
 
+get_model_name <- function(poly, w =T, homo=T) {
+  g = paste0(
+    mpoly::monomials(poly) |> lapply(function(item) {
+      item[[1]][names(item[[1]]) == "coef"] <- 1
+      item
+    }) |>
+      lapply(coef) |>
+      unlist() |>
+      get_listed_coeficients() |>
+      names(),
+    "*" ,
+    mpoly::monomials(poly) |> lapply(function(item) {
+      item[[1]][names(item[[1]]) == "coef"] <- 1
+      item
+    }) |>
+      lapply(mpoly_to_stan) |>
+      unlist() |>
+      c(),
+    collapse = "+"
+  )
+  g <- gsub("1\\*|\\*1", "", g)
+  sprintf("%s_%s%s.stan",
+          g,
+          if (homo)
+            "vn"
+          else
+            "hvn",
+          if (w)
+            "_w"
+          else
+            "")
+}
 

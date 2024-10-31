@@ -1,7 +1,7 @@
 #' Compile stan model for user-defined polynomials
 #'
 #' This function helps to avoid recompiling for polynomials
-#' with same indeterminates but different coefficients.
+#' with same indeterminate but different coefficients.
 #'
 #'
 #' @param poly An mpoly object.
@@ -12,16 +12,17 @@
 #' [rvnorm()] examples. Defauls to \code{FALSE}.
 #' @param homo If \code{TRUE}, the sampling is done from homoskedastic variety
 #'  normal distribution. Defaulst to \code{TRUE}.
-#' @param overwrite If \code{TRUE}, overwrites previously made stan model.
-#' Defaulst to \code{TRUE}
 #'
 #' This function creates temporary stan model for the kind of polynomial user is
 #'  interested in. This also creates a variable compiled_stan_info in the Global
 #'  environmentcompiled stan models that is needed to run rvnorm using user
 #'  defined stan codes.
+#'
+#'  Usage
+#'
 
 #' @export
-compile_stan_code<- function(poly, custom_stan_code = FALSE, w = FALSE, homo = TRUE, overwrite = TRUE) {
+compile_stan_code<- function(poly, custom_stan_code = FALSE, w = FALSE, homo = TRUE) {
   vars <- mpoly::vars(poly)
   num_of_vars <- length(vars)
   deg <- mpoly::totaldeg(poly)
@@ -34,13 +35,31 @@ compile_stan_code<- function(poly, custom_stan_code = FALSE, w = FALSE, homo = T
     stop("Cannot compile model for a mpolyList object")
   }
   if(!custom_stan_code){
-    if(length(mpoly::vars(poly)) > 3 |base::max(mpoly::totaldeg(poly)) > 3) {
+    if(length(mpoly::vars(poly)) < 4 & base::max(mpoly::totaldeg(poly) < 4)) {
       stop("Pre-compiled model for the general case already exists from installation,
-           Use custome_stan_code = TRUE to use custom model anyway")
+           Use custom_stan_code = TRUE to use custom model anyway")
     }
   }
 
+  stan_code <- make_custom_stan_code(poly = poly, w=w, homo=homo)
+  model_name <- get_model_name(poly = poly, w =w , homo = homo)
+  model_path <- cmdstanr::write_stan_file(stan_code, getwd())
+  compiled_stan_info <- data.frame("name" = model_name, "path" = model_path)
 
+  if (!exists("compiled_stan_info", envir = .GlobalEnv)) {
+    assign("compiled_stan_info", compiled_stan_info, envir = .GlobalEnv)
+    message("compiled_stan_info variable created in Global environment")
+  }
+  else {
+    compiled_stan_info <- get("compiled_stan_info", envir = .GlobalEnv)
+    new_row <- data.frame("name" = model_name, "path" = model_path)
+    compiled_stan_info <- rbind(compiled_stan_info, new_row)
+    compiled_stan_info <- dplyr::distinct(compiled_stan_info)
+    assign("compiled_stan_info", compiled_stan_info, envir = .GlobalEnv)
+    message("compiled_stan_info variable updated in Global environment")
+  }
+  cmdstan_model(model_path)
+  return("Model Compiled")
 }
 
 make_custom_stan_code <- function(poly, w= FALSE, homo = TRUE) {
@@ -128,31 +147,44 @@ make_custom_stan_code <- function(poly, w= FALSE, homo = TRUE) {
                           "_w"
                         else
                           "")
-  model_path <- cmdstanr::write_stan_file(stan_code, getwd())
-  compiled_stan_info <- data.frame("name" = model_name, "path" = model_path)
-  vnorm_env <- getNamespace("vnorm")
-
-  if (!exists("compiled_stan_info", envir = .GlobalEnv)) {
-    assign("compiled_stan_info", compiled_stan_info, envir = .GlobalEnv)
-    message("compiled_stan_info variable created in Global environment")
-  }
-  else {
-    compiled_stan_info <- get("compiled_stan_info", envir = .GlobalEnv)
-    new_row <- data.frame("name" = model_name, "path" = model_path)
-    compiled_stan_info <- rbind(compiled_stan_info, new_row)
-    compiled_stan_info <- dplyr::distinct(compiled_stan_info)
-    assign("compiled_stan_info", compiled_stan_info, envir = .GlobalEnv)
-    message("compiled_stan_info variable updated in Global environment")
-  }
-  cmdstan_model(model_path)
-  return("Model Compiled")
+  stan_code
 }
 
-
-
-
-
-
+make_derivative_for_custom_function <- function(var, poly, basis = c("x","y","z")) {
+  d <- get("deriv.mpoly", asNamespace("mpoly"))
+  df_for_der <- data.frame(num_coef = mpoly::monomials(poly) |>
+                             lapply(reorder,varorder = basis) |>
+                             lapply(function(item) {
+                               item[[1]][names(item[[1]]) == "coef"] <- 1
+                               item
+                             }) |>
+                             lapply(d, var = var) |>
+                             lapply(mpoly:::coef.mpoly) |>
+                             unlist() |>
+                             unname(),
+                           # For indeterminates after derivatives
+                           indeterminates = mpoly::monomials(poly) |>
+                             lapply(d, var = var) |>
+                             lapply(function(item) {
+                               item[[1]][names(item[[1]]) == "coef"] <- 1
+                               item
+                             }) |>
+                             lapply(mpoly_to_stan) |>
+                             unlist() |>
+                             c(),
+                           # For symbolic coefficients
+                           sym_coef = mpoly::monomials(poly) |>
+                             lapply(mpoly:::coef.mpoly) |>
+                             unlist() |>
+                             get_listed_coeficients() |>
+                             names()
+  )
+  df_for_der <- dplyr::filter(df_for_der,num_coef != 0)
+  out <- paste0(df_for_der$num_coef,"*",
+                df_for_der$sym_coef, "*",
+                df_for_der$indeterminates ,collapse = "+")
+  gsub("1\\*|\\*1", "", out)
+}
 
 
 
