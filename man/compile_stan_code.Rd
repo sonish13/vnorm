@@ -28,5 +28,5 @@ Usage}
 }
 \description{
 This function helps to avoid recompiling for polynomials
-with same indeterminates but different coefficients.
+with same indeterminate but different coefficients.
 }
