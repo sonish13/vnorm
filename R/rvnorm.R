@@ -45,6 +45,8 @@
 #'   \code{TRUE}.
 #' @param code_only If \code{TRUE}, will only formulate and return Stan code.
 #' @param ... Additional parameters to pass to [stan()].
+#' @param user_compiled If\code{TRUE}, user compiled stan program made using
+#' \link[vnorm]{compile_stan_program} is used. Defaults to \code{FALSE}
 #' @name rvnorm
 #' @return Either (1) matrix whose rows are the individual draws from the
 #'   distribution, (2) a [tbl_df-class] object with the draws along with
@@ -312,62 +314,74 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
 #' @rdname rvnorm
 #' @export
-rvnorm <- function(
-    n,
-    poly,
-    sd,
-    output = "simple",
-    chains = 4L,
-    warmup = max(500, floor(n/2)),
-    inc_warmup = FALSE,
-    thin = 1L,
-    inject_direct = FALSE,
-    verbose = FALSE,
-    cores = min(chains, getOption("mc.cores", 1L)),
-    homo = TRUE,
-    normalized = homo,
-    w,
-    vars,
-    numerator,
-    denominator,
-    refresh = 0L,
-    code_only = FALSE,
-    pre_compiled = TRUE,
-    ...
-) {
+rvnorm <- function(n,
+                   poly,
+                   sd,
+                   output = "simple",
+                   chains = 4L,
+                   warmup = max(500, floor(n / 2)),
+                   inc_warmup = FALSE,
+                   thin = 1L,
+                   inject_direct = FALSE,
+                   verbose = FALSE,
+                   cores = min(chains, getOption("mc.cores", 1L)),
+                   homo = TRUE,
+                   normalized = homo,
+                   w,
+                   vars,
+                   numerator,
+                   denominator,
+                   refresh = 0L,
+                   code_only = FALSE,
+                   pre_compiled = TRUE,
+                   user_compiled = FALSE,
+                   ...) {
   output_needs_rewriting <- FALSE
-  if ( is.character(poly) ) poly <- mp(poly)
-  if ( is.mpoly(poly) ) {
+  if (is.character(poly))
+    poly <- mp(poly)
+  if (is.mpoly(poly)) {
     n_eqs <- 1L
-  } else if ( is.mpolyList(poly) ) {
+  } else if (is.mpolyList(poly)) {
     n_eqs <- length(poly)
   } else {
-    stop("`poly` should be either a character vector, mpoly, or mpolyList.", call. = FALSE)
+    stop("`poly` should be either a character vector, mpoly, or mpolyList.",
+         call. = FALSE)
   }
   deg <- mpoly::totaldeg(poly)
   num_of_vars <- length(mpoly::vars(poly))
-  if (refresh) if (verbose) refresh <- max(ceiling(n/10), 1L) else refresh <- 0L
-  if (!missing(refresh)) stopifnot(is.numeric(refresh), length(refresh) == 1L)
+  if (refresh)
+    if (verbose)
+      refresh <- max(ceiling(n / 10), 1L)
+  else
+    refresh <- 0L
+  if (!missing(refresh))
+    stopifnot(is.numeric(refresh), length(refresh) == 1L)
 
-  if (n_eqs > 1) pre_compiled = FALSE
-  if (n_eqs > 1 | length(mpoly::vars(poly)) > 3 | base::max(mpoly::totaldeg(poly)) > 3) pre_compiled = FALSE
-  if(code_only) return(create_stan_code(poly, sd, n_eqs, w, normalized))
-
+  if (n_eqs > 1)
+    pre_compiled = FALSE
+  if (n_eqs > 1 |
+      length(mpoly::vars(poly)) > 3 |
+      base::max(mpoly::totaldeg(poly)) > 3)
+    pre_compiled = FALSE
+  if (code_only)
+    return(create_stan_code(poly, sd, n_eqs, w, normalized))
+  if(user_compiled){
+    model_name <- get_model_name(poly = poly, homo = homo , w = !missing(w))
+    model_path <- compiled_stan_info$path[compiled_stan_info$name == model_name]
+    model <- cmdstan_model(model_path)
+    stan_data <- get_listed_coeficients(coef(poly))
+    if (missing(w)) {
+      stan_data <- c(stan_data, "si" = sd)
+    } else {
+      stan_data <- c(stan_data, "w" = w, "si" = sd)
+    }
+  }
+  else{
   if (pre_compiled) {
     list_for_transformation <- check_and_replace_vars(poly)
-    if(!(list_for_transformation$mapping |> unlist() |> is.null())) {
+    if (!(list_for_transformation$mapping |> unlist() |> is.null())) {
       poly <- list_for_transformation$polynomial
       var_info <- list_for_transformation$mapping
       output_needs_rewriting <- TRUE
@@ -382,24 +396,24 @@ rvnorm <- function(
     }
     model <- instantiate::stan_package_model(name = stan_file_name, package = "vnorm")
     stan_data <- make_coeficients_data(poly, num_of_vars, deg)
-    if (missing(w)){
+    if (missing(w)) {
       stan_data <- c(stan_data, "si" = sd)
     } else {
       stan_data <- c(stan_data, "w" = w, "si" = sd)
-      }
+    }
   } else {
     stan_code <- create_stan_code(poly, sd, n_eqs, w, normalized, vars)
     stan_file <- write_stan_file(stan_code)
     model <- cmdstan_model(stan_file)
     stan_data <- list("si" = sd)
   }
-
+}
   # run stan sampler ---------------------------------------------------------
   samps <- model$sample(
     data = stan_data,
     refresh = refresh,
     iter_warmup = warmup,
-    iter_sampling = ceiling(n/chains),
+    iter_sampling = ceiling(n / chains),
     chains = chains,
     parallel_chains = cores,
     adapt_delta = .999,
@@ -408,40 +422,33 @@ rvnorm <- function(
 
   # parse output and return -------------------------------------------------
 
-  if(output == "simple") {
+  if (output == "simple") {
     df <- samps$draws(format = "df", inc_warmup = inc_warmup) |> as.data.frame()
-    df <- df[(nrow(df)-n+1):nrow(df), mpoly::vars(poly)]
+    df <- df[(nrow(df) - n + 1):nrow(df), mpoly::vars(poly)]
     row.names(df) <- NULL
-    if(output_needs_rewriting) df <- rename_output_df(df, replacement_list = var_info)
+    if (output_needs_rewriting)
+      df <- rename_output_df(df, replacement_list = var_info)
     return(df)
   }
 
   if (output == "tibble") {
     df <- samps$draws(format = "df", inc_warmup = inc_warmup) |> tibble::as_tibble()
-    df <- df[(nrow(df)-n+1):nrow(df),]
+    df <- df[(nrow(df) - n + 1):nrow(df), ]
     row.names(df) <- NULL
-    df <- cbind(df[,-1], df[,1]) # move lp__ to last column
-    if(output_needs_rewriting) df <- rename_output_df(df, replacement_list = var_info)
-    return( as_tibble(df) )
+    df <- cbind(df[, -1], df[, 1]) # move lp__ to last column
+    if (output_needs_rewriting)
+      df <- rename_output_df(df, replacement_list = var_info)
+    return(as_tibble(df))
   }
 
-  if (output == "stanfit") return(samps)
+  if (output == "stanfit"){
+    return(samps)
+    if(output_needs_rewriting){
+      message("The stanfit object has variable names as x,y,z instead of the ones on the polynomial.
+              Don't use pre-compiled model if you need the output to have same names as your polynomial")
+    }
+  }
 
-}
-
-
-
-mpoly_to_stan <- function (mpoly) {
-  p <- get("print.mpoly", asNamespace("mpoly"))
-  p(mpoly, stars = TRUE, silent = TRUE, plus_pad = 0L, times_pad = 0L) |>
-    stringr::str_replace_all("[*]{2}", "^")
-}
-
-mpolyList_to_stan <- function (mpolyList) {
-  p <- get("print.mpolyList", asNamespace("mpoly"))
-  p(mpolyList, silent = TRUE, stars = TRUE, plus_pad = 0, times_pad = 0) |>
-    stringr::str_replace_all("\\*\\*", "^") |>
-    stringr::str_c(collapse = ", ")
 }
 
 create_stan_code <- function(poly, sd, n_eqs, w, normalized, vars) {
@@ -522,8 +529,6 @@ model {
 
 
   } else {
-
-
     # multiple polynomials provided
 
     vars <- mpoly::vars(poly)
@@ -537,9 +542,12 @@ model {
     for (i in 1:n_eqs) {
       for (j in 1:n_vars) {
         if (normalized) {
-          printed_jac[i,j] <- mpoly_to_stan(d(poly[[i]], vars[j]))
+          printed_jac[i, j] <- mpoly_to_stan(d(poly[[i]], vars[j]))
         } else {
-          printed_jac[i,j] <- if (i == j) "1" else "0"
+          printed_jac[i, j] <- if (i == j)
+            "1"
+          else
+            "0"
         }
       }
     }
@@ -561,7 +569,9 @@ model {
         for (var_ndx in seq_along(vars)) {
           parms[var_ndx] <- if (vars[var_ndx] %in% names(w)) {
             var_ndx_in_w <- which(names(w) == vars[var_ndx])
-            glue::glue("real<lower={w[[var_ndx_in_w]][1]},upper={w[[var_ndx_in_w]][2]}> {vars[var_ndx]};")
+            glue::glue(
+              "real<lower={w[[var_ndx_in_w]][1]},upper={w[[var_ndx_in_w]][2]}> {vars[var_ndx]};"
+            )
           } else {
             glue::glue("real {vars[var_ndx]};")
           }
@@ -574,7 +584,6 @@ model {
 
     # normalization matrix
     if (is.numeric(sd) && is.vector(sd) && length(sd) == 1L) {
-
       gbar_string <- if (n_vars == n_eqs) {
         "J \\ g"
       } else if (n_vars > n_eqs) {
@@ -583,11 +592,13 @@ model {
         "(J'*J) \\ (J'*g)"
       }
 
-    } else stop("This sd not yet supported.")
+    } else
+      stop("This sd not yet supported.")
 
 
     # write stan code
-    stan_code <- glue::glue("
+    stan_code <- glue::glue(
+      "
 data {
   real<lower=0> si;
 }
@@ -604,103 +615,12 @@ transformed parameters {
 model {
   target += normal_lpdf(0.00 | {{gbar_string}}, si);
 }
-      ",  .open = "{{", .close = "}}"
+      ", .open = "{{", .close = "}}"
     )
   }
 
 
-  stan_code
+stan_code
 }
-
-
-
-make_coeficients_data <- function(poly, num_of_vars ,deg, basis = c("x", "y","z")) {
-  required_coefs<- basis_monomials(basis[seq_along(1:num_of_vars)], deg) |>
-    lapply(reorder,varorder = basis) |>
-    lapply(coef) |>
-    unlist() |>
-    get_listed_coeficients() |>
-    lapply(function(x) 0)
-  available_coef <- get_listed_coeficients( coef(poly) )
-  required_coefs[names(available_coef)] <- available_coef
-  required_coefs
-}
-
-
-
-get_listed_coeficients <- function(coefs) {
-  convert_names <- function(term) {
-    term <- gsub("\\s+", "", term)  # Remove spaces
-    if (term == "1") return("b0")   # Constant term should be "b0"
-    term <- gsub("\\^", "", term)   # Remove power symbol (^)
-    return(paste0("b", term))       # Add "b" at the beginning
-  }
-  names(coefs) <- sapply(names(coefs), convert_names)
-  as.list(coefs)
-}
-
-
-
-check_and_replace_vars <- function(p) {
-  current_vars <- vars(p)
-  num_vars <- length(current_vars)
-  target_vars <- list(
-    c("x"),           # for 1 indeterminate
-    c("x", "y"),      # for 2 indeterminates
-    c("x", "y", "z")  # for 3 indeterminates
-  )
-  if (num_vars > 3) {
-    stop("The polynomial has more than 3 indeterminates.")
-  }
-  expected_vars <- target_vars[[num_vars]]
-  if (setequal(current_vars, expected_vars)) {
-    return(list(polynomial = p, mapping = list()))  # No replacement needed
-  }
-  var_mapping <- list()
-
-  # Replace current variables with temporary placeholders to avoid conflicts
-  temp_vars <- paste0("tmp", seq_along(current_vars))  # Temporary placeholders
-  for (i in seq_along(current_vars)) {
-    p <- swap(p, current_vars[i], temp_vars[i])
-    var_mapping[[temp_vars[i]]] <- current_vars[i]  # Store the original variable
-  }
-
-  # Replace the temporary placeholders with the target variables (x, y, z)
-  for (i in seq_along(expected_vars)) {
-    p <- swap(p, temp_vars[i], expected_vars[i])
-    var_mapping[[expected_vars[i]]] <- var_mapping[[temp_vars[i]]]  # Map to target variables
-    var_mapping[[temp_vars[i]]] <- NULL  # Remove temp mapping
-  }
-
-  list(polynomial = p, mapping = var_mapping)
-}
-
-rename_output_df <- function(df, replacement_list) {
-  names(df) <- sapply(names(df), function(col) {
-    if (col %in% names(replacement_list)) {
-      replacement_list[[col]]
-    } else {
-      col
-    }
-  })
-  return(df)
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
