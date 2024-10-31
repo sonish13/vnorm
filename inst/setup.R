@@ -1,0 +1,37 @@
+# Compilation
+instantiate::stan_package_configure()
+instantiate::stan_package_compile()
+document()
+
+# Installation
+
+install.packages(pkgs = "/Users/slamsal/Research/vnorm/vnorm", type = "source", repos = NULL)
+library(vnorm)
+library(cmdstanr)
+library(stringr)
+library(mpoly)
+library(instantiate)
+library(tidyverse)
+
+# Stan Files Generator
+
+num_of_vars_vals <- 1:3
+totaldeg_vals <- 1:3
+homo_vals <- c(TRUE, FALSE)
+w_vals <- c(TRUE, FALSE)
+
+param_grid <- expand.grid(
+  num_of_vars = num_of_vars_vals,
+  totaldeg = totaldeg_vals,
+  homo = homo_vals,
+  w = w_vals
+)
+
+results <- apply(param_grid, 1, function(params) {
+  do.call(make_stan_file, as.list(params))
+})
+
+# Compilation code
+
+
+

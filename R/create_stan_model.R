@@ -85,7 +85,7 @@ make_stan_file <- function(num_of_vars,
                         "")
   path <- here::here("src", "stan", filename)
   readr::write_lines(stan_code, file = path)
-  #stan_code
+  # stan_code
 
 }
 
