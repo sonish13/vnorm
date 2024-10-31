@@ -2,6 +2,7 @@
 
 export(GeomVariety)
 export(StatVariety)
+export(compile_stan_code)
 export(geom_variety)
 export(project_onto_variety)
 export(project_onto_variety_gradient_descent)

@@ -1,17 +1,13 @@
 data {
-  real<lower=0> si;
-  real b0; real bx;
+real si;
+real b0; real bx;
 }
-
 parameters {
   real x;
-}
-
-transformed parameters{
-  real g = b0 + bx*x;
-  real ndg = 1;
-}
-
+ }
 model {
-  target += normal_lpdf(0.00 | g/ndg, si);
+real g = b0+bx*x;
+real dgx = bx;
+real ndg = sqrt(dgx^2);
+target += normal_lpdf(0.00 | g/ndg, si); 
 }

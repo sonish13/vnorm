@@ -25,6 +25,7 @@ rvnorm(
   refresh = 0L,
   code_only = FALSE,
   pre_compiled = TRUE,
+  user_compiled = FALSE,
   ...
 )
 }
@@ -79,6 +80,9 @@ much information is provided to the user while sampling.}
 \item{pre_compiled}{Whether to use pre-compiled stan models or not. Available
 for polynomials with three indeterminates and three degrees. Defaults to
 \code{TRUE}.}
+
+\item{user_compiled}{If\code{TRUE}, user compiled stan program made using
+\link[vnorm]{compile_stan_program} is used. Defaults to \code{FALSE}}
 
 \item{...}{Additional parameters to pass to \code{\link[=stan]{stan()}}.}
 }
