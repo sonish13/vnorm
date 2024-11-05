@@ -210,7 +210,7 @@ poly_to_df <- function(poly, xlim, ylim, nx, ny) {
   df
 }
 
-# Used for printing Variety names
+# Used for printing Variety names, kept the name same since it's the same function used in rvnorm
 mpoly_to_stan <- function(mpoly) {
   p <- get("print.mpoly", asNamespace("mpoly"))
   p(mpoly, stars = TRUE, silent = TRUE, plus_pad = 0L, times_pad = 0L) |>

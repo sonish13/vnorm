@@ -13,7 +13,7 @@ plotting 1d varieties in 2d plots and projection onto varieties.
 # Sampling from a variety
 
 Generate samples for the variety normal distribution with mean equal to
-and “standard deviation” equal to .
+`poly` and “standard deviation” equal to `sd`.
 
 For a polynomial $x^2 + y^2 -1$, we can sample using `rvnorm`
 
@@ -30,19 +30,19 @@ samps <- rvnorm(2000, poly, sd = .1)
 #> 
 #> All 4 chains finished successfully.
 #> Mean chain execution time: 0.2 seconds.
-#> Total execution time: 1.3 seconds.
+#> Total execution time: 1.2 seconds.
 head(samps)
-#>            x         y
-#> 1 -0.8139800  0.415087
-#> 2 -0.0591321  0.979381
-#> 3  0.9203630 -0.294203
-#> 4  0.9970770 -0.281915
-#> 5  0.1841940  1.022640
-#> 6  0.1908310  0.923108
+#>           x         y
+#> 1  0.966994  0.405642
+#> 2  0.958511  0.375407
+#> 3  0.394862 -0.967098
+#> 4 -0.736241  0.734586
+#> 5 -0.732316  0.734969
+#> 6 -0.707225  0.701170
 str(samps)
 #> 'data.frame':    2000 obs. of  2 variables:
-#>  $ x: num  -0.814 -0.0591 0.9204 0.9971 0.1842 ...
-#>  $ y: num  0.415 0.979 -0.294 -0.282 1.023 ...
+#>  $ x: num  0.967 0.959 0.395 -0.736 -0.732 ...
+#>  $ y: num  0.406 0.375 -0.967 0.735 0.735 ...
 ```
 
 Let’s plot this with ggplot:
@@ -71,22 +71,22 @@ poly <- mpoly::mp("x^2 + y^2 + z^2 - 1")
 samps <- rvnorm(2000, poly, sd = 0.1, pre_compiled = TRUE)
 #> Running MCMC with 4 sequential chains...
 #> 
-#> Chain 1 finished in 0.4 seconds.
-#> Chain 2 finished in 0.3 seconds.
+#> Chain 1 finished in 0.3 seconds.
+#> Chain 2 finished in 0.4 seconds.
 #> Chain 3 finished in 0.3 seconds.
 #> Chain 4 finished in 0.3 seconds.
 #> 
 #> All 4 chains finished successfully.
 #> Mean chain execution time: 0.3 seconds.
-#> Total execution time: 1.5 seconds.
+#> Total execution time: 1.6 seconds.
 head(samps)
-#>           x        y          z
-#> 1  0.453262 0.799288 -0.0800479
-#> 2  0.443706 0.803808 -0.0160269
-#> 3 -0.239365 0.827039  0.3014040
-#> 4 -0.847219 0.303297  0.6017080
-#> 5 -0.776019 0.300545  0.5745230
-#> 6 -0.764296 0.306352  0.5701080
+#>           x         y          z
+#> 1  0.162459 -0.988889 -0.0092164
+#> 2 -0.497968 -0.547431  0.6876140
+#> 3  0.352122 -0.782564  0.5125490
+#> 4 -0.470062  0.781425  0.4553070
+#> 5 -0.055613  0.521399 -0.8016060
+#> 6  0.126799  0.060375 -0.9487200
 ```
 
 We also want the user to be able to pre-compile models. This can be done
@@ -96,7 +96,7 @@ similar polynomial with different coefficients.
 ``` r
 poly <- mpoly::mp("x^4 + y^4 - 1")
 compile_stan_code(poly = poly)
-#> compiled_stan_info variable created in Global environment
+#> compiled_stan_info variable created in global environment
 #> [1] "Model Compiled"
 ```
 
@@ -110,22 +110,22 @@ poly <- mpoly::mp("2 x^4 + 3 y^4 - 1")
 samps <- rvnorm(1000, poly = poly, sd = 0.1, user_compiled = TRUE)
 #> Running MCMC with 4 sequential chains...
 #> 
-#> Chain 1 finished in 0.0 seconds.
+#> Chain 1 finished in 0.1 seconds.
 #> Chain 2 finished in 0.1 seconds.
-#> Chain 3 finished in 0.0 seconds.
+#> Chain 3 finished in 0.1 seconds.
 #> Chain 4 finished in 0.0 seconds.
 #> 
 #> All 4 chains finished successfully.
-#> Mean chain execution time: 0.0 seconds.
-#> Total execution time: 0.5 seconds.
+#> Mean chain execution time: 0.1 seconds.
+#> Total execution time: 0.6 seconds.
 head(samps)
-#>           x         y
-#> 1 -0.284020  1.135140
-#> 2 -0.385049  0.841975
-#> 3 -0.856798 -0.536129
-#> 4 -0.893442 -0.255433
-#> 5 -0.801538  0.354110
-#> 6  0.180647 -0.730491
+#>          x          y
+#> 1 0.861923  0.3347540
+#> 2 1.010160  0.3768460
+#> 3 0.744661  0.0496880
+#> 4 0.993849  0.0955615
+#> 5 0.961165  0.0962827
+#> 6 0.937857 -0.2780060
 ```
 
 # Plotting

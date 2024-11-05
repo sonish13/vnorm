@@ -5,6 +5,8 @@
 #' @param path Path where [compile_stan_code()] was used and files need deletion.
 #' Defaults to the current working directory.
 #' @usage remove_stan_files()
+#'
+#'
 #' @export
 remove_stan_files <- function(path = getwd()) {
   #check to see if the files to be deleted are present

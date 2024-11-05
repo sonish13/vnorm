@@ -22,7 +22,7 @@ The goal of vnorm is to sample from variety normal distributions. For faster com
 
 # Sampling from a variety
 
-Generate samples for the variety normal distribution with mean equal to \code{poly} and "standard deviation" equal to \code{sd}.
+Generate samples for the variety normal distribution with mean equal to `poly` and "standard deviation" equal to `sd`.
 
 For a polynomial $x^2 + y^2 -1$, we can sample using `rvnorm`
 
@@ -86,6 +86,7 @@ ggplot() +
   geom_variety(poly = poly , xlim = c(-2, 2), ylim = c(-2, 2)) +
   coord_equal()
 ```
+
 
 ## Installation
 
