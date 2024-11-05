@@ -2,14 +2,14 @@
 % Please edit documentation in R/remove_stan_files.R
 \name{remove_stan_files}
 \alias{remove_stan_files}
-\title{Remove files created by\code{\link[=compile_stan_code]{compile_stan_code()}}}
+\title{Remove files created by \code{\link[=compile_stan_code]{compile_stan_code()}}}
 \usage{
-remove_stan_file()
+remove_stan_files()
 }
 \arguments{
 \item{path}{Path where \code{\link[=compile_stan_code]{compile_stan_code()}} was used and files need deletion.
-Defaults to curerent working directory.}
+Defaults to the current working directory.}
 }
 \description{
-Deletes all the variables and stan files created by \code{\link[=compile_stan_code]{compile_stan_code()}}
+Deletes all the variables and Stan files created by \code{\link[=compile_stan_code]{compile_stan_code()}}.
 }

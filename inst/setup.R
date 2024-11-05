@@ -28,7 +28,7 @@ param_grid <- expand.grid(
 )
 
 results <- apply(param_grid, 1, function(params) {
-  do.call(make_stan_file, as.list(params))
+  do.call(make_stan_files, as.list(params))
 })
 
 # Compilation code

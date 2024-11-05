@@ -2,31 +2,28 @@
 % Please edit documentation in R/compile_stan_code.R
 \name{compile_stan_code}
 \alias{compile_stan_code}
-\title{Compile stan model for user-defined polynomials}
+\title{Compile Stan model for user-defined polynomials}
 \usage{
 compile_stan_code(poly, custom_stan_code = FALSE, w = FALSE, homo = TRUE)
 }
 \arguments{
 \item{poly}{An mpoly object.}
 
-\item{custom_stan_code}{If \code{TRUE}, custom model is compiled eventhough
-general case of the polynomial is already included during package installation.
+\item{custom_stan_code}{If \code{TRUE}, a custom model is compiled even if
+the general case of the polynomial is already included during package installation.
 Defaults to \code{FALSE}.}
 
-\item{w}{A named list of box constraints for vectors to be passed to Stan, See
-\code{\link[=rvnorm]{rvnorm()}} examples. Defauls to \code{FALSE}.}
+\item{w}{A named list of box constraints for vectors to be passed to Stan. See
+\code{\link[=rvnorm]{rvnorm()}} examples. Defaults to \code{FALSE}.}
 
-\item{homo}{If \code{TRUE}, the sampling is done from homoskedastic variety
-normal distribution. Defaulst to \code{TRUE}.
+\item{homo}{If \code{TRUE}, the sampling is done from a homoskedastic variety
+normal distribution. Defaults to \code{TRUE}.
 
-This function creates temporary stan model for the kind of polynomial user is
-interested in. This also creates a variable compiled_stan_info in the Global
-environmentcompiled stan models that is needed to run rvnorm using user
-defined stan codes.
-
-Usage}
+This function creates a temporary Stan model for the kind of polynomial the user is
+interested in. It also creates a variable \code{compiled_stan_info} in the global
+environment for compiled Stan models that is needed to run \code{rvnorm} using user-defined Stan codes.}
 }
 \description{
 This function helps to avoid recompiling for polynomials
-with same indeterminate but different coefficients.
+with the same indeterminate but different coefficients.
 }

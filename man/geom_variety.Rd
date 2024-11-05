@@ -146,41 +146,46 @@ Draw a variety using the biroot and ggplot2.
 
 \section{Computed variables}{
 
-
-\describe{ \item{probs}{The probability associated with the highest density region, specified
-by \code{probs} argument.} }
+\describe{
+\item{probs}{The probability associated with the highest density region, specified
+by \code{probs} argument.}
+}
 }
 
 \examples{
 # Basic plots
 p <- mpoly::mp("y - x")
 ggplot() +
- geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2))
+  geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2))
+
 p <- mpoly::mp("y - x^2")
 ggplot() +
- geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2))
+  geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2))
+
 p <- mpoly::mp("x^2 + y^2 - 1")
 ggplot() +
- geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2))
+  geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2))
+
 p1 <- mp("x^2 + y^2 - 1")
 p2 <- mp("y - x")
 poly <- mpolyList(p1, p2)
 ggplot() +
-  geom_variety(poly = poly , xlim = c(-2, 2), ylim = c(-2, 2)) +
+  geom_variety(poly = poly, xlim = c(-2, 2), ylim = c(-2, 2)) +
   coord_equal()
-(p <- lissajous(7, 7,  0, 0))
-ggplot() +
-  geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2), n=201)
 
-## setting limits
+(p <- lissajous(7, 7, 0, 0))
+ggplot() +
+  geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2), n = 201)
+
+## Setting limits
 p <- mpoly::mp("y - x^2")
 ggplot() +
- geom_variety(poly = p) +
- coord_equal()
-ggplot() +
- geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2)) +
- coord_equal()
+  geom_variety(poly = p) +
+  coord_equal()
 
+ggplot() +
+  geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2)) +
+  coord_equal()
 }
 \seealso{
 \code{\link[=geom_path]{geom_path()}}
