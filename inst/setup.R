@@ -31,6 +31,8 @@ results <- apply(param_grid, 1, function(params) {
   do.call(make_stan_files, as.list(params))
 })
 
+
+
 # Compilation code
 
 

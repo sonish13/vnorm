@@ -9,11 +9,12 @@
 #'
 #' @export
 remove_stan_files <- function(path = getwd()) {
-  #check to see if the files to be deleted are present
+  # Check if the files to be deleted are present
   if (exists("compiled_stan_info", envir = .GlobalEnv)) {
     stan_file_names <- compiled_stan_info$path
     exe_file_names <- sub("\\.stan$", "", stan_file_names)
-    #remove the files
+
+    # Remove the files
     file.remove(stan_file_names[file.exists(stan_file_names)])
     file.remove(exe_file_names[file.exists(exe_file_names)])
 
@@ -21,3 +22,4 @@ remove_stan_files <- function(path = getwd()) {
   }
   message("Files deleted")
 }
+

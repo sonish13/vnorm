@@ -33,13 +33,13 @@ compile_stan_code <- function(poly, custom_stan_code = FALSE, w = FALSE, homo = 
   }
 
   if (!custom_stan_code) {
-    if (length(mpoly::vars(poly)) < 4 & base::max(mpoly::totaldeg(poly) < 4)) {
+    if (length(mpoly::vars(poly)) < 4 & base::max(mpoly::totaldeg(poly)) < 4) {
       stop("Pre-compiled model for the general case already exists from installation.
             Use custom_stan_code = TRUE to use a custom model anyway.")
     }
   }
 
-  stan_code <- make_custom_stan_code(poly = poly, w = w, homo = homo)
+  stan_code <- get_custom_stan_code(poly = poly, w = w, homo = homo)
   model_name <- get_model_name(poly = poly, w = w, homo = homo)
   model_path <- cmdstanr::write_stan_file(stan_code, getwd())
   compiled_stan_info <- data.frame("name" = model_name, "path" = model_path)
@@ -60,20 +60,20 @@ compile_stan_code <- function(poly, custom_stan_code = FALSE, w = FALSE, homo = 
   return("Model Compiled")
 }
 
-make_custom_stan_code <- function(poly, w = FALSE, homo = TRUE) {
+get_custom_stan_code <- function(poly, w = FALSE, homo = TRUE) {
   vars <- mpoly::vars(poly)
   num_of_vars <- length(vars)
 
   # Data block
-  var_for_data_block <- mpoly::monomials(poly) |>
-    lapply(reorder, varorder = vars) |>
-    lapply(coef) |>
-    unlist() |>
-    get_listed_coeficients() |>
-    names()
+  var_for_data_block <- mpoly::monomials(poly)
+  var_for_data_block <- lapply(var_for_data_block, reorder, varorder = vars)
+  var_for_data_block <- lapply(var_for_data_block, coef)
+  var_for_data_block <- unlist(var_for_data_block)
+  var_for_data_block <- get_listed_coeficients(var_for_data_block)
+  var_for_data_block <- names(var_for_data_block)
 
-  data_block <- paste(sapply(var_for_data_block, function(x) paste("real", x)), collapse = "; ") |>
-    paste0(";")
+  data_block <- paste(sapply(var_for_data_block, function(x) paste("real", x)), collapse = "; ")
+  data_block <- paste0(data_block, ";")
   if (w) {
     data_block <- paste0(data_block, "real w;")
   }
@@ -92,28 +92,30 @@ make_custom_stan_code <- function(poly, w = FALSE, homo = TRUE) {
   params_block <- paste0("parameters {\n", params_block, "\n }\n")
 
   # Model block
-  g <- paste0(
-    mpoly::monomials(poly) |> lapply(function(item) {
-      item[[1]][names(item[[1]]) == "coef"] <- 1
-      item
-    }) |>
-      lapply(coef) |>
-      unlist() |>
-      get_listed_coeficients() |>
-      names(),
-    "*",
-    mpoly::monomials(poly) |> lapply(function(item) {
-      item[[1]][names(item[[1]]) == "coef"] <- 1
-      item
-    }) |>
-      lapply(mpoly_to_stan) |>
-      unlist() |>
-      c(),
-    collapse = "+"
-  )
+  g_coef <- mpoly::monomials(poly)
+  g_coef <- lapply(g_coef, function(item) {
+    item[[1]][names(item[[1]]) == "coef"] <- 1
+    item
+  })
+  g_coef <- lapply(g_coef, coef)
+  g_coef <- unlist(g_coef)
+  g_coef <- get_listed_coeficients(g_coef)
+  g_coef <- names(g_coef)
 
+  g_terms <- mpoly::monomials(poly)
+  g_terms <- lapply(g_terms, function(item) {
+    item[[1]][names(item[[1]]) == "coef"] <- 1
+    item
+  })
+  g_terms <- lapply(g_terms, mpoly_to_stan)
+  g_terms <- unlist(g_terms)
+  g_terms <- c(g_terms)
+
+  g <- paste0(g_coef, "*", g_terms, collapse = "+")
   g <- gsub("1\\*|\\*1", "", g)
-  derivatives <- vars |> lapply(make_derivative_for_custom_function, poly = poly, basis = vars)
+
+  # Derivatives
+  derivatives <- lapply(vars, get_derivative_for_custom_function, poly = poly, basis = vars)
 
   derivative_names <- sapply(seq_along(vars), function(i) {
     paste0("dg", vars[i])
@@ -125,9 +127,11 @@ make_custom_stan_code <- function(poly, w = FALSE, homo = TRUE) {
     "real ndg = 1;"
   }
 
-  dg <- sapply(seq_along(vars), function(i)
-    paste(derivative_names[i], paste(derivatives[[i]], collapse = ""), sep = " = "))
-  dg <- paste0("real ", dg) |> paste0(collapse = ";")
+  dg <- sapply(seq_along(vars), function(i) {
+    paste(derivative_names[i], paste(derivatives[[i]], collapse = ""), sep = " = ")
+  })
+  dg <- paste0("real ", dg)
+  dg <- paste(dg, collapse = ";")
 
   model_block <- paste0(
     "model {\nreal g = ", g, ";\n", dg, ";\n", ndg,
@@ -145,40 +149,49 @@ make_custom_stan_code <- function(poly, w = FALSE, homo = TRUE) {
   stan_code
 }
 
-make_derivative_for_custom_function <- function(var, poly, basis = c("x", "y", "z")) {
+get_derivative_for_custom_function <- function(var, poly, basis = c("x", "y", "z")) {
   d <- get("deriv.mpoly", asNamespace("mpoly"))
 
+  # Calculate numeric coefficients
+  num_coef <- mpoly::monomials(poly)
+  num_coef <- lapply(num_coef, reorder, varorder = basis)
+  num_coef <- lapply(num_coef, function(item) {
+    item[[1]][names(item[[1]]) == "coef"] <- 1
+    item
+  })
+  num_coef <- lapply(num_coef, d, var = var)
+  num_coef <- lapply(num_coef, mpoly:::coef.mpoly)
+  num_coef <- unlist(num_coef)
+  num_coef <- unname(num_coef)
+
+  # Calculate indeterminates
+  indeterminates <- mpoly::monomials(poly)
+  indeterminates <- lapply(indeterminates, d, var = var)
+  indeterminates <- lapply(indeterminates, function(item) {
+    item[[1]][names(item[[1]]) == "coef"] <- 1
+    item
+  })
+  indeterminates <- lapply(indeterminates, mpoly_to_stan)
+  indeterminates <- unlist(indeterminates)
+  indeterminates <- c(indeterminates)
+
+  # Calculate symbolic coefficients
+  sym_coef <- mpoly::monomials(poly)
+  sym_coef <- lapply(sym_coef, mpoly:::coef.mpoly)
+  sym_coef <- unlist(sym_coef)
+  sym_coef <- get_listed_coeficients(sym_coef)
+  sym_coef <- names(sym_coef)
+
+  # Create data frame
   df_for_der <- data.frame(
-    num_coef = mpoly::monomials(poly) |>
-      lapply(reorder, varorder = basis) |>
-      lapply(function(item) {
-        item[[1]][names(item[[1]]) == "coef"] <- 1
-        item
-      }) |>
-      lapply(d, var = var) |>
-      lapply(mpoly:::coef.mpoly) |>
-      unlist() |>
-      unname(),
-
-    indeterminates = mpoly::monomials(poly) |>
-      lapply(d, var = var) |>
-      lapply(function(item) {
-        item[[1]][names(item[[1]]) == "coef"] <- 1
-        item
-      }) |>
-      lapply(mpoly_to_stan) |>
-      unlist() |>
-      c(),
-
-    sym_coef = mpoly::monomials(poly) |>
-      lapply(mpoly:::coef.mpoly) |>
-      unlist() |>
-      get_listed_coeficients() |>
-      names()
+    num_coef = num_coef,
+    indeterminates = indeterminates,
+    sym_coef = sym_coef
   )
 
+  # Filter and format output
   df_for_der <- dplyr::filter(df_for_der, num_coef != 0)
-
   out <- paste0(df_for_der$num_coef, "*", df_for_der$sym_coef, "*", df_for_der$indeterminates, collapse = "+")
   gsub("1\\*|\\*1", "", out)
 }
+

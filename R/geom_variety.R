@@ -100,6 +100,7 @@ stat_variety <- function(
   )
 }
 
+
 #' @rdname geom_variety
 #' @format NULL
 #' @usage NULL
@@ -119,20 +120,21 @@ StatVariety <- ggproto(
     rangey <- if (is.null(ylim)) {
       if (!is.null(scales$y)) scales$y$dimension() else c(-1, 1)
     } else ylim
-      # calculation for mpoly
+
+    # Calculation for mpoly
     if (is.mpoly(poly)) {
       dfxyz <- poly_to_df(poly, rangex, rangey, nx, ny)
       isolines <- xyz_to_isolines(dfxyz, 0)
       df <- iso_to_path(isolines, data$group[1])
-      df$Variety <- poly |> mpoly_to_stan() |> as.character()
+      df$Variety <- as.character(mpoly_to_stan(poly))
       return(df)
     } else if (is.mpolyList(poly)) {
-      #calculation for mpolyList
+      # Calculation for mpolyList
       data_list <- lapply(seq_along(poly), function(i) {
         dfxyz <- poly_to_df(poly[[i]], rangex, rangey, nx, ny)
         isolines <- xyz_to_isolines(dfxyz, 0)
         df <- iso_to_path(isolines, paste0(data$group[1], "_", i))
-        df$Variety <- poly[[i]] |> mpoly_to_stan() |> as.character()
+        df$Variety <- as.character(mpoly_to_stan(poly[[i]]))
         return(df)
       })
       combined_data <- dplyr::bind_rows(data_list)
@@ -142,6 +144,7 @@ StatVariety <- ggproto(
     }
   }
 )
+
 
 #' @rdname geom_variety
 #' @format NULL
@@ -171,8 +174,10 @@ geom_variety <- function(
     show.legend = NA,
     inherit.aes = TRUE
 ) {
-  # workaround for data = NULL
-  if (is.null(data)) data <- ensure_nonempty_data
+  # Workaround for data = NULL
+  if (is.null(data)) {
+    data <- ensure_nonempty_data
+  }
 
   mapping <- if (is.null(mapping)) {
     aes(group = after_stat(group), colour = after_stat(Variety))
@@ -196,6 +201,7 @@ geom_variety <- function(
   )
 }
 
+
 # Function to get the value of polynomial in a grid
 poly_to_df <- function(poly, xlim, ylim, nx, ny) {
   if (!is.mpoly(poly)) poly <- mp(poly)
@@ -213,6 +219,8 @@ poly_to_df <- function(poly, xlim, ylim, nx, ny) {
 # Used for printing Variety names, kept the name same since it's the same function used in rvnorm
 mpoly_to_stan <- function(mpoly) {
   p <- get("print.mpoly", asNamespace("mpoly"))
-  p(mpoly, stars = TRUE, silent = TRUE, plus_pad = 0L, times_pad = 0L) |>
-    stringr::str_replace_all("[*]{2}", "^")
+  result <- p(mpoly, stars = TRUE, silent = TRUE, plus_pad = 0L, times_pad = 0L)
+  result <- stringr::str_replace_all(result, "[*]{2}", "^")
+  result
 }
+

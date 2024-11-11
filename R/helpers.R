@@ -1,15 +1,16 @@
 make_coeficients_data <- function(poly, num_of_vars, deg, basis = c("x", "y", "z")) {
-  required_coefs <- mpoly::basis_monomials(basis[seq_along(1:num_of_vars)], deg) |>
-    lapply(reorder, varorder = basis) |>
-    lapply(coef) |>
-    unlist() |>
-    get_listed_coeficients() |>
-    lapply(function(x) 0)
+  required_coefs <- mpoly::basis_monomials(basis[seq_along(1:num_of_vars)], deg)
+  required_coefs <- lapply(required_coefs, reorder, varorder = basis)
+  required_coefs <- lapply(required_coefs, coef)
+  required_coefs <- unlist(required_coefs)
+  required_coefs <- get_listed_coeficients(required_coefs)
+  required_coefs <- lapply(required_coefs, function(x) 0)
 
   available_coef <- get_listed_coeficients(coef(poly))
   required_coefs[names(available_coef)] <- available_coef
   required_coefs
 }
+
 
 get_listed_coeficients <- function(coefs) {
   convert_names <- function(term) {
@@ -21,6 +22,8 @@ get_listed_coeficients <- function(coefs) {
   names(coefs) <- sapply(names(coefs), convert_names)
   as.list(coefs)
 }
+
+
 
 check_and_replace_vars <- function(p) {
   current_vars <- vars(p)
@@ -57,6 +60,7 @@ check_and_replace_vars <- function(p) {
   list(polynomial = p, mapping = var_mapping)
 }
 
+
 rename_output_df <- function(df, replacement_list) {
   names(df) <- sapply(names(df), function(col) {
     if (col %in% names(replacement_list)) {
@@ -70,111 +74,88 @@ rename_output_df <- function(df, replacement_list) {
 
 mpoly_to_stan <- function(mpoly) {
   p <- get("print.mpoly", asNamespace("mpoly"))
-  p(mpoly, stars = TRUE, silent = TRUE, plus_pad = 0L, times_pad = 0L) |>
-    stringr::str_replace_all("[*]{2}", "^")
+  result <- p(mpoly, stars = TRUE, silent = TRUE, plus_pad = 0L, times_pad = 0L)
+  result <- stringr::str_replace_all(result, "[*]{2}", "^")
+  result
 }
 
 mpolyList_to_stan <- function(mpolyList) {
   p <- get("print.mpolyList", asNamespace("mpoly"))
-  p(mpolyList, silent = TRUE, stars = TRUE, plus_pad = 0, times_pad = 0) |>
-    stringr::str_replace_all("\\*\\*", "^") |>
-    stringr::str_c(collapse = ", ")
+  result <- p(mpolyList, silent = TRUE, stars = TRUE, plus_pad = 0, times_pad = 0)
+  result <- stringr::str_replace_all(result, "\\*\\*", "^")
+  result <- stringr::str_c(result, collapse = ", ")
+  result
 }
 
-make_derivative_for_custom_function <- function(var, poly, basis = c("x", "y", "z")) {
+
+get_derivative <- function(var, num_of_vars, deg, basis = c("x", "y", "z")) {
   d <- get("deriv.mpoly", asNamespace("mpoly"))
 
+  # Calculate num_coef
+  num_coef <- mpoly::basis_monomials(basis[seq_along(1:num_of_vars)], deg)
+  num_coef <- lapply(num_coef, reorder, varorder = basis)
+  num_coef <- lapply(num_coef, d, var = var)
+  num_coef <- lapply(num_coef, mpoly:::coef.mpoly)
+  num_coef <- unlist(num_coef)
+  num_coef <- unname(num_coef)
+
+  # Calculate indeterminates
+  indeterminates <- mpoly::basis_monomials(basis[seq_along(1:num_of_vars)], deg)
+  indeterminates <- lapply(indeterminates, reorder, varorder = basis)
+  indeterminates <- lapply(indeterminates, d, var = var)
+  indeterminates <- lapply(indeterminates, function(item) {
+    item[[1]][names(item[[1]]) == "coef"] <- 1
+    item
+  })
+  indeterminates <- lapply(indeterminates, mpoly_to_stan)
+  indeterminates <- unlist(indeterminates)
+  indeterminates <- c(indeterminates)
+
+  # Calculate sym_coef
+  sym_coef <- mpoly::basis_monomials(basis[seq_along(1:num_of_vars)], deg)
+  sym_coef <- lapply(sym_coef, reorder, varorder = basis)
+  sym_coef <- lapply(sym_coef, mpoly:::coef.mpoly)
+  sym_coef <- unlist(sym_coef)
+  sym_coef <- get_listed_coeficients(sym_coef)
+  sym_coef <- names(sym_coef)
+
+  # Create data frame
   df_for_der <- data.frame(
-    num_coef = mpoly::monomials(poly) |>
-      lapply(reorder, varorder = basis) |>
-      lapply(function(item) {
-        item[[1]][names(item[[1]]) == "coef"] <- 1
-        item
-      }) |>
-      lapply(d, var = var) |>
-      lapply(mpoly:::coef.mpoly) |>
-      unlist() |>
-      unname(),
-
-    indeterminates = mpoly::monomials(poly) |>
-      lapply(d, var = var) |>
-      lapply(function(item) {
-        item[[1]][names(item[[1]]) == "coef"] <- 1
-        item
-      }) |>
-      lapply(mpoly_to_stan) |>
-      unlist() |>
-      c(),
-
-    sym_coef = mpoly::monomials(poly) |>
-      lapply(mpoly:::coef.mpoly) |>
-      unlist() |>
-      get_listed_coeficients() |>
-      names()
+    num_coef = num_coef,
+    indeterminates = indeterminates,
+    sym_coef = sym_coef
   )
 
+  # Filter and format output
   df_for_der <- dplyr::filter(df_for_der, num_coef != 0)
   out <- paste0(df_for_der$num_coef, "*", df_for_der$sym_coef, "*", df_for_der$indeterminates, collapse = "+")
   gsub("1\\*|\\*1", "", out)
 }
 
-make_derivative <- function(var, num_of_vars, deg, basis = c("x", "y", "z")) {
-  d <- get("deriv.mpoly", asNamespace("mpoly"))
-
-  df_for_der <- data.frame(
-    num_coef = mpoly::basis_monomials(basis[seq_along(1:num_of_vars)], deg) |>
-      lapply(reorder, varorder = basis) |>
-      lapply(d, var = var) |>
-      lapply(mpoly:::coef.mpoly) |>
-      unlist() |>
-      unname(),
-
-    indeterminates = mpoly::basis_monomials(basis[seq_along(1:num_of_vars)], deg) |>
-      lapply(reorder, varorder = basis) |>
-      lapply(d, var = var) |>
-      lapply(function(item) {
-        item[[1]][names(item[[1]]) == "coef"] <- 1
-        item
-      }) |>
-      lapply(mpoly_to_stan) |>
-      unlist() |>
-      c(),
-
-    sym_coef = mpoly::basis_monomials(basis[seq_along(1:num_of_vars)], deg) |>
-      lapply(reorder, varorder = basis) |>
-      lapply(mpoly:::coef.mpoly) |>
-      unlist() |>
-      get_listed_coeficients() |>
-      names()
-  )
-
-  df_for_der <- dplyr::filter(df_for_der, num_coef != 0)
-  out <- paste0(df_for_der$num_coef, "*", df_for_der$sym_coef, "*", df_for_der$indeterminates, collapse = "+")
-  gsub("1\\*|\\*1", "", out)
-}
 
 get_model_name <- function(poly, w = TRUE, homo = TRUE) {
-  g <- paste0(
-    mpoly::monomials(poly) |> lapply(function(item) {
-      item[[1]][names(item[[1]]) == "coef"] <- 1
-      item
-    }) |>
-      lapply(coef) |>
-      unlist() |>
-      get_listed_coeficients() |>
-      names(),
-    "*",
-    mpoly::monomials(poly) |> lapply(function(item) {
-      item[[1]][names(item[[1]]) == "coef"] <- 1
-      item
-    }) |>
-      lapply(mpoly_to_stan) |>
-      unlist() |>
-      c(),
-    collapse = "+"
-  )
+  monomials <- mpoly::monomials(poly)
 
+  coef_names <- lapply(monomials, function(item) {
+    item[[1]][names(item[[1]]) == "coef"] <- 1
+    item
+  })
+  coef_names <- lapply(coef_names, coef)
+  coef_names <- unlist(coef_names)
+  coef_names <- get_listed_coeficients(coef_names)
+  coef_names <- names(coef_names)
+
+  indeterminates <- lapply(monomials, function(item) {
+    item[[1]][names(item[[1]]) == "coef"] <- 1
+    item
+  })
+  indeterminates <- lapply(indeterminates, mpoly_to_stan)
+  indeterminates <- unlist(indeterminates)
+  indeterminates <- c(indeterminates)
+
+  g <- paste0(coef_names, "*", indeterminates, collapse = "+")
   g <- gsub("1\\*|\\*1", "", g)
+
   sprintf(
     "%s_%s%s.stan",
     g,
@@ -182,3 +163,4 @@ get_model_name <- function(poly, w = TRUE, homo = TRUE) {
     if (w) "_w" else ""
   )
 }
+
