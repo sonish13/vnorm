@@ -166,6 +166,8 @@ p <- mpoly::mp("x^2 + y^2 - 1")
 ggplot() +
   geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2))
 
+Multiple polynomial
+
 p1 <- mp("x^2 + y^2 - 1")
 p2 <- mp("y - x")
 poly <- mpolyList(p1, p2)
@@ -173,9 +175,6 @@ ggplot() +
   geom_variety(poly = poly, xlim = c(-2, 2), ylim = c(-2, 2)) +
   coord_equal()
 
-(p <- lissajous(7, 7, 0, 0))
-ggplot() +
-  geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2), n = 201)
 
 ## Setting limits
 p <- mpoly::mp("y - x^2")
@@ -186,6 +185,81 @@ ggplot() +
 ggplot() +
   geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2)) +
   coord_equal()
+
+## ggplot2 styling
+##################################################
+
+p <- mpoly::mp("x^2 + y^2 - 1")
+ggplot() +
+  geom_variety(poly = p)
+
+ggplot() +
+  geom_variety(poly = p) +
+  coord_equal()
+
+ggplot() +
+  geom_variety(poly = p, color = "black") +
+  coord_equal()
+
+ggplot() +
+  geom_variety(poly = p, linewidth = 2) +
+  coord_equal()
+
+ggplot() +
+  geom_variety(poly = p, size = 2, alpha = .2) +
+  coord_equal()
+
+ggplot() +
+  geom_variety(poly = p, linetype = 2) +
+  coord_equal()
+
+ggplot() +
+  geom_variety(poly = p) +
+  theme_bw()
+
+ggplot() +
+  geom_variety(poly = p) +
+  theme_classic()
+
+  ggplot() +
+    geom_variety(poly = mpoly::mp(c("x^2 + y^2 - 1", "(x^2 + y^2)^3 - 4 x^2 y^2")))  +
+    coord_equal() + theme_void() +
+    scale_color_manual(values = c("red", "blue"), guide = "none")
+
+(p <- lissajous(7, 7, 0, 0))
+ggplot() +
+  geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2), n = 201, show.legend = FALSE)
+
+The above example has leend removed because the legend is too long and the
+plot looks distorted. We can use theme() to put legend on top when we have
+long polynomial names
+
+p <- mp("((x + 1.5)^2 + y^2 - 1) ((x - 1.5)^2 + y^2 - 1)")
+ggplot() +
+  geom_variety(poly = p, xlim = c(-3,3)) +
+  theme(legend.position = "top") +
+  coord_equal()
+
+## possible issues
+##################################################
+
+# at a low level, ggvariety() uses grDevices::contourLines()
+# to numerically detect zero crossings. this is an imperfect process,
+# so you may see gaps where none exist. as a general strategy, upping
+# the number of sampled points on the grid is recommended.
+# the below are commented to cut check time; they run
+
+(p <- lissajous(7, 7, 0, 0))
+ggplot() +
+geom_variety(poly = p) +
+  theme(legend.position = "top") +
+  coord_equal()
+
+ ggplot() +
+  geom_variety(poly = p, n = 201) +
+  theme(legend.position = "top") +
+  coord_equal()
+
 }
 \seealso{
 \code{\link[=geom_path]{geom_path()}}
