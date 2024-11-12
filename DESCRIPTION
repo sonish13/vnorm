@@ -10,13 +10,12 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 Imports: 
     cmdstanr,
-    ggplot2,
     glue,
-    instantiate,
     magrittr,
-    mpoly,
     isoband,
     vctrs,
     stats,
-    stringr (>= 1.0.0),
-    tibble
+    base
+Depends: 
+    instantiate,
+    mpoly

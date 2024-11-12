@@ -79,7 +79,10 @@ rvnorm <- function(n, poly, sd, output = "simple", chains = 4L, warmup = max(500
   if (n_eqs > 1) pre_compiled <- FALSE
   if (n_eqs > 1 || length(mpoly::vars(poly)) > 3 || base::max(mpoly::totaldeg(poly)) > 3)
     pre_compiled <- FALSE
-  if (code_only) return(create_stan_code(poly, sd, n_eqs, w, normalized))
+  if (code_only) {
+    stan_code <-  create_stan_code(poly, sd, n_eqs, w, normalized)
+    return(stan_code)
+  }
 
   # Model selection and data preparation
   if (user_compiled) { # incase we want use model that user compiled
@@ -96,7 +99,7 @@ rvnorm <- function(n, poly, sd, output = "simple", chains = 4L, warmup = max(500
       var_info <- list_for_transformation$mapping
       output_needs_rewriting <- TRUE
     }
-    # det name of stan model to use
+    # get name of stan model to use
     stan_file_name <- paste(num_of_vars, deg, if (normalized | homo) "hvn" else "vn", sep = "_")
     if (!missing(w)) stan_file_name <- paste(stan_file_name, "w", sep = "_")
     model <- instantiate::stan_package_model(name = stan_file_name, package = "vnorm")
@@ -117,7 +120,7 @@ rvnorm <- function(n, poly, sd, output = "simple", chains = 4L, warmup = max(500
 
   # Parse output and return
   if (output == "simple") {
-    df <- samps$draws(format = "df", inc_warmup = inc_warmup) |> as.data.frame()
+    df <- as.data.frame(samps$draws(format = "df", inc_warmup = inc_warmup))
     df <- df[(nrow(df) - n + 1):nrow(df), mpoly::vars(poly)]
     row.names(df) <- NULL
     if (output_needs_rewriting) df <- rename_output_df(df, replacement_list = var_info)
@@ -125,12 +128,12 @@ rvnorm <- function(n, poly, sd, output = "simple", chains = 4L, warmup = max(500
   }
 
   if (output == "tibble") {
-    df <- samps$draws(format = "df", inc_warmup = inc_warmup) |> tibble::as_tibble()
+    df <- tibble::as_tibble(samps$draws(format = "df", inc_warmup = inc_warmup))
     df <- df[(nrow(df) - n + 1):nrow(df), ]
     row.names(df) <- NULL
     df <- cbind(df[, -1], df[, 1])  # Move lp__ to last column
     if (output_needs_rewriting) df <- rename_output_df(df, replacement_list = var_info)
-    return(as_tibble(df))
+    return(tibble::as_tibble(df))
   }
 
   if (output == "stanfit") {
@@ -142,7 +145,7 @@ rvnorm <- function(n, poly, sd, output = "simple", chains = 4L, warmup = max(500
   }
 }
 
-# Function to create stan code
+
 create_stan_code <- function(poly, sd, n_eqs, w, normalized, vars) {
   d <- get("deriv.mpoly", asNamespace("mpoly"))
 
@@ -164,10 +167,12 @@ create_stan_code <- function(poly, sd, n_eqs, w, normalized, vars) {
     }
 
     # Set variables
-    parms <- if (missing(w)) {
-      glue::glue("real {vars};")
+    if (missing(w)) {
+      parms <- glue::glue("real {vars};")
+      parms <- paste(parms, collapse = "\n  ")
     } else if (is.numeric(w) && length(w) == 1L) {
-      glue::glue("real<lower=-{w},upper={w}> {vars};")
+      parms <- glue::glue("real<lower=-{w},upper={w}> {vars};")
+      parms <- paste(parms, collapse = "\n  ")
     } else {
       parms <- sapply(seq_along(vars), function(i) {
         if (vars[i] %in% names(w)) {
@@ -175,7 +180,8 @@ create_stan_code <- function(poly, sd, n_eqs, w, normalized, vars) {
         } else {
           glue::glue("real {vars[i]};")
         }
-      }) |> str_c(collapse = "\n  ")
+      })
+      parms <- paste(parms, collapse = "\n  ")
     }
 
     stan_code <- glue::glue(
@@ -196,7 +202,7 @@ transformed parameters {{
 model {{
   target += normal_lpdf(0.00 | g/ndg, si);
 }}
-      ")
+    ")
 
   } else {
     # Multiple polynomials provided
@@ -217,22 +223,24 @@ model {{
         }
       }
     }
-    printed_jac <- apply(printed_jac, 1, str_c, collapse = ", ") |>
-      str_c("      [", ., "]", collapse = ", \n") |>
-      str_c("[\n", ., "\n    ]")
+    printed_jac <- apply(printed_jac, 1, paste, collapse = ", ")
+    printed_jac <- paste("      [", printed_jac, "]", collapse = ", \n")
+    printed_jac <- paste0("[\n", printed_jac, "\n    ]")
 
     # Set variables
-    parms <- if (missing(w)) {
-      glue::glue("real {vars};")
+    if (missing(w)) {
+      parms <- paste(sprintf("real %s;", vars), collapse = "\n  ")
     } else {
-      sapply(seq_along(vars), function(i) {
+      parms <- sapply(seq_along(vars), function(i) {
         if (vars[i] %in% names(w)) {
-          glue::glue("real<lower={w[[vars[i]]][1]},upper={w[[vars[i]]][2]}> {vars[i]};")
+          sprintf("real<lower=%s,upper=%s> %s;", w[[vars[i]]][1], w[[vars[i]]][2], vars[i])
         } else {
-          glue::glue("real {vars[i]};")
+          sprintf("real %s;", vars[i])
         }
-      }) |> str_c(collapse = "\n  ")
+      })
+      parms <- paste(parms, collapse = "\n  ")
     }
+
 
     gbar_string <- if (n_vars == n_eqs) "J \\ g" else if (n_vars > n_eqs) "J' * ((J*J') \\ g)" else "(J'*J) \\ (J'*g)"
 
@@ -258,3 +266,9 @@ model {{
   }
   stan_code
 }
+
+
+
+
+
+

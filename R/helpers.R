@@ -11,7 +11,6 @@ make_coeficients_data <- function(poly, num_of_vars, deg, basis = c("x", "y", "z
   required_coefs
 }
 
-
 get_listed_coeficients <- function(coefs) {
   convert_names <- function(term) {
     term <- gsub("\\s+", "", term)  # Remove spaces
@@ -22,8 +21,6 @@ get_listed_coeficients <- function(coefs) {
   names(coefs) <- sapply(names(coefs), convert_names)
   as.list(coefs)
 }
-
-
 
 check_and_replace_vars <- function(p) {
   current_vars <- vars(p)
@@ -61,6 +58,7 @@ check_and_replace_vars <- function(p) {
 }
 
 
+
 rename_output_df <- function(df, replacement_list) {
   names(df) <- sapply(names(df), function(col) {
     if (col %in% names(replacement_list)) {
@@ -75,17 +73,18 @@ rename_output_df <- function(df, replacement_list) {
 mpoly_to_stan <- function(mpoly) {
   p <- get("print.mpoly", asNamespace("mpoly"))
   result <- p(mpoly, stars = TRUE, silent = TRUE, plus_pad = 0L, times_pad = 0L)
-  result <- stringr::str_replace_all(result, "[*]{2}", "^")
+  result <- gsub("[*]{2}", "^", result)
   result
 }
 
 mpolyList_to_stan <- function(mpolyList) {
   p <- get("print.mpolyList", asNamespace("mpoly"))
   result <- p(mpolyList, silent = TRUE, stars = TRUE, plus_pad = 0, times_pad = 0)
-  result <- stringr::str_replace_all(result, "\\*\\*", "^")
-  result <- stringr::str_c(result, collapse = ", ")
+  result <- gsub("\\*\\*", "^", result)
+  result <- paste(result, collapse = ", ")
   result
 }
+
 
 
 get_derivative <- function(var, num_of_vars, deg, basis = c("x", "y", "z")) {

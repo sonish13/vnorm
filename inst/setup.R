@@ -7,11 +7,8 @@ document()
 
 install.packages(pkgs = "/Users/slamsal/Research/vnorm/vnorm", type = "source", repos = NULL)
 library(vnorm)
-library(cmdstanr)
-library(stringr)
-library(mpoly)
-library(instantiate)
-library(tidyverse)
+
+
 
 # Stan Files Generator
 
@@ -34,6 +31,8 @@ results <- apply(param_grid, 1, function(params) {
 
 
 # Compilation code
+
+
 
 
 

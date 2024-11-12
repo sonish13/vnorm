@@ -220,7 +220,7 @@ poly_to_df <- function(poly, xlim, ylim, nx, ny) {
 mpoly_to_stan <- function(mpoly) {
   p <- get("print.mpoly", asNamespace("mpoly"))
   result <- p(mpoly, stars = TRUE, silent = TRUE, plus_pad = 0L, times_pad = 0L)
-  result <- stringr::str_replace_all(result, "[*]{2}", "^")
+  result <- gsub("[*]{2}", "^", result)
   result
 }
 
