@@ -1,0 +1,101 @@
+make_multivariety_stan_codes <- function(num_of_vars,
+                                    totaldeg,
+                                    num_of_poly,
+                                    homo = TRUE,
+                                    w = TRUE,
+                                    basis = c("x","y","z")) {
+  vars <- list()
+  for (i in seq_along(1:num_of_poly)) {
+    vars[[i]] <- basis[seq_along(1:num_of_vars[i])]
+  }
+  var_for_data_block <- list()
+  for (i in seq_along(1:num_of_poly)) {
+    var_for_data_block[[i]] <- mpoly::basis_monomials(basis[seq_along(1:num_of_vars[i])], totaldeg[i])
+    var_for_data_block[[i]] <- lapply(var_for_data_block[[i]], reorder, varorder = basis)
+    var_for_data_block[[i]] <- lapply(var_for_data_block[[i]], coef)
+    var_for_data_block[[i]] <- unlist(var_for_data_block[[i]])
+    var_for_data_block[[i]] <- get_listed_coeficients(var_for_data_block[[i]])
+    var_for_data_block[[i]] <- names(var_for_data_block[[i]])
+    var_for_data_block[[i]] <- paste0(var_for_data_block[[i]],"_" ,i)
+  }
+  var_for_data_block <- unlist(var_for_data_block)
+  data_block <- paste(sapply(var_for_data_block, function(x) paste("real", x)), collapse = "; ")
+  data_block <- paste0(data_block, ";")
+
+  if (w) {
+    data_block <- paste0(data_block, "real w;")
+  }
+
+  data_block <- paste0("data {\nreal si;\n", data_block, "\n}\n")
+
+  # Parameter block
+  vars_for_params <- unique(unlist(vars))
+  if (w) {
+    params_block <- paste(sapply(vars_for_params, function(var) {
+      paste0("  real<lower=-", "w", ", upper=", "w", "> ", var, ";")
+    }), collapse = "\n")
+  } else {
+    params_block <- paste(sapply(vars_for_params, function(var) {
+      paste0("  real ", var, ";")
+    }), collapse = "\n")
+  }
+  params_block <- paste0("\nparameters {\n", params_block, "\n}\n")
+
+
+  # Jacobain Calculation Stuff
+  g <- list()
+  g_coef <- list()
+  g_terms <- list()
+  derivatives_pre <- list()
+  derivatives <- list()
+
+  for (i in seq_along(1:num_of_poly)) {
+    g_coef[[i]] <- mpoly::basis_monomials(basis[seq_along(1:num_of_vars[i])], totaldeg[i])
+    g_coef[[i]] <- lapply(g_coef[[i]], reorder, varorder = basis)
+    g_coef[[i]] <- lapply(g_coef[[i]], coef)
+    g_coef[[i]] <- unlist(g_coef[[i]])
+    g_coef[[i]] <- get_listed_coeficients(g_coef[[i]])
+    g_coef[[i]] <- names(g_coef[[i]])
+
+    g_terms[[i]] <- mpoly::basis_monomials(basis[seq_along(1:num_of_vars[i])], totaldeg[i])
+    g_terms[[i]] <- lapply(g_terms[[i]], reorder, varorder = basis)
+    g_terms[[i]] <- lapply(g_terms[[i]], mpoly_to_stan)
+    g_terms[[i]] <- unlist(g_terms[[i]])
+    g_terms[[i]] <- c(g_terms[[i]])
+
+    g[[i]] <- paste0(g_coef[[i]], "*", g_terms[[i]], collapse = "+")
+    g[[i]] <- gsub("1\\*|\\*1", "", g[[i]])
+
+    derivatives_pre[[i]] <- lapply(unique(unlist(vars)), get_derivative,
+                                   num_of_vars = num_of_vars[i], deg = totaldeg[i], basis = unique(unlist(vars)))
+
+    # Transformed parameter block
+
+  }
+  g <- unlist(g)
+  g <- paste0("vector[", length(g), "] g = [", paste(g, collapse = ","), "]';")
+  for (i in seq_along(1:num_of_poly)) {
+    derivatives[[i]] <- unlist(derivatives_pre[[i]])
+  }
+  derivatives <- lapply(derivatives, function(v){
+    v[v =="**"] <- 0
+    v
+  })
+  derivatives <- paste(
+    sapply(derivatives, function(v) paste0("[", paste(v, collapse = ",\n"), "]")),
+    collapse = ",\n"
+  )
+  dg <- paste0("matrix[",num_of_poly,"," ,max(num_of_vars),"] J = [ \n" , derivatives,"\n];")
+  trans_block <- paste0("\ntransformed parameters {\n", g, "\n",dg, "\n}\n")
+
+
+  # Model block
+
+  model_block <- paste0("\nmodel {\ntarget += normal_lpdf(0.00 | J' * ((J*J') \ g), si);\n}")
+  stan_code <- paste0(data_block, params_block, trans_block, model_block)
+  stan_code
+}
+
+make_multivariety_stan_codes(num_of_vars = c(1,1), totaldeg = c(2,2), num_of_poly = 2) |> cat()
+make_multivariety_stan_codes(num_of_vars = c(2,3), totaldeg = c(3,2), num_of_poly = 2) |> cat()
+

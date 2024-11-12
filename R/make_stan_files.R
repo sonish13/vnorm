@@ -78,14 +78,18 @@ make_stan_files <- function(num_of_vars,
     ndg <- "real ndg = 1;"
   }
 
+  # Transformed parameter block
+
+  trans_block <- paste0(
+    "transformed parameters {\nreal g =", g, ";\n", dg, ";\n", ndg, "\n}\n"
+  )
   # Model block
   model_block <- paste0(
-    "model {\nreal g = ", g, ";\n", dg, ";\n", ndg,
-    "\ntarget += normal_lpdf(0.00 | g/ndg, si); \n}"
+    "model {\ntarget += normal_lpdf(0.00 | g/ndg, si); \n}"
   )
 
   # Complete stan code
-  stan_code <- paste0(data_block, params_block, model_block, sep = "")
+  stan_code <- paste0(data_block, params_block, trans_block, model_block, sep = "")
 
   filename <- sprintf(
     "%i_%i_%s%s.stan",
