@@ -201,8 +201,8 @@ get_custom_stan_code <- function(poly, w = FALSE, homo = TRUE) {
 
 
     # Model block
-
-    model_block <- paste0("\nmodel {\ntarget += normal_lpdf(0.00 | J' * ((J*J') \ g), si);\n}")
+    gbar_string <- if (n_vars == n_eqs) "J \\ g" else if (n_vars > n_eqs) "J' * ((J*J') \\ g)" else "(J'*J) \\ (J'*g)"
+    model_block <- paste0("\nmodel {\ntarget += normal_lpdf(0.00 |", gbar_string, ", si);\n}")
     stan_code <- paste0(data_block, params_block, trans_block, model_block)
   }else{
     stop("`poly` should either be an mpoly, or an mpolyList object.")
