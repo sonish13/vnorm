@@ -1,0 +1,73 @@
+canonicalize_mpoly <- function(poly) {
+  terms <- unclass(poly)
+
+  # Calculate degree and lexicographic key for sorting
+  degrees <- sapply(terms, function(term) sum(term[names(term) != "coef"], na.rm = TRUE))
+  lex_keys <- sapply(terms, function(term) paste(sort(names(term)[names(term) != "coef"]), collapse = ""))
+
+  # Sort terms by degree (descending) and lexicographic order
+  sorted_terms <- terms[order(-degrees, lex_keys, method = "radix")]
+
+  structure(sorted_terms, class = "mpoly")
+}
+
+canonicalize_mpolylist <- function(poly) {
+  stopifnot(inherits(poly, "mpolyList"))
+
+  canonicalized_list <- lapply(poly, canonicalize_mpoly)
+  structure(canonicalized_list, class = "mpolyList")
+}
+
+sort_mpolylist_lexicographically <- function(poly) {
+  stopifnot(inherits(poly, "mpolyList"))
+
+  poly_strings <- vapply(poly, function(p) paste(as.character(p), collapse = ""), character(1))
+  sorted_indices <- order(poly_strings, method = "radix")
+
+  sorted_list <- poly[sorted_indices]
+  structure(sorted_list, class = "mpolyList")
+}
+
+helper_for_derivative_for_mpoly_stan_code <- function(var, poly) {
+  lifted_poly <- mpoly::coef_lift(poly)
+  derivative <- deriv(lifted_poly, var)
+  mpoly_to_stan(derivative)
+}
+
+helper_for_coef_lift_for_mpolylist <- function(p, i) {
+  monos <- monomials(p, unit = TRUE)
+  printed_monos <- print(monos, silent = TRUE)
+  printed_monos <- gsub("\\^", "", printed_monos)
+  printed_monos <- gsub(" ", "", printed_monos)
+  coefs_to_add <- paste0("b", printed_monos,"_",i)
+  for (i in seq_along(p)) {
+    p[[i]]["coef"] <- 1
+    p[[i]] <- structure(c(1, p[[i]]), names = c(coefs_to_add[i],
+                                                names(p[[i]])))
+  }
+  p
+}
+
+helper_for_derivative_for_mpolylist_stan_code <- function(var, poly, i) {
+  lifted_poly <- helper_for_coef_lift_for_mpolylist(poly, i)
+  derivative <- deriv(lifted_poly, var)
+  mpoly_to_stan(derivative)
+}
+
+generate_model_name <- function(poly, w = FALSE, homo = TRUE) {
+  if(is.mpoly(poly)){
+    g <- canonicalize_mpoly(poly)
+    g <- digest::digest(g, algo = "md5")
+  }else if (is.mpolyList(poly)){
+    g <- canonicalize_mpolylist(poly)
+    g <- sort_mpolylist_lexicographically(g)
+    g <- digest::digest(g, algo = "md5")
+  }
+
+  sprintf(
+    "%s_%s%s.stan",
+    g,
+    if (homo) "vn" else "hvn",
+    if (w) "_w" else ""
+  )
+}
