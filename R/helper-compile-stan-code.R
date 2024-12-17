@@ -54,13 +54,21 @@ helper_for_derivative_for_mpolylist_stan_code <- function(var, poly, i) {
   mpoly_to_stan(derivative)
 }
 
+coef_lift_mpolylist_for_generating_names <- function(poly) {
+  lifted_mpolylist <- lapply(poly, coef_lift)
+  class(lifted_mpolylist) <- "mpolyList"
+  lifted_mpolylist
+}
+
 generate_model_name <- function(poly, w = FALSE, homo = TRUE) {
   if(is.mpoly(poly)){
     g <- canonicalize_mpoly(poly)
+    g <- coef_lift(g)
     g <- digest::digest(g, algo = "md5")
   }else if (is.mpolyList(poly)){
     g <- canonicalize_mpolylist(poly)
     g <- sort_mpolylist_lexicographically(g)
+    g <- coef_lift_mpolylist_for_generating_names(g)
     g <- digest::digest(g, algo = "md5")
   }
 

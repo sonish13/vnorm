@@ -111,6 +111,3 @@ make_multivariety_stan_codes <- function(num_of_vars,
   stan_code
 }
 
-make_multivariety_stan_codes(num_of_vars = c(1,1), totaldeg = c(2,2), num_of_poly = 2) |> cat()
-make_multivariety_stan_codes(num_of_vars = c(2,3), totaldeg = c(3,2), num_of_poly = 2) |> cat()
-

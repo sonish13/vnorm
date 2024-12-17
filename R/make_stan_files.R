@@ -104,4 +104,3 @@ make_stan_files <- function(num_of_vars,
   readr::write_lines(stan_code, file = path)
 }
 
-make_stan_files(2,2, homo = T, w=F) |> cat()

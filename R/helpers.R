@@ -22,6 +22,30 @@ get_listed_coeficients <- function(coefs) {
   as.list(coefs)
 }
 
+get_coefficeints_data <- function(poly) {
+  if(is.mpoly(poly)){
+    data <- get_listed_coeficients(coef(poly))
+  }
+  else if (is.mpolyList(poly)){
+    poly <- canonicalize_mpolylist(poly)
+    poly <- sort_mpolylist_lexicographically(poly)
+    convert_names <- function(term, i) {
+      term <- gsub("\\s+", "", term)  # Remove spaces
+      if (term == "1") return(paste0("b1_",i))   # Constant term should be "b1"
+      term <- gsub("\\^", "", term)   # Remove power symbol (^)
+      paste0("b", term, "_",i)        # Add "b" at the beginning and _i at the end
+    }
+    coefs <- list()
+    for (i in seq_along(1:length(poly))) {
+      coefs[[i]] <- coef(poly[[i]])
+      names(coefs[[i]]) <- sapply(names(coefs[[i]]), convert_names, i= i)
+    }
+    coefs <- unlist(coefs)
+    data <- as.list(coefs)
+  }
+  data
+}
+
 check_and_replace_vars <- function(p) {
   current_vars <- vars(p)
   num_vars <- length(current_vars)
@@ -129,35 +153,4 @@ get_derivative <- function(var, num_of_vars, deg, basis = c("x", "y", "z")) {
   gsub("1\\*|\\*1", "", out)
 }
 
-
-get_model_name <- function(poly, w = FALSE, homo = TRUE) {
-  monomials <- mpoly::monomials(poly)
-
-  coef_names <- lapply(monomials, function(item) {
-    item[[1]][names(item[[1]]) == "coef"] <- 1
-    item
-  })
-  coef_names <- lapply(coef_names, coef)
-  coef_names <- unlist(coef_names)
-  coef_names <- get_listed_coeficients(coef_names)
-  coef_names <- names(coef_names)
-
-  indeterminates <- lapply(monomials, function(item) {
-    item[[1]][names(item[[1]]) == "coef"] <- 1
-    item
-  })
-  indeterminates <- lapply(indeterminates, mpoly_to_stan)
-  indeterminates <- unlist(indeterminates)
-  indeterminates <- c(indeterminates)
-
-  g <- paste0(coef_names, "*", indeterminates, collapse = "+")
-  g <- gsub("1\\*|\\*1", "", g)
-
-  sprintf(
-    "%s_%s%s.stan",
-    g,
-    if (homo) "vn" else "hvn",
-    if (w) "_w" else ""
-  )
-}
 
