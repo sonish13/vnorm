@@ -1,9 +1,11 @@
+# This need changes done if we end up implementing it.
+
 make_multivariety_stan_codes <- function(num_of_vars,
-                                    totaldeg,
-                                    num_of_poly,
-                                    homo = TRUE,
-                                    w = TRUE,
-                                    basis = c("x","y","z")) {
+                                         totaldeg,
+                                         num_of_poly,
+                                         homo = TRUE,
+                                         w = TRUE,
+                                         basis = c("x","y","z")) {
   vars <- list()
   for (i in seq_along(1:num_of_poly)) {
     vars[[i]] <- basis[seq_along(1:num_of_vars[i])]
@@ -19,14 +21,14 @@ make_multivariety_stan_codes <- function(num_of_vars,
     var_for_data_block[[i]] <- paste0(var_for_data_block[[i]],"_" ,i)
   }
   var_for_data_block <- unlist(var_for_data_block)
-  data_block <- paste(sapply(var_for_data_block, function(x) paste("real", x)), collapse = "; ")
+  data_block <- paste(sapply(var_for_data_block, function(x) paste("  real", x)), collapse = "; ")
   data_block <- paste0(data_block, ";")
 
   if (w) {
-    data_block <- paste0(data_block, "real w;")
+    data_block <- paste0(data_block, "\n  real w;")
   }
 
-  data_block <- paste0("data {\nreal si;\n", data_block, "\n}\n")
+  data_block <- paste0("data {\n  real si;\n", data_block, "\n}\n")
 
   # Parameter block
   vars_for_params <- unique(unlist(vars))
@@ -73,7 +75,8 @@ make_multivariety_stan_codes <- function(num_of_vars,
 
   }
   g <- unlist(g)
-  g <- paste0("vector[", length(g), "] g = [", paste(g, collapse = ","), "]';")
+  g <- paste0("  vector[", length(g), "] g = [", paste(g, collapse = ","), "]';")
+  if(homo){
   for (i in seq_along(1:num_of_poly)) {
     derivatives[[i]] <- unlist(derivatives_pre[[i]])
   }
@@ -81,11 +84,23 @@ make_multivariety_stan_codes <- function(num_of_vars,
     v[v =="**"] <- 0
     v
   })
-  derivatives <- paste(
-    sapply(derivatives, function(v) paste0("[", paste(v, collapse = ",\n"), "]")),
+  jac <- paste(
+    sapply(derivatives, function(v) paste0("      [", paste(v, collapse = ","), "]")),
     collapse = ",\n"
   )
-  dg <- paste0("matrix[",num_of_poly,"," ,max(num_of_vars),"] J = [ \n" , derivatives,"\n];")
+  }else{
+    n_eqs <- num_of_poly
+    n_vars <- max(num_of_vars)
+    jac <- array("", dim = c(n_eqs, n_vars))
+    for (i in 1:n_eqs) {
+      for (j in 1:n_vars) {
+        jac[i,j] <- if (i == j) "1" else "0"
+      }
+    }
+    jac <- apply(jac, 1L, paste, collapse = ", ")
+    jac <- paste("      [", jac, "]", collapse = ", \n")
+  }
+  dg <- paste0("  matrix[",num_of_poly,"," ,max(num_of_vars),"] J = [ \n" , jac,"\n    ];")
   trans_block <- paste0("\ntransformed parameters {\n", g, "\n",dg, "\n}\n")
 
 

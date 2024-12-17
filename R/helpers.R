@@ -1,4 +1,4 @@
-make_coeficients_data <- function(poly, num_of_vars, deg, basis = c("x", "y", "z")) {
+make_coefficients_data <- function(poly, num_of_vars, deg, basis = c("x", "y", "z")) {
   required_coefs <- mpoly::basis_monomials(basis[seq_along(1:num_of_vars)], deg)
   required_coefs <- lapply(required_coefs, reorder, varorder = basis)
   required_coefs <- lapply(required_coefs, coef)
@@ -14,7 +14,7 @@ make_coeficients_data <- function(poly, num_of_vars, deg, basis = c("x", "y", "z
 get_listed_coeficients <- function(coefs) {
   convert_names <- function(term) {
     term <- gsub("\\s+", "", term)  # Remove spaces
-    if (term == "1") return("b0")   # Constant term should be "b0"
+    if (term == "1") return("b1")   # Constant term should be "b1"
     term <- gsub("\\^", "", term)   # Remove power symbol (^)
     paste0("b", term)               # Add "b" at the beginning
   }
@@ -56,8 +56,6 @@ check_and_replace_vars <- function(p) {
 
   list(polynomial = p, mapping = var_mapping)
 }
-
-
 
 rename_output_df <- function(df, replacement_list) {
   names(df) <- sapply(names(df), function(col) {
@@ -132,7 +130,7 @@ get_derivative <- function(var, num_of_vars, deg, basis = c("x", "y", "z")) {
 }
 
 
-get_model_name <- function(poly, w = TRUE, homo = TRUE) {
+get_model_name <- function(poly, w = FALSE, homo = TRUE) {
   monomials <- mpoly::monomials(poly)
 
   coef_names <- lapply(monomials, function(item) {
