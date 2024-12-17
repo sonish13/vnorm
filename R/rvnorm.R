@@ -315,8 +315,6 @@ rvnorm <- function(n, poly, sd, output = "simple", chains = 4L, warmup = max(500
   } else {
     stop("`poly` should be either a character vector, mpoly, or mpolyList.", call. = FALSE)
   }
-  deg <- mpoly::totaldeg(poly)
-  num_of_vars <- length(mpoly::vars(poly))
   if (refresh) refresh <- if (verbose) max(ceiling(n / 10), 1L) else 0L
   if (n_eqs > 1) pre_compiled <- FALSE
   if (n_eqs > 1 || length(mpoly::vars(poly)) > 3 || base::max(mpoly::totaldeg(poly)) > 3)
@@ -328,13 +326,13 @@ rvnorm <- function(n, poly, sd, output = "simple", chains = 4L, warmup = max(500
 
   # Model selection and data preparation
   if (user_compiled) { # incase we want use model that user compiled
-    model_name <- get_model_name(poly = poly, homo = homo, w = !missing(w))
+    model_name <- generate_model_name(poly = poly, homo = homo, w = !missing(w))
     model_path <- compiled_stan_info$path[compiled_stan_info$name == model_name]
     model <- cmdstan_model(model_path)
-    stan_data <- get_listed_coeficients(coef(poly))
+    stan_data <- get_coefficeints_data(poly)
     stan_data <- if (missing(w)) c(stan_data, "si" = sd) else c(stan_data, "w" = w, "si" = sd)
   } else if (pre_compiled) { # data and model if/when pre-compiled model is used
-    #replace variable if poly has anything other then x, y or z
+    # replace variable if poly has anything other then x, y or z
     list_for_transformation <- check_and_replace_vars(poly)
     if (!is.null(unlist(list_for_transformation$mapping))) {
       poly <- list_for_transformation$polynomial
@@ -342,10 +340,12 @@ rvnorm <- function(n, poly, sd, output = "simple", chains = 4L, warmup = max(500
       output_needs_rewriting <- TRUE
     }
     # get name of stan model to use
+    deg <- mpoly::totaldeg(poly)
+    num_of_vars <- length(mpoly::vars(poly))
     stan_file_name <- paste(num_of_vars, deg, if (normalized | homo) "hvn" else "vn", sep = "_")
     if (!missing(w)) stan_file_name <- paste(stan_file_name, "w", sep = "_")
     model <- instantiate::stan_package_model(name = stan_file_name, package = "vnorm")
-    stan_data <- make_coeficients_data(poly, num_of_vars, deg)
+    stan_data <- make_coefficients_data(poly, num_of_vars, deg)
     stan_data <- if (missing(w)) c(stan_data, "si" = sd) else c(stan_data, "w" = w, "si" = sd)
   } else {
     # create code to run stan model from scratch
