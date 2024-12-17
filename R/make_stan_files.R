@@ -17,14 +17,14 @@ make_stan_files <- function(num_of_vars,
   var_for_data_block <- get_listed_coeficients(var_for_data_block)
   var_for_data_block <- names(var_for_data_block)
 
-  data_block <- paste(sapply(var_for_data_block, function(x) paste("real", x)), collapse = "; ")
+  data_block <- paste(sapply(var_for_data_block, function(x) paste("  real", x)), collapse = "; ")
   data_block <- paste0(data_block, ";")
 
   if (w) {
-    data_block <- paste0(data_block, "real w;")
+    data_block <- paste0(data_block, "\n  real w;")
   }
 
-  data_block <- paste0("data {\nreal si;\n", data_block, "\n}\n")
+  data_block <- paste0("data {\n  real si;\n", data_block, "\n}\n")
 
   # Parameter block
   if (w) {
@@ -37,7 +37,7 @@ make_stan_files <- function(num_of_vars,
     }), collapse = "\n")
   }
 
-  params_block <- paste0("parameters {\n", params_block, "\n }\n")
+  params_block <- paste0("parameters {\n", params_block, "\n}\n")
 
   # Model block
   g_coef <- mpoly::basis_monomials(basis[seq_along(1:num_of_vars)], totaldeg)
@@ -67,25 +67,25 @@ make_stan_files <- function(num_of_vars,
     paste(derivative_names[i], paste(derivatives[[i]], collapse = ""), sep = " = ")
   })
 
-  dg <- paste0("real ", dg)
-  dg <- paste(dg, collapse = ";")
+  dg <- paste0("  real ", dg)
+  dg <- paste(dg, collapse = ";\n")
 
   if (homo) {
-    ndg <- paste0("real ndg = sqrt(",
+    ndg <- paste0("  real ndg = sqrt(",
                   paste0(derivative_names, "^2", collapse = " + "),
                   ");")
   } else {
-    ndg <- "real ndg = 1;"
+    ndg <- "  real ndg = 1;"
   }
 
   # Transformed parameter block
 
   trans_block <- paste0(
-    "transformed parameters {\nreal g =", g, ";\n", dg, ";\n", ndg, "\n}\n"
+    "transformed parameters {\n  real g = ", g, ";\n", dg, ";\n", ndg, "\n}\n"
   )
   # Model block
   model_block <- paste0(
-    "model {\ntarget += normal_lpdf(0.00 | g/ndg, si); \n}"
+    "model {\n  target += normal_lpdf(0.00 | g/ndg, si); \n}"
   )
 
   # Complete stan code
@@ -104,3 +104,4 @@ make_stan_files <- function(num_of_vars,
   readr::write_lines(stan_code, file = path)
 }
 
+make_stan_files(2,2, homo = T, w=F) |> cat()
