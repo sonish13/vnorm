@@ -16,6 +16,7 @@
 #' @param poly An mpoly object.
 #' @param sd The "standard deviation" component of the normal kernel.
 #' @param output \code{"simple"}, \code{"tibble"}, \code{"stanfit"}.
+#' @param rejection If \code{TRUE}, rejection sampling is used.
 #' @param chains The number of chains to run for the random number generation,
 #'   see [stan()].
 #' @param cores The number of CPU cores to distribute the chains across, see
@@ -26,11 +27,6 @@
 #' @param thin [stan()] \code{thin} parameter.
 #' @param homo If \code{TRUE}, the sampling is done from homoskedastic variety
 #'  normal distribution.
-#' @param normalized If \code{TRUE}, the polynomial is gradient-normalized. This
-#'   is highly recommended. Set to \code{TRUE} if homo = \code{TRUE}
-#' @param inject_direct Directly specify printed polynomial to string inject
-#'   into the stan code. Requires you specify \code{vars}, \code{numerator}, and
-#'   \code{denominator}.
 #' @param verbose \code{TRUE} or \code{FALSE}; determines level of messaging.
 #' @param vars A character vector of the indeterminates in the distribution.
 #' @param numerator,denominator A character(1) containing the printed numerator
@@ -176,7 +172,7 @@
 #' ggplot(samps, aes(x, y)) + geom_bin2d(binwidth = .05*c(1,1)) + coord_equal()
 #'
 #' # unnormalized, bad
-#' (samps <- rvnorm(2000, p, .05, "tibble", normalized = FALSE))
+#' (samps <- rvnorm(2000, p, .05, "tibble", homo = FALSE))
 #' ggplot(samps, aes(x, y)) + geom_point(size = .5) + coord_equal()
 #' ggplot(samps, aes(x, y)) + geom_bin2d(binwidth = .05*c(1,1)) + coord_equal()
 #'
@@ -276,10 +272,10 @@
 #'
 #' # semi-algebraic set
 #' samps_normd <- rvnorm(1e4, p + mp("s^2"), sd = .01, "tibble", chains = 8,
-#'   cores = 8, normalized = TRUE
+#'   cores = 8, homo = TRUE
 #' )
 #' samps_unormd <- rvnorm(1e4, p + mp("s^2"), sd = .01, "tibble", chains = 8,
-#'   cores = 8, normalized = FALSE
+#'   cores = 8, homo = FALSE
 #' )
 #'
 #' bind_rows(
@@ -299,13 +295,20 @@
 
 #' @rdname rvnorm
 #' @export
-rvnorm <- function(n, poly, sd, output = "simple", chains = 4L, warmup = max(500, floor(n / 2)),
-                   inc_warmup = FALSE, thin = 1L, inject_direct = FALSE, verbose = FALSE,
+rvnorm <- function(n, poly, sd, output = "simple", rejection = FALSE ,chains = 4L, warmup = max(500, floor(n / 2)),
+                   inc_warmup = FALSE, thin = 1L,verbose = FALSE,
                    cores = min(chains, getOption("mc.cores", 1L)), homo = TRUE,
-                   normalized = homo, w, vars, numerator, denominator, refresh = 0L,
+                   w, vars, numerator, denominator, refresh = 0L,
                    code_only = FALSE, pre_compiled = TRUE, user_compiled = FALSE, ...) {
 
   # Initialization and checks
+  if(rejection) {
+    if(missing(w)) w = 1
+    sample <- rejection_sampler(n = n, poly = poly , sd = sd, vars = sort(mpoly::vars(poly)),
+                                  w = w, output = output, homo = homo,
+                                  message = verbose)
+    return(sample)
+  }
   output_needs_rewriting <- FALSE
   if (is.character(poly)) poly <- mp(poly)
   if (is.mpoly(poly)) {
@@ -320,7 +323,7 @@ rvnorm <- function(n, poly, sd, output = "simple", chains = 4L, warmup = max(500
   if (n_eqs > 1 || length(mpoly::vars(poly)) > 3 || base::max(mpoly::totaldeg(poly)) > 3)
     pre_compiled <- FALSE
   if (code_only) {
-    stan_code <-  create_stan_code(poly, sd, n_eqs, w, normalized)
+    stan_code <-  create_stan_code(poly, sd, n_eqs, w, homo)
     return(stan_code)
   }
 
@@ -342,14 +345,14 @@ rvnorm <- function(n, poly, sd, output = "simple", chains = 4L, warmup = max(500
     # get name of stan model to use
     deg <- mpoly::totaldeg(poly)
     num_of_vars <- length(mpoly::vars(poly))
-    stan_file_name <- paste(num_of_vars, deg, if (normalized | homo) "hvn" else "vn", sep = "_")
+    stan_file_name <- paste(num_of_vars, deg, if (homo) "hvn" else "vn", sep = "_")
     if (!missing(w)) stan_file_name <- paste(stan_file_name, "w", sep = "_")
     model <- instantiate::stan_package_model(name = stan_file_name, package = "vnorm")
     stan_data <- make_coefficients_data(poly, num_of_vars, deg)
     stan_data <- if (missing(w)) c(stan_data, "si" = sd) else c(stan_data, "w" = w, "si" = sd)
   } else {
     # create code to run stan model from scratch
-    stan_code <- create_stan_code(poly, sd, n_eqs, w, normalized, vars)
+    stan_code <- create_stan_code(poly, sd, n_eqs, w, homo, vars)
     stan_file <- write_stan_file(stan_code)
     model <- cmdstan_model(stan_file)
     stan_data <- list("si" = sd)
@@ -388,7 +391,7 @@ rvnorm <- function(n, poly, sd, output = "simple", chains = 4L, warmup = max(500
 }
 
 
-create_stan_code <- function(poly, sd, n_eqs, w, normalized, vars) {
+create_stan_code <- function(poly, sd, n_eqs, w, homo, vars) {
   d <- get("deriv.mpoly", asNamespace("mpoly"))
 
   if (n_eqs == 1L) {
@@ -400,7 +403,7 @@ create_stan_code <- function(poly, sd, n_eqs, w, normalized, vars) {
     poly <- reorder.mpoly(poly, varorder = sort(vars))
 
     g_string <- mpoly_to_stan(poly)
-    if (normalized) {
+    if (homo) {
       grad <- if (n_vars > 1) deriv(poly, var = mpoly::vars(poly)) else gradient(poly) ^ 2
       ndg_sq <- Reduce(`+`, grad ^ 2)
       ndg_string <- glue::glue("sqrt({mpoly_to_stan(ndg_sq)})")
@@ -456,7 +459,7 @@ model {{
     printed_jac <- array("", dim = c(n_eqs, n_vars))
     for (i in seq_len(n_eqs)) {
       for (j in seq_len(n_vars)) {
-        printed_jac[i, j] <- if (normalized) {
+        printed_jac[i, j] <- if (homo) {
           mpoly_to_stan(d(poly[[i]], vars[j]))
         } else if (i == j) {
           "1"
@@ -508,7 +511,6 @@ model {{
   }
   stan_code
 }
-
 
 
 
