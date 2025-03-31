@@ -37,7 +37,7 @@
 #' ggplot() +
 #'   geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2))
 #'
-#' Multiple polynomial
+#' # Multiple polynomial
 #'
 #' p1 <- mp("x^2 + y^2 - 1")
 #' p2 <- mp("y - x")
