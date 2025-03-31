@@ -9,15 +9,14 @@ rvnorm(
   poly,
   sd,
   output = "simple",
+  rejection = FALSE,
   chains = 4L,
   warmup = max(500, floor(n/2)),
   inc_warmup = FALSE,
   thin = 1L,
-  inject_direct = FALSE,
   verbose = FALSE,
   cores = min(chains, getOption("mc.cores", 1L)),
   homo = TRUE,
-  normalized = homo,
   w,
   vars,
   numerator,
@@ -38,6 +37,8 @@ rvnorm(
 
 \item{output}{\code{"simple"}, \code{"tibble"}, \code{"stanfit"}.}
 
+\item{rejection}{If \code{TRUE}, rejection sampling is used.}
+
 \item{chains}{The number of chains to run for the random number generation,
 see \code{\link[=stan]{stan()}}.}
 
@@ -48,10 +49,6 @@ output.}
 
 \item{thin}{\code{\link[=stan]{stan()}} \code{thin} parameter.}
 
-\item{inject_direct}{Directly specify printed polynomial to string inject
-into the stan code. Requires you specify \code{vars}, \code{numerator}, and
-\code{denominator}.}
-
 \item{verbose}{\code{TRUE} or \code{FALSE}; determines level of messaging.}
 
 \item{cores}{The number of CPU cores to distribute the chains across, see
@@ -59,9 +56,6 @@ into the stan code. Requires you specify \code{vars}, \code{numerator}, and
 
 \item{homo}{If \code{TRUE}, the sampling is done from homoskedastic variety
 normal distribution.}
-
-\item{normalized}{If \code{TRUE}, the polynomial is gradient-normalized. This
-is highly recommended. Set to \code{TRUE} if homo = \code{TRUE}}
 
 \item{w}{A named list of box constraints for vectors to be passed to Stan,
 see examples. A If a single number, a box window (-w,w) is applied to all
@@ -230,7 +224,7 @@ ggplot(samps, aes(x, y)) + geom_point(size = .5) + coord_equal()
 ggplot(samps, aes(x, y)) + geom_bin2d(binwidth = .05*c(1,1)) + coord_equal()
 
 # unnormalized, bad
-(samps <- rvnorm(2000, p, .05, "tibble", normalized = FALSE))
+(samps <- rvnorm(2000, p, .05, "tibble", homo = FALSE))
 ggplot(samps, aes(x, y)) + geom_point(size = .5) + coord_equal()
 ggplot(samps, aes(x, y)) + geom_bin2d(binwidth = .05*c(1,1)) + coord_equal()
 
@@ -330,10 +324,10 @@ ggplot(samps, aes(x, y, color = factor(.chain))) +
 
 # semi-algebraic set
 samps_normd <- rvnorm(1e4, p + mp("s^2"), sd = .01, "tibble", chains = 8,
-  cores = 8, normalized = TRUE
+  cores = 8, homo = TRUE
 )
 samps_unormd <- rvnorm(1e4, p + mp("s^2"), sd = .01, "tibble", chains = 8,
-  cores = 8, normalized = FALSE
+  cores = 8, homo = FALSE
 )
 
 bind_rows(
