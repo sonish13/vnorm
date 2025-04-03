@@ -1,6 +1,7 @@
 #' Projection onto a variety
 #'
-#' A R-based implementation of the gradient descent homotopies. The lagrange
+#' A R-based implementation of the gradient descent homotopies with adaptive
+#' step sizes for Euler's prediction. The lagrange
 #' version uses Newton's method on the Lagrangian system.
 #'
 #'
@@ -34,6 +35,13 @@
 #'   internally if not provided.
 #' @param bias A multiple to add to the identity to make the Jacobian
 #'   invertible.
+#' @param adaptive Defaults to \code{TRUE}. Whether to use adaptive stepsizes or not.
+#' @param t_start,t_end Start and end times for homotopy integration (default:
+#'    \code{1} to \code{0}).
+#' @param dt_min,dt_max Minimum and maximum allowed step sizes during adaptive
+#'    integration (default: \code{1e-6} and \code{0.1}).
+#' @param error_tol Tolerance used for adaptive step size control
+#'    (default: \code{0.1}). Smaller values give more accurate results at the cost of runtime.
 #' @return A numeric vector the same length as \code{x0}.
 #' @references Griffin, Z. and J. Hauenstein (2015). Real solutions to systems
 #'   of polynomial equations and parameter continuation. \emph{Advances in
@@ -257,12 +265,15 @@
 #' @rdname project-onto-variety
 #' @export
 project_onto_variety <- function(
-    x0, poly, dt = .05, varorder = sort(mpoly::vars(poly)),
-    n_correct = 2, al = stats::rnorm(length(x0)),
+    x0, poly, dt = .01, varorder = sort(mpoly::vars(poly)),
+    n_correct = 2, al = rnorm(length(x0)),
     message = FALSE, tol = .Machine$double.eps^(1/2),
-    gfunc, dgfunc, ddgfunc, bias = 0
+    gfunc, dgfunc, ddgfunc, bias = 0,
+    adaptive = TRUE,
+    dt_min = 1e-6, dt_max = 0.1, error_tol = .01
 ) {
-
+  t_start = 1
+  t_end = 0
   if (missing(x0)) stop("`x0` must be supplied.")
   if (missing(poly)) stop("`poly` must be supplied.")
 
@@ -279,11 +290,11 @@ project_onto_variety <- function(
     gfunc <- as.function(g, varorder = varorder, silent = TRUE)
 
     # jacobian
-    dg <- stats::deriv(g, var = varorder)
+    dg <- deriv(g, var = varorder)
     dgfunc <- as.function(dg, varorder = varorder, silent = TRUE)
 
     # hessian
-    ddg <- lapply(dg, stats::deriv, var = varorder)
+    ddg <- lapply(dg, deriv, var = varorder)
     ddgfunc_list <- lapply(ddg, as.function, varorder = varorder, silent = TRUE)
     ddgfunc <- function(x) sapply(ddgfunc_list, function(f) f(x))
 
@@ -343,37 +354,59 @@ project_onto_variety <- function(
   Ht <- function(v, t) c(-gfunc(x0), rep(0, n_vars + 2 - 1))
   # Ht(c(1,1), 1)
 
+  if (adaptive) {
+    # Adaptive Heun's method
+    t <- t_start
+    while (t > t_end) {
+      h <- min(dt, t - t_end)
 
-  for (i in 2:length(ts)) {
+      # Predictor: Euler step
+      F1 <- solve(JHa(vn, t), Ht(vn, t))
+      v_euler <- vn + h * F1
 
-    # predict
-    # vn <- vn + as.numeric(solve(JHa(vn, t = ts[i-1])) %*% Ht(vn, t = ts[i-1])) * dt
-    vn <- vn + solve(JHa(vn, t = ts[i-1]), Ht(vn, t = ts[i-1])) * dt
-    if (message) message(paste(round(vn, 5), collapse = " "))
+      # Corrector: Heun step
+      F2 <- solve(JHa(v_euler, t - h), Ht(v_euler, t - h))
+      v_heun <- vn + 0.5 * h * (F1 + F2)
 
-    # correct
-    for (. in 1:n_correct) {
-      # vnp1 <- as.numeric( vn - solve(JHa(vn, t = ts[i])) %*% Ha(vn, t = ts[i]) )
-      vnp1 <- vn - solve(JHa(vn, t = ts[i]) + bias*diag(n_vars+2), Ha(vn, t = ts[i]))
-      vn <- vnp1
-      if (message) message("  ", paste(round(vn, 5), collapse = " "))
+      err <- sqrt(sum((v_heun - v_euler)^2))
+
+      if (err < error_tol) {
+        # Accept step
+        vn <- v_euler
+        t <- t - h
+
+        for (. in 1:n_correct) {
+          vn <- vn - solve(JHa(vn, t) + bias * diag(n_vars + 2), Ha(vn, t))
+        }
+
+        if (message) message("t: ", round(t, 5), " | dt: ", round(h, 5))
+
+        dt <- min(dt_max, h * min(2, (error_tol / err)^0.5))
+      } else {
+        # Reject step
+        dt <- max(dt_min, h * max(0.1, (error_tol / err)^0.5))
+        if (message) message("  Rejected step. Reducing dt to ", round(dt, 6))
+      }
     }
 
+  } else {
+    # Fixed step size (non-adaptive)
+    ts <- seq(t_start, t_end, -dt)
+    for (i in 2:length(ts)) {
+      vn <- vn + solve(JHa(vn, t = ts[i - 1]), Ht(vn, t = ts[i - 1])) * dt
+      if (message) message(paste(round(vn, 5), collapse = " "))
+
+      for (. in 1:n_correct) {
+        vn <- vn - solve(JHa(vn, t = ts[i]) + bias * diag(n_vars + 2), Ha(vn, t = ts[i]))
+        if (message) message("  ", paste(round(vn, 5), collapse = " "))
+      }
+    }
   }
 
   resid <- gfunc(vn[1:n_vars])
   if (abs(resid) >= tol) warning(sprintf("Tolerance not met (residual = %f).", resid), call. = FALSE)
-
   vn[1:n_vars]
 }
-
-
-
-
-
-
-
-
 
 
 

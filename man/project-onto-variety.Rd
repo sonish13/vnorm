@@ -11,16 +11,20 @@
 project_onto_variety(
   x0,
   poly,
-  dt = 0.05,
+  dt = 0.01,
   varorder = sort(mpoly::vars(poly)),
   n_correct = 2,
-  al = stats::rnorm(length(x0)),
+  al = rnorm(length(x0)),
   message = FALSE,
   tol = .Machine$double.eps^(1/2),
   gfunc,
   dgfunc,
   ddgfunc,
-  bias = 0
+  bias = 0,
+  adaptive = TRUE,
+  dt_min = 1e-06,
+  dt_max = 0.1,
+  error_tol = 0.01
 )
 
 project_onto_variety_lagrange(
@@ -89,6 +93,14 @@ internally if not provided.}
 \item{bias}{A multiple to add to the identity to make the Jacobian
 invertible.}
 
+\item{adaptive}{Defaults to \code{TRUE}. Whether to use adaptive stepsizes or not.}
+
+\item{dt_min, dt_max}{Minimum and maximum allowed step sizes during adaptive
+integration (default: \code{1e-6} and \code{0.1}).}
+
+\item{error_tol}{Tolerance used for adaptive step size control
+(default: \code{0.1}). Smaller values give more accurate results at the cost of runtime.}
+
 \item{method}{Used in \code{\link[=project_onto_variety_lagrange]{project_onto_variety_lagrange()}} and
 \code{\link[=project_onto_variety_gradient_descent]{project_onto_variety_gradient_descent()}}. In the former, if
 \code{"newton"}, a simple R implementation of Newton's method to solve the
@@ -107,12 +119,16 @@ not \code{"newton"}.}
 \item{ga}{Learning rate for gradient descent.}
 
 \item{max_ga}{Maximum learning rate for gradient descent line search.}
+
+\item{t_start, t_end}{Start and end times for homotopy integration (default:
+\code{1} to \code{0}).}
 }
 \value{
 A numeric vector the same length as \code{x0}.
 }
 \description{
-A R-based implementation of the gradient descent homotopies. The lagrange
+A R-based implementation of the gradient descent homotopies with adaptive
+step sizes for Euler's prediction. The lagrange
 version uses Newton's method on the Lagrangian system.
 }
 \examples{
