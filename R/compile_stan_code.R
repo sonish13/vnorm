@@ -195,8 +195,7 @@ get_custom_stan_code <- function(poly, w = FALSE, homo = TRUE) {
       jac <- paste("      [", jac, "]", collapse = ", \n")
     }
 
-    max_num_of_vars <- lapply(poly, vars) |> lapply(length) |> unlist() |> max()
-    dg <- paste0("  matrix[",length(poly),"," ,max_num_of_vars,"] J = [ \n" , jac,"\n    ];")
+    dg <- paste0("  matrix[",n_eqs,"," ,n_vars,"] J = [ \n" , jac,"\n    ];")
     trans_block <- paste0("\ntransformed parameters {\n", g, "\n",dg, "\n}\n")
 
 
@@ -208,31 +207,5 @@ get_custom_stan_code <- function(poly, w = FALSE, homo = TRUE) {
     stop("`poly` should either be an mpoly, or an mpolyList object.")
   }
   stan_code
-}
-
-helper_for_derivative_for_mpoly_stan_code <- function(var, poly) {
-  lifted_poly <- mpoly::coef_lift(poly)
-  derivative <- deriv(lifted_poly, var)
-  mpoly_to_stan(derivative)
-}
-
-helper_for_coef_lift_for_mpolylist <- function(p, i) {
-  monos <- monomials(p, unit = TRUE)
-  printed_monos <- print(monos, silent = TRUE)
-  printed_monos <- gsub("\\^", "", printed_monos)
-  printed_monos <- gsub(" ", "", printed_monos)
-  coefs_to_add <- paste0("b", printed_monos,"_",i)
-  for (i in seq_along(p)) {
-    p[[i]]["coef"] <- 1
-    p[[i]] <- structure(c(1, p[[i]]), names = c(coefs_to_add[i],
-                                                names(p[[i]])))
-  }
-  p
-}
-
-helper_for_derivative_for_mpolylist_stan_code <- function(var, poly, i) {
-  lifted_poly <- helper_for_coef_lift_for_mpolylist(poly, i)
-  derivative <- deriv(lifted_poly, var)
-  mpoly_to_stan(derivative)
 }
 

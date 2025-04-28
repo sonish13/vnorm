@@ -6,8 +6,10 @@
 #' @param x Numeric value or vector at which to evaluate the density.
 #' @param poly An `mpoly` object representing the polynomial
 #' @param sd A positive numeric value representing the standard deviation
-#' @param homo Logical, default is `TRUE`. If `TRUE`, computes the homoskedastic variety normal density. If `FALSE`, computes the heteroskedastic variety normal density.
-#'
+#' @param homo Logical, default is `TRUE`. If `TRUE`, computes the homoskedastic
+#'  variety normal density. If `FALSE`, computes the heteroskedastic variety
+#'  normal density.
+#'@param log Logical. If `TRUE`, returns the log of the density.
 #' @return A numeric value (or vector) representing the density evaluated at `x`.
 #'
 #' @examples
@@ -34,7 +36,7 @@
 #'
 #'
 #' @export
-pdvnorm <- function(x, poly, sd, homo = TRUE) {
+pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE) {
   if (!inherits(poly, "mpoly")) {
     stop("Error: 'poly' must be an 'mpoly' object.")
   }
@@ -47,22 +49,26 @@ pdvnorm <- function(x, poly, sd, homo = TRUE) {
 
   # Evaluate the polynomial g(x | beta) at x
   g_func <- suppressMessages(as.function(poly))
-
   g_val <- g_func(x)
 
   if (homo) {
     # Gradient
     grad_g <- gradient(poly)
-    grad_g_func <- suppressMessages(as.function(poly))
+    grad_g_func <- suppressMessages(as.function(grad_g))
     grad_g_val <- sqrt(sum(grad_g_func(x)^2))
 
-    # Homoskedastic density
-    g_bar <- g_val / grad_g_val  # ḡ(x|β)
-    density <- (1 / (sqrt(2 * pi) * sd)) * exp(- (g_bar^2) / (2 * sd^2))
+    # Homoskedastic log-density
+    g_bar <- g_val / grad_g_val
+    log_density <- -0.5 * log(2 * pi) - log(sd) - (g_bar^2) / (2 * sd^2)
   } else {
-    # Heteroskedastic density
-    density <- (1 / (sqrt(2 * pi) * sd)) * exp(- (g_val^2) / (2 * sd^2))
+    # Heteroskedastic log-density
+    log_density <- -0.5 * log(2 * pi) - log(sd) - (g_val^2) / (2 * sd^2)
   }
 
-  return(density)
+  if (log) {
+    return(log_density)
+  } else {
+    return(exp(log_density))
+  }
 }
+
