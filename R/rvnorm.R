@@ -318,12 +318,24 @@ rvnorm <- function(n, poly, sd, output = "simple", rejection = FALSE ,chains = 4
   } else {
     stop("`poly` should be either a character vector, mpoly, or mpolyList.", call. = FALSE)
   }
+  n_vars <- length(mpoly::vars(poly))
+  if(!(length(sd) == 1 | length(sd) == n_vars | length(diag(sd)) == n_vars) )
+  if(length(sd) == 1){
+    sd = sd
+  } else if (is.vector(sd) & length(sd) == n_vars){
+    sd = diag(sd)
+  } else if (is.matrix(sd) & length(diag(sd)) == n_vars ) {
+    sd = sd
+  } else {
+    stop("`sd` should be a number, vector of length equal to number of
+         variables or matrix with diagonal length equal to number of variables.", call. = FALSE)
+  }
   if (refresh) refresh <- if (verbose) max(ceiling(n / 10), 1L) else 0L
   if (n_eqs > 1) pre_compiled <- FALSE
   if (n_eqs > 1 || length(mpoly::vars(poly)) > 3 || base::max(mpoly::totaldeg(poly)) > 3)
     pre_compiled <- FALSE
   if (code_only) {
-    stan_code <-  create_stan_code(poly, sd, n_eqs, w, homo)
+    stan_code <- create_stan_code(poly, sd, n_eqs, w, homo)
     return(stan_code)
   }
 
@@ -475,7 +487,10 @@ model {{
     # Set variables
     if (missing(w)) {
       parms <- paste(sprintf("real %s;", vars), collapse = "\n  ")
-    } else {
+    } else if(is.numeric(w) && length(w) == 1L) {
+      parms <- glue::glue("real<lower=-{w},upper={w}> {vars};")
+      parms <- paste(parms, collapse = "\n  ")
+    }else {
       parms <- sapply(seq_along(vars), function(i) {
         if (vars[i] %in% names(w)) {
           sprintf("real<lower=%s,upper=%s> %s;", w[[vars[i]]][1], w[[vars[i]]][2], vars[i])
@@ -485,14 +500,15 @@ model {{
       })
       parms <- paste(parms, collapse = "\n  ")
     }
-
-
+    data_string <- if(length(sd) == 1) "real<lower=0> si;" else paste0("cov_matrix[",n_vars,"] si")
+    model_string <- if(length(sd) == 1) "normal_lpdf(" else " multi_normal_lpdf("
+    mu_string <- if(length(sd) == 1)"0.00" else paste(rep(0.00, n_vars), collapse = ",")
     gbar_string <- if (n_vars == n_eqs) "J \\ g" else if (n_vars > n_eqs) "J' * ((J*J') \\ g)" else "(J'*J) \\ (J'*g)"
 
     stan_code <- glue::glue(
       "
 data {{
-  real<lower=0> si;
+  {data_string};
 }}
 
 parameters {{
@@ -505,12 +521,22 @@ transformed parameters {{
 }}
 
 model {{
-  target += normal_lpdf(0.00 | {gbar_string}, si);
+  target += {model_string}[{mu_string}]' | {gbar_string}, si);
 }}
       ")
   }
   stan_code
 }
+
+
+
+
+
+
+
+
+
+
 
 
 
