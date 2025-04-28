@@ -4,7 +4,7 @@
 \alias{pdvnorm}
 \title{Psuedo Probability Density Function for the Variety Normal Distribution}
 \usage{
-pdvnorm(x, poly, sd, homo = TRUE)
+pdvnorm(x, poly, sd, homo = TRUE, log = FALSE)
 }
 \arguments{
 \item{x}{Numeric value or vector at which to evaluate the density.}
@@ -13,7 +13,11 @@ pdvnorm(x, poly, sd, homo = TRUE)
 
 \item{sd}{A positive numeric value representing the standard deviation}
 
-\item{homo}{Logical, default is \code{TRUE}. If \code{TRUE}, computes the homoskedastic variety normal density. If \code{FALSE}, computes the heteroskedastic variety normal density.}
+\item{homo}{Logical, default is \code{TRUE}. If \code{TRUE}, computes the homoskedastic
+variety normal density. If \code{FALSE}, computes the heteroskedastic variety
+normal density.}
+
+\item{log}{Logical. If \code{TRUE}, returns the log of the density.}
 }
 \value{
 A numeric value (or vector) representing the density evaluated at \code{x}.
