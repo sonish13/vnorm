@@ -47,7 +47,7 @@ get_coefficeints_data <- function(poly) {
 }
 
 check_and_replace_vars <- function(p) {
-  current_vars <- vars(p)
+  current_vars <- mpoly::vars(p)
   num_vars <- length(current_vars)
   target_vars <- list(
     c("x"),           # for 1 indeterminate

@@ -136,6 +136,7 @@
 #' ########################################
 #'
 #' options(mc.cores = parallel::detectCores())
+#' #Needs checking
 #' p <- mp("x^2 + (4 y)^2 - 1")
 #' (samps <- rvnorm(1e4, p, sd = .01, "tibble", verbose = TRUE, chains = 8))
 #' ggplot(samps, aes(x, y)) + geom_bin2d(binwidth = .01*c(1,1)) + coord_equal()
@@ -184,6 +185,7 @@
 #' # this is the projection of the sphere into the xy-plane.
 #'
 #' p <- mp("1 - (x^2 + y^2) - s^2")
+#' #Needs checking
 #' samps <- rvnorm(1e4, p, sd = .1, "tibble", chains = 8, refresh = 1e3)
 #' ggplot(samps, aes(x, y)) + geom_bin2d(binwidth = .05*c(1,1)) + coord_equal()
 #'
@@ -211,14 +213,6 @@
 #' # notice the migration of chains initialized away from the distribution
 #' # (it helps to make the graphic large on your screen)
 #' samps <- rvnorm(500, p, sd = .05, "tibble", chains = 8, inc_warmup = TRUE)
-#' ggplot(samps, aes(x, y, group = factor(.iteration))) +
-#'   geom_point(size = 1, alpha = .5) + geom_path(alpha = .2) +
-#'   coord_equal() + facet_wrap(~ factor(.chain)) +
-#'   theme(legend.position = "none")
-#'
-#' samps <- rvnorm(2500, p, sd = .05, "tibble", chains = 8, inc_warmup = TRUE)
-#' ggplot(samps, aes(x, y)) + geom_bin2d(binwidth = .05*c(1,1)) +
-#'   coord_equal() + facet_wrap(~ factor(chain))
 #'
 #' ## ideal-variety correspondence considerations
 #' ########################################
@@ -230,7 +224,7 @@
 #' samps_3 <- rvnorm(250, p^3, sd = .1, output = "tibble", chains = 8)
 #' samps_4 <- rvnorm(250, p^4, sd = .1, output = "tibble", chains = 8)
 #' samps <- bind_rows(mget(apropos("samps_[1-4]")))
-#' samps$power <- rep(seq_along(apropos("samps_[1-4]")), each = 2000)
+#' samps$power <- rep(seq_along(apropos("samps_[1-4]")), each = 250)
 #'
 #' ggplot(samps, aes(x, y, color = g < 0)) +
 #'   geom_point(size = .5) +
@@ -290,7 +284,6 @@
 #'
 #' ggplot(samps_normd, aes(x, y)) +
 #'   geom_bin2d(binwidth = .05*c(1,1)) + coord_equal()
-#' }
 
 
 #' @rdname rvnorm
@@ -373,7 +366,8 @@ rvnorm <- function(n, poly, sd, output = "simple", rejection = FALSE ,chains = 4
   # Run Stan sampler
   samps <- model$sample(data = stan_data, refresh = refresh, iter_warmup = warmup,
                         iter_sampling = ceiling(n / chains), chains = chains,
-                        parallel_chains = cores, adapt_delta = .999, max_treedepth = 20L)
+                        parallel_chains = cores, adapt_delta = .999, max_treedepth = 20L,
+                        save_warmup = inc_warmup)
 
   # Parse output and return
   if (output == "simple") {
