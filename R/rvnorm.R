@@ -502,7 +502,7 @@ model {{
     }
     data_string <- if(length(sd) == 1) "real<lower=0> si;" else paste0("cov_matrix[",n_vars,"] si")
     model_string <- if(length(sd) == 1) "normal_lpdf(" else " multi_normal_lpdf("
-    mu_string <- if(length(sd) == 1)"0.00" else paste(rep(0.00, n_vars), collapse = ",")
+    mu_string <- if(length(sd) == 1)"0.00" else paste0("[",paste(rep(0.00, n_vars), collapse = ","),"]'")
     gbar_string <- if (n_vars == n_eqs) "J \\ g" else if (n_vars > n_eqs) "J' * ((J*J') \\ g)" else "(J'*J) \\ (J'*g)"
 
     stan_code <- glue::glue(
@@ -521,7 +521,7 @@ transformed parameters {{
 }}
 
 model {{
-  target += {model_string}[{mu_string}]' | {gbar_string}, si);
+  target += {model_string}{mu_string} | {gbar_string}, si);
 }}
       ")
   }
