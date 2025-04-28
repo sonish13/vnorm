@@ -70,14 +70,14 @@
 #'   as.data.frame() |> tibble::as_tibble() |>
 #'   purrr::set_names(c("x", "y", "x_proj", "y_proj")) -> df
 #'
-#'\dontrun{ requires ggvariety
-#'
-#' ggvariety(p) + coord_equal() +
+#' ggplot() +
+#'   geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2)) +
 #'   geom_segment(
 #'     aes(x, y, xend = x_proj, yend = y_proj),
-#'     data = df, inherit.aes = FALSE
-#'   )
-#'}
+#'     data = df) +
+#'    theme(legend.position = "bottom")
+
+
 #'
 #' # alternatives
 #' 1 / sqrt(2)
@@ -120,27 +120,77 @@
 #'
 #' project_onto_variety(x0, p, gfunc = gfunc, dgfunc = dgfunc, ddgfunc = ddgfunc)
 #'
+#' ## adaptive time stepping examples
+#' ########################################
+#'
+#' x0 <- c(1, 1)
+#' p <- mpoly::mp("x^2 + y^2 - 1")
+#'
+#' # Using adaptive time stepping (default)
+#' x0_proj_adaptive <- project_onto_variety(x0, p, message = TRUE)
+#'
+#' # For comparison, fixed step size (no adaptation)
+#' x0_proj_fixed <- project_onto_variety(x0, p, adaptive = FALSE, dt = 0.01, message = TRUE)
+#'
+#' # Using stricter error tolerance for adaptive stepping
+#' x0_proj_strict <- project_onto_variety(x0, p, error_tol = 0.01, message = TRUE)
+#'
+#' # Visualize
+#' df_adaptive <- cbind(t(x0), t(x0_proj_adaptive)) |>
+#'   as.data.frame() |> tibble::as_tibble() |>
+#'   purrr::set_names(c("x", "y", "x_proj", "y_proj"))
+#'
+#' ggplot() +
+#'   geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2)) +
+#'   geom_segment(aes(x, y, xend = x_proj, yend = y_proj), data = df_adaptive) +
+#'   coord_equal() +
+#'   theme(legend.position = "bottom")
+#'
+#'
+#' ## changing adaptive control parameters
+#' ########################################
+#'
+#' x0_proj_custom_adaptive <- project_onto_variety(
+#'   x0, p,
+#'   adaptive = TRUE,
+#'   dt = 0.05,
+#'   dt_min = 1e-5,
+#'   dt_max = 0.2,
+#'   error_tol = 0.05,
+#'   message = TRUE
+#' )
+#'
+#'
+#' ## larger systems
+#' ########################################
+#'
+#' x0 <- c(1,1,1)
+#' p <- mpoly::mp("x^2 + y^2 + z^2 - 1")
+#' project_onto_variety(x0, p) # adaptive by default
+#' project_onto_variety(x0, p, adaptive = FALSE, dt = 0.01) # fixed step size
 #'
 #' ## more complex example
 #' ########################################
 #'
 #' p <- mpoly::mp("(x^2 + y^2)^2 - 2 (x^2 - y^2)")
-#' \dontrun{ requires ggvariety
-#' ggvariety(p, c(-2, 2), n = 201) + coord_equal()
-#'}
-#' x0 <- c(.025, .30)
+#' ggplot() + geom_variety(poly = p) + coord_equal() +
+#' theme(legend.position = "bottom")
 #' (x0_proj <- project_onto_variety(x0, p))
 #'
 #' cbind(t(x0), t(x0_proj)) |>
 #'   as.data.frame() |> tibble::as_tibble() |>
 #'   purrr::set_names(c("x", "y", "x_proj", "y_proj")) -> df
-#'\dontrun{ requires ggvariety
-#' ggvariety(p, c(-2, 2)) + coord_equal() +
+#' p <- mpoly::mp("(x^2 + y^2)^2 - 2 (x^2 - y^2)")
+#'ggplot() +
+#'   geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2)) +
+#'   coord_equal() +
 #'   geom_segment(
 #'     aes(x, y, xend = x_proj, yend = y_proj),
 #'     data = df, inherit.aes = FALSE
-#'   )
-#'}
+#'   ) +
+#'    theme(legend.position = "bottom")
+
+
 #'
 #'
 #'
@@ -153,9 +203,11 @@
 #' (p <- mpoly::lissajous(5, 5, 0, 0))
 #' # (p <- mpoly::lissajous(9, 9, 0, 0))
 #' # p <- mpoly::mp("x^2 + y^2 - 1")
-#' \dontrun{ requires ggvariety
-#' ggvariety(p, n = 251) + coord_equal()
-#'}
+#' ggplot() +
+#'   geom_variety(poly = p, n = 251) +
+#'  coord_equal() +
+#'    theme(legend.position = "bottom")
+
 #' set.seed(1)
 #' (s <- seq(-1, 1, .25))
 #' n <- length(s)
@@ -169,15 +221,16 @@
 #' head(grid_proj)
 #' names(grid_proj) <- c("x_proj", "y_proj")
 #'
-#'\dontrun{ requires ggvariety
-#'
-#' ggvariety(p, n = 251) + coord_equal() +
+#' ggplot() +
+#'   geom_variety(poly = p, n = 501, xlim = c(-2, 2), ylim = c(-2, 2)) +
+#'   coord_equal() +
 #'   geom_segment(
 #'     aes(x, y, xend = x_proj, yend = y_proj),
 #'     data = bind_cols(grid, grid_proj), inherit.aes = FALSE
 #'   ) +
-#'   geom_point(aes(x, y), data = grid, inherit.aes = FALSE)
-#'}
+#'   geom_point(aes(x, y), data = grid, inherit.aes = FALSE) +
+#'    theme(legend.position = "bottom")
+#'
 #'
 #' # here's what happens when you use a naive implementation -
 #' # gradient descent on g^2 with line search
@@ -197,17 +250,17 @@
 #'   bind_cols(grid, grid_proj_lagrange) |> mutate(method = "newton on lagrangian")
 #' )
 #'
-#'\dontrun{ requires ggvariety
 #'
-#' ggvariety(p, n = 251) +
+#' ggplot() +
+#'   geom_variety(poly = p, n = 501, xlim = c(-2, 2), ylim = c(-2, 2)) +
 #'   geom_segment(
 #'     aes(x, y, xend = x_proj, yend = y_proj),
 #'     data = df, inherit.aes = FALSE
 #'   ) +
 #'   geom_point(aes(x, y), data = grid, inherit.aes = FALSE) +
 #'   coord_equal() +
-#'   facet_wrap(~ method) + xlim(-1.1, 1.1) + ylim(-1.1, 1.1)
-#'}
+#'   facet_wrap(~ method) + xlim(-1.1, 1.1) + ylim(-1.1, 1.1) +
+#'    theme(legend.position = "bottom")
 #'
 #' ## projecting a dataset - rvnorm
 #' ########################################
@@ -215,18 +268,19 @@
 #' library("ggplot2")
 #' library("dplyr")
 #'
-#' \dontrun{ requires stan
 #'
 #' (p <- mpoly::lissajous(5, 5, 0, 0))
-#' ggvariety(p, n = 251) + coord_equal()
-#'
+#' ggplot() +
+#'   geom_variety(poly = p, n = 501, xlim = c(-2, 2), ylim = c(-2, 2)) +
+#'   coord_equal() +
+#'    theme(legend.position = "bottom")
 #' set.seed(1)
 #' (samps <- rvnorm(1e4, p, sd = .025, output = "tibble"))
 #'
 #' ggplot(samps, aes(x, y)) +
-#'   geom_point(aes(color = chain)) +
+#'   geom_point(aes(color = .chain)) +
 #'   coord_equal() +
-#'   facet_wrap(~ chain)
+#'   facet_wrap(~ .chain)
 #'
 #' ggplot(samps, aes(x, y)) +
 #'   geom_bin2d(binwidth = .03*c(1,1)) +
@@ -239,27 +293,30 @@
 #' subsamps |>
 #'   select(x, y) |>
 #'   as.matrix() |>
-#'   #apply(1, function(x0) project_onto_variety(x0, p, dt = .025, n_correct = 3)) |> t() |>
 #'   apply(1, function(x0) project_onto_variety_lagrange(x0, p)) |> t() |>
 #'   as.data.frame() |> tibble::as_tibble() |>
 #'   purrr::set_names(c("x_proj", "y_proj")) |>
-#'   bind_cols(subsamps, .) ->
-#'   subsamps
-#'
-#' ggvariety(p, n = 251) + coord_equal() +
+#'   (\(df_proj) bind_cols(subsamps, df_proj))() ->
+#' subsamps
+#'  ggplot() +
+#'   geom_variety(poly = p, n = 501, xlim = c(-2, 2), ylim = c(-2, 2)) +
+#'   coord_equal() +
+#'    theme(legend.position = "bottom") +
 #'   geom_segment(
 #'     aes(x, y, xend = x_proj, yend = y_proj),
 #'     data = subsamps, inherit.aes = FALSE
 #'   ) +
 #'   geom_point(
-#'     aes(x, y, color = factor(chain)),
+#'     aes(x, y, color = factor(.chain)),
 #'     data = subsamps, inherit.aes = FALSE
 #'   )
 #'
 #' ggplot(subsamps, aes(x_proj, y_proj)) + geom_point() + coord_equal()
 #'
-#' }
 #'
+#'
+
+
 
 
 #' @rdname project-onto-variety
