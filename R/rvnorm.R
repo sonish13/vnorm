@@ -49,7 +49,6 @@
 #'   additional information, or (3) an object of class [stanfit-class].
 #' @examples
 #'
-#' \dontrun{
 #'
 #' library("tidyverse")
 #' options("mc.cores" = parallel::detectCores() - 1)
@@ -494,7 +493,7 @@ model {{
       })
       parms <- paste(parms, collapse = "\n  ")
     }
-    data_string <- if(length(sd) == 1) "real<lower=0> si;" else paste0("cov_matrix[",n_vars,"] si")
+    data_string <- if(length(sd) == 1) "real<lower=0> si" else paste0("cov_matrix[",n_vars,"] si")
     model_string <- if(length(sd) == 1) "normal_lpdf(" else " multi_normal_lpdf("
     mu_string <- if(length(sd) == 1)"0.00" else paste0("[",paste(rep(0.00, n_vars), collapse = ","),"]'")
     gbar_string <- if (n_vars == n_eqs) "J \\ g" else if (n_vars > n_eqs) "J' * ((J*J') \\ g)" else "(J'*J) \\ (J'*g)"
