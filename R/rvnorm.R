@@ -311,16 +311,18 @@ rvnorm <- function(n, poly, sd, output = "simple", rejection = FALSE ,chains = 4
     stop("`poly` should be either a character vector, mpoly, or mpolyList.", call. = FALSE)
   }
   n_vars <- length(mpoly::vars(poly))
-  if(!(length(sd) == 1 | length(sd) == n_vars | length(diag(sd)) == n_vars) )
-  if(length(sd) == 1){
-    sd = sd
-  } else if (is.vector(sd) & length(sd) == n_vars){
-    sd = diag(sd)
-  } else if (is.matrix(sd) & length(diag(sd)) == n_vars ) {
-    sd = sd
+  if (length(sd) == 1) {
+    sd <- sd
+  } else if (is.vector(sd) && length(sd) == n_vars) {
+    sd <- diag(sd)
+  } else if (is.matrix(sd) && length(diag(sd)) == n_vars) {
+    sd <- sd
   } else {
-    stop("`sd` should be a number, vector of length equal to number of
-         variables or matrix with diagonal length equal to number of variables.", call. = FALSE)
+    stop(
+      "`sd` should be a number, vector of length equal to number of",
+      " variables or matrix with diagonal length equal to number of variables.",
+      call. = FALSE
+    )
   }
   if (refresh) refresh <- if (verbose) max(ceiling(n / 10), 1L) else 0L
   if (n_eqs > 1) pre_compiled <- FALSE
