@@ -4,11 +4,9 @@ instantiate::stan_package_compile()
 document()
 
 # Installation
-
+# Use your own path here
 install.packages(pkgs = "/Users/slamsal/Research/vnorm/vnorm", type = "source", repos = NULL)
 library(vnorm)
-
-
 
 # Stan Files Generator
 
