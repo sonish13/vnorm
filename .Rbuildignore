@@ -1,3 +1,4 @@
 ^vnorm\.Rproj$
 ^\.Rproj\.user$
 ^LICENSE\.md$
+inst/setup.R
