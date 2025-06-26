@@ -25,6 +25,7 @@ rvnorm(
   code_only = FALSE,
   pre_compiled = TRUE,
   user_compiled = FALSE,
+  show_messages = FALSE,
   ...
 )
 }
@@ -77,6 +78,9 @@ for polynomials with three indeterminates and three degrees. Defaults to
 
 \item{user_compiled}{If\code{TRUE}, user compiled stan program made using
 \link{compile_stan_code} is used. Defaults to \code{FALSE}}
+
+\item{show_messages}{If \code{TRUE}, stan sampler messages are shown.
+Defaults to \code{FALSE}}
 
 \item{...}{Additional parameters to pass to \code{\link[=stan]{stan()}}.}
 }
