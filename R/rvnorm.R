@@ -43,6 +43,8 @@
 #' @param ... Additional parameters to pass to [stan()].
 #' @param user_compiled If\code{TRUE}, user compiled stan program made using
 #' [compile_stan_code] is used. Defaults to \code{FALSE}
+#' @param show_messages If \code{TRUE}, stan sampler messages are shown.
+#' Defaults to \code{FALSE}
 #' @name rvnorm
 #' @return Either (1) matrix whose rows are the individual draws from the
 #'   distribution, (2) a [tbl_df-class] object with the draws along with
@@ -291,7 +293,8 @@ rvnorm <- function(n, poly, sd, output = "simple", rejection = FALSE ,chains = 4
                    inc_warmup = FALSE, thin = 1L,verbose = FALSE,
                    cores = min(chains, getOption("mc.cores", 1L)), homo = TRUE,
                    w, vars, numerator, denominator, refresh = 0L,
-                   code_only = FALSE, pre_compiled = TRUE, user_compiled = FALSE, ...) {
+                   code_only = FALSE, pre_compiled = TRUE, user_compiled = FALSE,
+                   show_messages = FALSE, ...) {
 
   # Initialization and checks
   if(rejection) {
@@ -349,7 +352,7 @@ rvnorm <- function(n, poly, sd, output = "simple", rejection = FALSE ,chains = 4
     # get name of stan model to use
     deg <- mpoly::totaldeg(poly)
     num_of_vars <- length(mpoly::vars(poly))
-    stan_file_name <- paste(num_of_vars, deg, if (homo) "hvn" else "vn", sep = "_")
+    stan_file_name <- paste(num_of_vars, deg, if (homo) "vn" else "hvn", sep = "_")
     if (!missing(w)) stan_file_name <- paste(stan_file_name, "w", sep = "_")
     model <- instantiate::stan_package_model(name = stan_file_name, package = "vnorm")
     stan_data <- make_coefficients_data(poly, num_of_vars, deg)
@@ -366,7 +369,7 @@ rvnorm <- function(n, poly, sd, output = "simple", rejection = FALSE ,chains = 4
   samps <- model$sample(data = stan_data, refresh = refresh, iter_warmup = warmup,
                         iter_sampling = ceiling(n / chains), chains = chains,
                         parallel_chains = cores, adapt_delta = .999, max_treedepth = 20L,
-                        save_warmup = inc_warmup)
+                        save_warmup = inc_warmup, show_messages = show_messages, ... = ...)
 
   # Parse output and return
   if (output == "simple") {
@@ -408,7 +411,7 @@ create_stan_code <- function(poly, sd, n_eqs, w, homo, vars) {
     poly <- reorder.mpoly(poly, varorder = sort(vars))
 
     g_string <- mpoly_to_stan(poly)
-    if (homo) {
+    if (!homo) {
       grad <- if (n_vars > 1) deriv(poly, var = mpoly::vars(poly)) else gradient(poly) ^ 2
       ndg_sq <- Reduce(`+`, grad ^ 2)
       ndg_string <- glue::glue("sqrt({mpoly_to_stan(ndg_sq)})")
