@@ -201,7 +201,7 @@ StatVariety <- ggproto(
       dfxyz <- poly_to_df(poly, rangex, rangey, nx, ny)
       isolines <- xyz_to_isolines(dfxyz, 0)
       df <- iso_to_path(isolines, data$group[1])
-      df$Variety <- as.character(mpoly_to_stan(poly))
+      df$Polynomial <- as.character(mpoly_to_stan(poly))
       return(df)
     } else if (is.mpolyList(poly)) {
       # Calculation for mpolyList
@@ -209,7 +209,7 @@ StatVariety <- ggproto(
         dfxyz <- poly_to_df(poly[[i]], rangex, rangey, nx, ny)
         isolines <- xyz_to_isolines(dfxyz, 0)
         df <- iso_to_path(isolines, paste0(data$group[1], "_", i))
-        df$Variety <- as.character(mpoly_to_stan(poly[[i]]))
+        df$Polynomial <- as.character(mpoly_to_stan(poly[[i]]))
         return(df)
       })
       combined_data <- dplyr::bind_rows(data_list)
@@ -255,12 +255,12 @@ geom_variety <- function(
   }
 
   mapping <- if (is.null(mapping)) {
-    aes(group = after_stat(group), colour = after_stat(Variety))
+    aes(group = after_stat(group), colour = after_stat(Polynomial))
   } else {
-    modifyList(mapping, aes(group = after_stat(group), colour = after_stat(Variety)))
+    modifyList(mapping, aes(group = after_stat(group), colour = after_stat(Polynomial)))
   }
 
-  layer(
+  layer_obj <- layer(
     stat = stat,
     data = data,
     mapping = mapping,
@@ -273,6 +273,12 @@ geom_variety <- function(
       na.rm = na.rm,
       ...
     )
+  )
+
+  # add an auto-parsing scale for pretty labels
+  list(
+    layer_obj,
+    scale_color_discrete(labels = function(l) parse(text = l))
   )
 }
 
