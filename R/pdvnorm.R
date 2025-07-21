@@ -65,10 +65,5 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE) {
     log_density <- -0.5 * log(2 * pi) - log(sd) - (g_val^2) / (2 * sd^2)
   }
 
-  if (log) {
-    return(log_density)
-  } else {
-    return(exp(log_density))
-  }
+  if (log) log_density else exp(log_density)
 }
-
