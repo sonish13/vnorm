@@ -168,7 +168,6 @@ pdvnorm <- function(x, poly, sigma, homo = TRUE, log = FALSE) {
       J <- matrix(NA_real_, nrow = m, ncol = n)
       for (j in seq_len(m)) J[j, ] <- grad_fun[[j]](xi)
 
-      # --- Pseudoinverse J^+ with under/over-determined awareness -----------
       sv  <- svd(J)
       tol <- max(dim(J)) * .Machine$double.eps * ifelse(length(sv$d) > 0, sv$d[1], 0)
       r   <- sum(sv$d > tol)

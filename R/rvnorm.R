@@ -15,6 +15,7 @@
 #' @param n The number of draws desired from each chain after warmup.
 #' @param poly An mpoly object.
 #' @param sd The "standard deviation" component of the normal kernel.
+#' @param Sigma Full covariance matrix or the diagonal(vector) of the covariance matrix.
 #' @param output \code{"simple"}, \code{"tibble"}, \code{"stanfit"}.
 #' @param rejection If \code{TRUE}, rejection sampling is used.
 #' @param chains The number of chains to run for the random number generation,
@@ -78,7 +79,7 @@
 #'   coord_equal()
 #'
 #' ggplot(samps, aes(x, y)) +
-#'   geom_point(aes(color = factor(.chain)), size = .5) +
+#'   geom_point(aes(color = factor(.chain))) +
 #'   geom_variety(poly = p, size = 1) +
 #'   coord_equal()
 #'
@@ -289,7 +290,7 @@
 
 #' @rdname rvnorm
 #' @export
-rvnorm <- function(n, poly, sd, output = "simple", rejection = FALSE ,chains = 4L, warmup = max(500, floor(n / 2)),
+rvnorm <- function(n, poly, sd, Sigma = NULL, output = "simple", rejection = FALSE ,chains = 4L, warmup = max(500, floor(n / 2)),
                    inc_warmup = FALSE, thin = 1L,verbose = FALSE,
                    cores = min(chains, getOption("mc.cores", 1L)), homo = TRUE,
                    w, vars, numerator, denominator, refresh = 0L,
@@ -299,13 +300,14 @@ rvnorm <- function(n, poly, sd, output = "simple", rejection = FALSE ,chains = 4
   # Initialization and checks
   if(rejection) {
     if(missing(w)) w = 1
+    if (!(is.numeric(sd) && is.vector(sd) && length(sd) == 1L)) stop("This sd is not supported yet for rejection sampler.")
     sample <- rejection_sampler(n = n, poly = poly , sd = sd, vars = sort(mpoly::vars(poly)),
                                   w = w, output = output, homo = homo,
                                   message = verbose)
     return(sample)
   }
   output_needs_rewriting <- FALSE
-  if (is.character(poly)) poly <- mp(poly)
+  if (is.character(poly)) poly <- mpoly::mp(poly)
   if (is.mpoly(poly)) {
     n_eqs <- 1L
   } else if (is.mpolyList(poly)) {
@@ -313,8 +315,8 @@ rvnorm <- function(n, poly, sd, output = "simple", rejection = FALSE ,chains = 4
   } else {
     stop("`poly` should be either a character vector, mpoly, or mpolyList.", call. = FALSE)
   }
+  if(!is.null(Sigma)) sd <- Sigma
   n_vars <- length(mpoly::vars(poly))
-  if(!(length(sd) == 1 | length(sd) == n_vars | length(diag(sd)) == n_vars) )
   if(length(sd) == 1){
     sd = sd
   } else if (is.vector(sd) & length(sd) == n_vars){
@@ -322,7 +324,7 @@ rvnorm <- function(n, poly, sd, output = "simple", rejection = FALSE ,chains = 4
   } else if (is.matrix(sd) & length(diag(sd)) == n_vars ) {
     sd = sd
   } else {
-    stop("`sd` should be a number, vector of length equal to number of
+    stop("`Sigma` should be a number, vector of length equal to number of
          variables or matrix with diagonal length equal to number of variables.", call. = FALSE)
   }
   if (refresh) refresh <- if (verbose) max(ceiling(n / 10), 1L) else 0L
@@ -411,7 +413,7 @@ create_stan_code <- function(poly, sd, n_eqs, w, homo, vars) {
     poly <- reorder.mpoly(poly, varorder = sort(vars))
 
     g_string <- mpoly_to_stan(poly)
-    if (!homo) {
+    if (homo) {
       grad <- if (n_vars > 1) deriv(poly, var = mpoly::vars(poly)) else gradient(poly) ^ 2
       ndg_sq <- Reduce(`+`, grad ^ 2)
       ndg_string <- glue::glue("sqrt({mpoly_to_stan(ndg_sq)})")
@@ -498,7 +500,7 @@ model {{
     }
     data_string <- if(length(sd) == 1) "real<lower=0> si" else paste0("cov_matrix[",n_vars,"] si")
     model_string <- if(length(sd) == 1) "normal_lpdf(" else " multi_normal_lpdf("
-    mu_string <- if(length(sd) == 1)"0.00" else paste0("[",paste(rep(0.00, n_vars), collapse = ","),"]'")
+    mu_string <- if(length(sd) == 1)"0.00" else (paste0("[",paste(rep(0.00, n_vars), collapse = ","),"]'"))
     gbar_string <- if (n_vars == n_eqs) "J \\ g" else if (n_vars > n_eqs) "J' * ((J*J') \\ g)" else "(J'*J) \\ (J'*g)"
 
     stan_code <- glue::glue(
