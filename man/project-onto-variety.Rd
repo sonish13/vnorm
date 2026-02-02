@@ -251,10 +251,10 @@ project_onto_variety(x0, p, adaptive = FALSE, dt = 0.01) # fixed step size
 ## more complex example
 ########################################
 
+x0 <- c(1,1)
 p <- mpoly::mp("(x^2 + y^2)^2 - 2 (x^2 - y^2)")
-ggplot() + geom_variety(poly = p) + coord_equal() +
-theme(legend.position = "bottom")
 (x0_proj <- project_onto_variety(x0, p))
+
 
 cbind(t(x0), t(x0_proj)) |>
   as.data.frame() |> tibble::as_tibble() |>

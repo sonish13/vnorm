@@ -4,14 +4,20 @@
 \alias{pdvnorm}
 \title{Psuedo Probability Density Function for the Variety Normal Distribution}
 \usage{
-pdvnorm(x, poly, sd, homo = TRUE, log = FALSE)
+pdvnorm(x, poly, sigma, homo = TRUE, log = FALSE)
 }
 \arguments{
-\item{x}{Numeric value or vector at which to evaluate the density.}
+\item{x}{A numeric vector of length equal to the number of variables in
+\code{poly}, or a numeric matrix (or data frame) with that many columns.}
 
-\item{poly}{An \code{mpoly} object representing the polynomial}
+\item{poly}{An \code{mpoly} object (univariate case) or an \code{mpolyList}
+object (multivariate case).}
 
-\item{sd}{A positive numeric value representing the standard deviation}
+\item{sigma}{A positive numeric value representing the standard deviation for
+univariate case. For the multivariate case,
+may be a scalar, vector, or matrix. If \code{homo = TRUE}, \code{sigma}
+must conform to the number of variables; if \code{homo = FALSE}, it must
+conform to the number of polynomials.}
 
 \item{homo}{Logical, default is \code{TRUE}. If \code{TRUE}, computes the homoskedastic
 variety normal density. If \code{FALSE}, computes the heteroskedastic variety
@@ -27,26 +33,33 @@ Computes a pseudo probability density function (PDF) for the variety normal dist
 This function supports both the heteroskedastic and homoskedastic cases.
 }
 \examples{
+
 library(mpoly)
 
-# Example 1: Heteroskedastic VN with a simple polynomial
-poly1 <- mp("x^2 - 1")  # g(x) = x^2 - 1
-pdvnorm(0.5, poly1, sd = 1)  # Homoskedastic (default)
-pdvnorm(0.5, poly1, sd = 1, homo = FALSE)  # Heteroskedastic
+## Univariate usage
+poly_uni <- mp("x")
+pdvnorm(c(-1, 0, 1), poly_uni, sigma = 1)
+pdvnorm(0, poly_uni, sigma = 2, log = TRUE)
 
-# Example 2: Homoskedastic VN with a cubic polynomial
-poly2 <- mp("x^3 - x")  # g(x) = x^3 - x
-pdvnorm(-0.5, poly2, sd = 1)
-pdvnorm(-0.5, poly2, sd = 1, homo = FALSE)
+## Multivariate (square) system: two polynomials in two variables
+poly_sq <- mpolyList(mp("x"), mp("y"))
+X <- rbind(c(0, 0), c(1, 2), c(-1, 3))
 
-# Example 3: Vectorized evaluation
-x_vals <- seq(-2, 2, length.out = 5)  # Evaluate at multiple points
-pdvnorm(x_vals, poly1, sd = 1)
+## Different sigma forms
+pdvnorm(X, poly_sq, sigma = 1,        homo = TRUE)
+pdvnorm(X, poly_sq, sigma = c(1, 2),  homo = TRUE)
+pdvnorm(X, poly_sq, sigma = diag(c(1, 4)), homo = TRUE)
 
-# Example 4: Handling a polynomial where gradient norm is small
-poly3 <- mp("x^4 - 2*x^2")  # g(x) = x^4 - 2x^2
-pdvnorm(0, poly3, sd = 1)  # Should return an error for homoskedastic case
+## Multivariate (underdetermined): one polynomial in two variables
+poly_under <- mpolyList(mp("x + y"))
+X_under <- rbind(c(1, 1), c(2, -1), c(0, 3))
+pdvnorm(X_under, poly_under, sigma = diag(2),   homo = TRUE)
+pdvnorm(X_under, poly_under, sigma = 1,         homo = FALSE)
 
-
+## Multivariate (overdetermined): three polynomials in two variables
+poly_over <- mpolyList(mp("x"), mp("y"), mp("x + y"))
+X_over <- rbind(c(1, 2), c(0, -1), c(2, 2))
+pdvnorm(X_over, poly_over, sigma = diag(2),    homo = TRUE)
+pdvnorm(X_over, poly_over, sigma = c(1, 2, 3), homo = FALSE)
 
 }

@@ -6,7 +6,7 @@
 \alias{vnorm-package}
 \title{vnorm: Variety Normal Distribution}
 \description{
-What the package does (one paragraph).
+Sample, project and Visualize Variety Normal Distributions
 }
 \author{
 \strong{Maintainer}: David Kahle \email{david@kahle.io} (\href{https://orcid.org/0000-0002-9999-1558}{ORCID})

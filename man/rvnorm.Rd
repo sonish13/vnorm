@@ -9,6 +9,7 @@ rvnorm(
   poly,
   sd,
   output = "simple",
+  Sigma = NULL,
   rejection = FALSE,
   chains = 4L,
   warmup = max(500, floor(n/2)),
@@ -34,9 +35,11 @@ rvnorm(
 
 \item{poly}{An mpoly object.}
 
-\item{sd}{The "standard deviation" component of the normal kernel.}
+\item{sd}{The "standard deviation" component of the normal kernel. sd = Sigma when Sigma is not NULL.}
 
 \item{output}{\code{"simple"}, \code{"tibble"}, \code{"stanfit"}.}
+
+\item{Sigma}{Full covariance matrix or the diagonal(vector) of the covariance matrix.}
 
 \item{rejection}{If \code{TRUE}, rejection sampling is used.}
 
@@ -132,8 +135,8 @@ ggplot(samps, aes(x, y)) +
   coord_equal()
 
 ggplot(samps, aes(x, y)) +
-  geom_point(aes(color = factor(.chain)), size = .5) +
-  geom_variety(poly = p, size = 1) +
+  geom_point(aes(color = factor(.chain))) +
+  geom_variety(poly = p, linewidth = 1) +
   coord_equal()
 
 ggplot(samps, aes(x, y)) +
@@ -191,7 +194,6 @@ rvnorm(2000, p, sd = .1, "tibble", refresh = -1)
 ########################################
 
 options(mc.cores = parallel::detectCores())
-#Needs checking
 p <- mp("x^2 + (4 y)^2 - 1")
 (samps <- rvnorm(1e4, p, sd = .01, "tibble", verbose = TRUE, chains = 8))
 ggplot(samps, aes(x, y)) + geom_bin2d(binwidth = .01*c(1,1)) + coord_equal()
@@ -206,13 +208,10 @@ p <- mp("x y - 1") # unbounded variety, 1 poly
 p <- mp(c("x y - 1", "y - x")) # 2 polys
 
 rvnorm(1e3, p, sd = .01, "tibble", code_only = TRUE)
-rvnorm(1e3, p, sd = .01, "tibble", code_only = TRUE, w = 1.15)
-
-window <- list("x" = c(-1.5, 1.25), "y" = c(-2, 1.5))
-rvnorm(1e3, p, sd = .01, "tibble", code_only = TRUE, w = window)
+rvnorm(1e3, p, sd = .01, "tibble",  w = 1.15)
 
 window <- list("x" = c(-1.5, 1.5))
-rvnorm(1e3, p, sd = .01, "tibble", code_only = TRUE, w = window)
+rvnorm(1e3, p, sd = .01, "tibble",  w = window)
 
 ## the importance of normalizing
 ########################################
@@ -240,7 +239,6 @@ ggplot(samps, aes(x, y)) + geom_bin2d(binwidth = .05*c(1,1)) + coord_equal()
 # this is the projection of the sphere into the xy-plane.
 
 p <- mp("1 - (x^2 + y^2) - s^2")
-#Needs checking
 samps <- rvnorm(1e4, p, sd = .1, "tibble", chains = 8, refresh = 1e3)
 ggplot(samps, aes(x, y)) + geom_bin2d(binwidth = .05*c(1,1)) + coord_equal()
 
