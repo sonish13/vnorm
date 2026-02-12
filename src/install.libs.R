@@ -23,12 +23,122 @@ if (!file.exists(bin)) {
   dir.create(bin, recursive = TRUE, showWarnings = FALSE)
 }
 bin_stan <- file.path(bin, "stan")
-fs::dir_copy(path = "stan", new_path = bin_stan)
+dir.create(bin_stan, recursive = TRUE, showWarnings = FALSE)
 callr::r(
-  func = function(bin_stan) {
-    instantiate::stan_package_compile(
-      models = instantiate::stan_package_model_files(path = bin_stan)
+  func = function(src_stan, bin_stan) {
+    sanitize_component <- function(x) {
+      gsub("[^[:alnum:]_.-]", "_", x)
+    }
+
+    model_binary_exists <- function(dir, model_stem) {
+      candidates <- c(
+        file.path(dir, model_stem),
+        file.path(dir, paste0(model_stem, ".exe"))
+      )
+      any(file.exists(candidates))
+    }
+
+    find_cache_root <- function() {
+      user_cache <- tryCatch(
+        tools::R_user_dir("vnorm", which = "cache"),
+        error = function(e) NA_character_
+      )
+      candidates <- unique(c(user_cache, file.path(tempdir(), "vnorm-cache")))
+      candidates <- candidates[!is.na(candidates)]
+      for (candidate in candidates) {
+        ok <- tryCatch({
+          dir.create(candidate, recursive = TRUE, showWarnings = FALSE)
+          dir.exists(candidate)
+        }, error = function(e) FALSE)
+        if (isTRUE(ok)) return(candidate)
+      }
+      stop("Could not create a cache directory for Stan model binaries.")
+    }
+
+    cmdstan_version <- tryCatch(
+      as.character(cmdstanr::cmdstan_version()),
+      error = function(e) "unknown"
     )
+    # Keep cache entries scoped to platform + CmdStan version.
+    cache_stan <- file.path(
+      find_cache_root(),
+      "stan",
+      sanitize_component(R.version$platform),
+      paste0("cmdstan-", sanitize_component(cmdstan_version))
+    )
+    dir.create(cache_stan, recursive = TRUE, showWarnings = FALSE)
+
+    source_models <- instantiate::stan_package_model_files(path = src_stan)
+    if (length(source_models) == 0) {
+      return(invisible(NULL))
+    }
+
+    model_files <- basename(source_models)
+    model_stems <- tools::file_path_sans_ext(model_files)
+
+    model_hashes <- as.character(tools::md5sum(source_models))
+    names(model_hashes) <- model_files
+
+    cache_index_path <- file.path(cache_stan, "compile-index.rds")
+    if (file.exists(cache_index_path)) {
+      cache_index <- readRDS(cache_index_path)
+    } else {
+      cache_index <- data.frame(model = character(), hash = character(), stringsAsFactors = FALSE)
+    }
+    if (!is.data.frame(cache_index) || !all(c("model", "hash") %in% names(cache_index))) {
+      cache_index <- data.frame(model = character(), hash = character(), stringsAsFactors = FALSE)
+    }
+    cache_hash_lookup <- setNames(cache_index$hash, cache_index$model)
+
+    file.copy(source_models, file.path(cache_stan, model_files), overwrite = TRUE)
+
+    needs_compile <- vapply(seq_along(model_files), function(i) {
+      model_file <- model_files[[i]]
+      model_stem <- model_stems[[i]]
+      cached_hash <- unname(cache_hash_lookup[model_file])
+      current_hash <- unname(model_hashes[model_file])
+      hash_changed <- length(cached_hash) == 0L ||
+        is.na(cached_hash) ||
+        !identical(cached_hash, current_hash)
+      # Recompile only when source changed or cached binary is missing.
+      hash_changed ||
+        !model_binary_exists(cache_stan, model_stem)
+    }, logical(1))
+
+    models_to_compile <- file.path(cache_stan, model_files[needs_compile])
+    if (length(models_to_compile) > 0) {
+      instantiate::stan_package_compile(models = models_to_compile)
+    }
+
+    has_binary <- vapply(model_stems, function(model_stem) {
+      model_binary_exists(cache_stan, model_stem)
+    }, logical(1))
+    cache_index <- data.frame(
+      model = model_files[has_binary],
+      hash = unname(model_hashes[model_files[has_binary]]),
+      stringsAsFactors = FALSE
+    )
+    saveRDS(cache_index, cache_index_path)
+
+    existing_bin_files <- list.files(
+      path = bin_stan,
+      all.files = TRUE,
+      full.names = TRUE,
+      no.. = TRUE
+    )
+    if (length(existing_bin_files) > 0) {
+      unlink(existing_bin_files, recursive = TRUE, force = TRUE)
+    }
+
+    file.copy(file.path(cache_stan, model_files), bin_stan, overwrite = TRUE)
+    for (model_stem in model_stems) {
+      for (suffix in c("", ".exe")) {
+        model_binary <- file.path(cache_stan, paste0(model_stem, suffix))
+        if (file.exists(model_binary)) {
+          file.copy(model_binary, bin_stan, overwrite = TRUE)
+        }
+      }
+    }
   },
-  args = list(bin_stan = bin_stan)
+  args = list(src_stan = "stan", bin_stan = bin_stan)
 )
