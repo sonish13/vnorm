@@ -18,7 +18,8 @@
 #'
 #' @export
 compile_stan_code <- function(poly, custom_stan_code = FALSE, w = FALSE, homo = TRUE) {
-  if(!(is.mpoly(poly)| is.mpolyList(poly))) stop("`poly` should either be an mpoly, or an mpolyList object.")
+  if (is.mpolyList(poly)) stop("Cannot compile model for an mpolyList object")
+  if (!is.mpoly(poly)) stop("`poly` should be an mpoly object.")
 
   if (!custom_stan_code & is.mpoly(poly)) {
     if (length(mpoly::vars(poly)) < 4 & base::max(mpoly::totaldeg(poly)) < 4) {
@@ -29,7 +30,7 @@ compile_stan_code <- function(poly, custom_stan_code = FALSE, w = FALSE, homo = 
 
   stan_code <- get_custom_stan_code(poly = poly, w = w, homo = homo)
   model_name <- generate_model_name(poly = poly, w = w, homo = homo)
-  model_path <- cmdstanr::write_stan_file(stan_code, getwd())
+  model_path <- cmdstanr::write_stan_file(stan_code, dir = tempdir())
   compiled_stan_info <- data.frame("name" = model_name, "path" = model_path)
 
   if (!exists("compiled_stan_info", envir = .GlobalEnv)) {
@@ -208,4 +209,3 @@ get_custom_stan_code <- function(poly, w = FALSE, homo = TRUE) {
   }
   stan_code
 }
-

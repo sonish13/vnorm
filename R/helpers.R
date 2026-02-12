@@ -14,7 +14,7 @@ make_coefficients_data <- function(poly, num_of_vars, deg, basis = c("x", "y", "
 get_listed_coeficients <- function(coefs) {
   convert_names <- function(term) {
     term <- gsub("\\s+", "", term)  # Remove spaces
-    if (term == "1") return("b0")   # Constant term should be "b0"
+    if (term == "1") return("b1")   # Constant term should be "b1"
     term <- gsub("\\^", "", term)   # Remove power symbol (^)
     paste0("b", term)               # Add "b" at the beginning
   }
@@ -31,7 +31,7 @@ get_coefficeints_data <- function(poly) {
     poly <- sort_mpolylist_lexicographically(poly)
     convert_names <- function(term, i) {
       term <- gsub("\\s+", "", term)  # Remove spaces
-      if (term == "1") return(paste0("b0_",i))   # Constant term should be "b0"
+      if (term == "1") return(paste0("b1_",i))   # Constant term should be "b1"
       term <- gsub("\\^", "", term)   # Remove power symbol (^)
       paste0("b", term, "_",i)        # Add "b" at the beginning and _i at the end
     }
@@ -152,5 +152,4 @@ get_derivative <- function(var, num_of_vars, deg, basis = c("x", "y", "z")) {
   out <- paste0(df_for_der$num_coef, "*", df_for_der$sym_coef, "*", df_for_der$indeterminates, collapse = "+")
   gsub("1\\*|\\*1", "", out)
 }
-
 

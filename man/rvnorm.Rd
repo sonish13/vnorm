@@ -136,7 +136,16 @@ ggplot(samps, aes(x, y)) +
 
 ggplot(samps, aes(x, y)) +
   geom_point(aes(color = factor(.chain))) +
-  geom_variety(poly = p, linewidth = 1) +
+  geom_variety(poly = p) +
+  coord_equal()
+
+ggplot(samps, aes(x, y)) +
+  geom_point(aes(color = g)) +
+  geom_variety(poly = p) +
+  scale_color_gradient2(
+    low = "firebrick", high = "steelblue",
+    mid = "white", midpoint = 0
+  ) +
   coord_equal()
 
 ggplot(samps, aes(x, y)) +

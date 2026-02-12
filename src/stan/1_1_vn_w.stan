@@ -1,13 +1,13 @@
 data {
   real si;
-  real b0;   real bx;
+  real b1;   real bx;
   real w;
 }
 parameters {
   real<lower=-w, upper=w> x;
 }
 transformed parameters {
-  real g = b0+bx*x;
+  real g = b1+bx*x;
   real dgx = bx;
   real ndg = sqrt(dgx^2);
 }

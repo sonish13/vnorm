@@ -1,6 +1,6 @@
 data {
   real si;
-  real b0;   real bx;   real by;
+  real b1;   real bx;   real by;
   real w;
 }
 parameters {
@@ -8,7 +8,7 @@ parameters {
   real<lower=-w, upper=w> y;
 }
 transformed parameters {
-  real g = b0+bx*x+by*y;
+  real g = b1+bx*x+by*y;
   real dgx = bx;
   real dgy = by;
   real ndg = 1;
