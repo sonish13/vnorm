@@ -24,6 +24,8 @@ if (!file.exists(bin)) {
 }
 bin_stan <- file.path(bin, "stan")
 dir.create(bin_stan, recursive = TRUE, showWarnings = FALSE)
+src_stan <- normalizePath("stan", winslash = "/", mustWork = TRUE)
+bin_stan <- normalizePath(bin_stan, winslash = "/", mustWork = TRUE)
 callr::r(
   func = function(src_stan, bin_stan) {
     sanitize_component <- function(x) {
@@ -59,18 +61,29 @@ callr::r(
       as.character(cmdstanr::cmdstan_version()),
       error = function(e) "unknown"
     )
-    # Keep cache entries scoped to platform + CmdStan version.
+    cmdstan_path <- tryCatch(
+      as.character(cmdstanr::cmdstan_path()),
+      error = function(e) "unknown"
+    )
+    # Keep cache entries scoped to platform + CmdStan version + CmdStan path.
     cache_stan <- file.path(
       find_cache_root(),
       "stan",
       sanitize_component(R.version$platform),
-      paste0("cmdstan-", sanitize_component(cmdstan_version))
+      paste0("cmdstan-", sanitize_component(cmdstan_version)),
+      paste0("path-", sanitize_component(cmdstan_path))
     )
     dir.create(cache_stan, recursive = TRUE, showWarnings = FALSE)
 
-    source_models <- instantiate::stan_package_model_files(path = src_stan)
+    source_models <- sort(
+      list.files(
+        path = src_stan,
+        pattern = "[.]stan$",
+        full.names = TRUE
+      )
+    )
     if (length(source_models) == 0) {
-      return(invisible(NULL))
+      stop("No .stan model files found in source directory: ", src_stan)
     }
 
     model_files <- basename(source_models)
@@ -140,5 +153,5 @@ callr::r(
       }
     }
   },
-  args = list(src_stan = "stan", bin_stan = bin_stan)
+  args = list(src_stan = src_stan, bin_stan = bin_stan)
 )

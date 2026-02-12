@@ -351,7 +351,7 @@ rvnorm <- function(n, poly, sd, output = "simple", Sigma = NULL, rejection = FAL
     num_of_vars <- length(mpoly::vars(poly))
     stan_file_name <- paste(num_of_vars, deg, if (homo) "vn" else "hvn", sep = "_")
     if (!missing(w)) stan_file_name <- paste(stan_file_name, "w", sep = "_")
-    model <- instantiate::stan_package_model(name = stan_file_name, package = "vnorm")
+    model <- load_precompiled_vnorm_model(stan_file_name)
     stan_data <- make_coefficients_data(poly, num_of_vars, deg)
     stan_data <- if (missing(w)) c(stan_data, "si" = sd) else c(stan_data, "w" = w, "si" = sd)
   } else {
@@ -393,6 +393,88 @@ rvnorm <- function(n, poly, sd, output = "simple", Sigma = NULL, rejection = FAL
     }
     return(samps)
   }
+}
+
+find_existing_path <- function(paths) {
+  hits <- paths[file.exists(paths)]
+  if (length(hits) == 0L) return(NA_character_)
+  normalizePath(hits[[1]], winslash = "/", mustWork = TRUE)
+}
+
+sanitize_cache_component <- function(x) {
+  if (length(x) == 0L || is.na(x) || !nzchar(x)) return("unknown")
+  gsub("[^[:alnum:]_.-]", "_", x)
+}
+
+vnorm_stan_cache_dir <- function() {
+  cache_root <- tryCatch(
+    tools::R_user_dir("vnorm", which = "cache"),
+    error = function(e) file.path(tempdir(), "vnorm-cache")
+  )
+  dir.create(cache_root, recursive = TRUE, showWarnings = FALSE)
+
+  cmdstan_version <- tryCatch(
+    as.character(cmdstanr::cmdstan_version()),
+    error = function(e) "unknown"
+  )
+  cmdstan_path <- tryCatch(
+    as.character(cmdstanr::cmdstan_path()),
+    error = function(e) "unknown"
+  )
+
+  file.path(
+    cache_root,
+    "stan",
+    sanitize_cache_component(R.version$platform),
+    paste0("cmdstan-", sanitize_cache_component(cmdstan_version)),
+    paste0("path-", sanitize_cache_component(cmdstan_path))
+  )
+}
+
+precompiled_stan_source_candidates <- function(stan_file_name) {
+  stan_basename <- paste0(stan_file_name, ".stan")
+  package_roots <- unique(c(
+    tryCatch(getNamespaceInfo(asNamespace("vnorm"), "path"), error = function(e) ""),
+    tryCatch(system.file(package = "vnorm"), error = function(e) "")
+  ))
+  package_roots <- package_roots[nzchar(package_roots)]
+  unique(as.vector(rbind(
+    file.path(package_roots, "bin", "stan", stan_basename),
+    file.path(package_roots, "src", "stan", stan_basename)
+  )))
+}
+
+load_precompiled_vnorm_model <- function(stan_file_name) {
+  source_candidates <- precompiled_stan_source_candidates(stan_file_name)
+  source_stan <- find_existing_path(source_candidates)
+  if (is.na(source_stan)) {
+    stop(
+      "Could not locate precompiled Stan source '", stan_file_name, ".stan'. ",
+      "Searched: ", paste(source_candidates, collapse = ", ")
+    )
+  }
+
+  cache_dir <- vnorm_stan_cache_dir()
+  dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
+  cached_stan <- file.path(cache_dir, basename(source_stan))
+  file.copy(source_stan, cached_stan, overwrite = TRUE, copy.date = TRUE)
+
+  cached_exe <- find_existing_path(c(
+    file.path(cache_dir, stan_file_name),
+    file.path(cache_dir, paste0(stan_file_name, ".exe"))
+  ))
+  stan_info <- file.info(cached_stan)
+  exe_info <- if (is.na(cached_exe)) NULL else file.info(cached_exe)
+  needs_compile <- is.na(cached_exe) ||
+    is.na(stan_info$mtime) ||
+    is.null(exe_info) ||
+    is.na(exe_info$mtime) ||
+    (exe_info$mtime < stan_info$mtime)
+
+  if (isTRUE(needs_compile)) {
+    return(cmdstanr::cmdstan_model(stan_file = cached_stan))
+  }
+  return(cmdstanr::cmdstan_model(stan_file = cached_stan, exe_file = cached_exe, compile = FALSE))
 }
 
 
@@ -520,12 +602,6 @@ model {{
   }
   stan_code
 }
-
-
-
-
-
-
 
 
 
