@@ -175,9 +175,9 @@ geom_variety <- function(
   }
 
   mapping <- if (is.null(mapping)) {
-    aes(group = after_stat(group), colour = after_stat(Polynomial))
+    aes(group = after_stat(group), linetype = after_stat(Polynomial))
   } else {
-    modifyList(mapping, aes(group = after_stat(group), colour = after_stat(Polynomial)))
+    modifyList(mapping, aes(group = after_stat(group), linetype = after_stat(Polynomial)))
   }
 
   layer_obj <- layer(
@@ -198,7 +198,7 @@ geom_variety <- function(
 
   list(
     layer_obj,
-    scale_color_discrete(name = NULL, labels = function(l) parse(text = l))# ,
+    ggplot2::scale_linetype_discrete(name = NULL, labels = function(l) parse(text = l))# ,
     # theme(legend.position = "top")
   )
 }
