@@ -89,7 +89,7 @@ Defaults to \code{FALSE}}
 }
 \value{
 Either (1) matrix whose rows are the individual draws from the
-distribution, (2) a \linkS4class{tbl_df} object with the draws along with
+distribution, (2) a \link[tibble:tbl_df-class]{tibble::tbl_df} object with the draws along with
 additional information, or (3) an object of class \linkS4class{stanfit}.
 }
 \description{
