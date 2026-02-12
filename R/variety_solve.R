@@ -1,9 +1,10 @@
 #' Solve a Zero-Dimensional Variety
 #'
 #' Estimates the solution of a zero-dimensional variety by sampling with
-#' [rvnorm()] and averaging the draws. For well-behaved varieties, this method works reliably. When multiple
-#' isolated components exist, the sampler may favor some over others, and the
-#' posterior mean may fall between true solutions.
+#' [rvnorm()] and averaging the draws. For well-behaved varieties, this method
+#' works reliably. When multiple isolated components exist, the sampler may
+#' favor some over others, and the posterior mean may fall between true
+#' solutions.
 #'
 #' @param polylist An `mpolyList` or `mpoly` object containing the polynomials.
 #' @param sd Numeric scalar, standard deviation used by [rvnorm()] (default: `0.01`).
