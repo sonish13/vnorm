@@ -3,19 +3,21 @@ Title: Variety Normal Distribution
 Version: 0.0.0.9000
 Authors@R: c(person("Sonish", "Lamsal", email = "sonish_lamsal1@baylor.edu", role = "aut",comment = c(ORCID = "0009-0007-1098-2211")),
   person("David", "Kahle", email = "david@kahle.io", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-9999-1558")))
-Description: What the package does (one paragraph).
+Description: Sample, project and Visualize Variety Normal Distributions
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
-Imports: 
+Depends:
+    R (>= 4.1.0)
+Imports:
     glue,
     magrittr,
     isoband,
     vctrs,
     stats,
-    base
-Depends: 
+    ggplot2,
+    tibble,
     instantiate,
     mpoly,
     cmdstanr
