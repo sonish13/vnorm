@@ -162,34 +162,28 @@ library(ggplot2)
 library(mpoly)
 
 # 1) Lemniscate of Bernoulli (∞-shaped)
-#    (x^2 + y^2)^2 = 2 x^2
-p1 <- mp("(x^2 + y^2)^2 - 2*x^2")
+p1 <- mp("(x^2 + y^2)^2 - 2 x^2")
 ggplot() +
   geom_variety(poly = p1, xlim = c(-2, 2), ylim = c(-2, 2), n = 401) +
   coord_equal()
 
 # 2) Folium of Descartes (loop with an asymptote)
-#    x^3 + y^3 = 3xy
-p2 <- mp("x^3 + y^3 - 3*x*y")
+p2 <- mp("x^3 + y^3 - 3 x y")
 ggplot() +
   geom_variety(poly = p2, xlim = c(-2, 3), ylim = c(-2, 3), n = 401) +
   coord_equal()
 
 # 3) "Heart" curve (classic implicit heart)
-#    (x^2 + y^2 - 1)^3 - x^2 y^3 = 0
-p3 <- mp("(x^2 + y^2 - 1)^3 - x^2*y^3")
+p3 <- mp("(x^2 + y^2 - 1)^3 - x^2 y^3")
 ggplot() +
   geom_variety(poly = p3, xlim = c(-2, 2), ylim = c(-2, 2), n = 401) +
   coord_equal()
 
 # 4) A 2-polynomial system (mpolyList): circle ∩ hyperbola-like branch overlay
 #    Useful example showing multiple contours from one call.
-p_list <- mpolyList(
-  mp("x^2 + y^2 - 1"),
-  mp("x*y - 0.25")
-)
+ps <- mp( c( "x^2 + y^2 - 1", "x y - 0.25" ) )
 ggplot() +
-  geom_variety(poly = p_list, xlim = c(-2, 2), ylim = c(-2, 2), n = 401) +
+  geom_variety(poly = ps, xlim = c(-2, 2), ylim = c(-2, 2), n = 401) +
   coord_equal()
 
 }
