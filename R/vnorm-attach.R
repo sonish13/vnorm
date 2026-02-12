@@ -1,8 +1,11 @@
 .onLoad <- function(libname, pkgname) {
+
   options(cmdstanr_no_ver_check = TRUE)
+
 }
 
 .onAttach <- function(libname, pkgname) {
+
   suppressPackageStartupMessages({
 
     if (requireNamespace("instantiate", quietly = TRUE)) {
@@ -23,4 +26,5 @@
       }
     }
   })
+
 }
