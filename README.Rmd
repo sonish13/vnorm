@@ -11,9 +11,6 @@ knitr::opts_chunk$set(
   fig.path = "man/figures/README-",
   out.width = "100%"
 )
-library(mpoly)
-library(stringr)
-library(cmdstanr)
 ```
 
 # vnorm
@@ -24,27 +21,28 @@ The goal of vnorm is to sample from variety normal distributions. For faster com
 
 Generate samples for the variety normal distribution with mean equal to `poly` and "standard deviation" equal to `sd`.
 
-For a polynomial $x^2 + y^2 -1$, we can sample using `rvnorm`
+For a polynomial $x^2 + y^2 - 1$, we can sample using `rvnorm()`
 
 ```{r}
 library("vnorm")
 poly <- mp("x^2 + y^2 -1")
 samps <- rvnorm(2000, poly, sd = .1)
+
 head(samps)
+
 str(samps)
 ```
 
 Let's plot this with ggplot:
 
 ```{r}
-library(ggplot2)
-samps |> 
-  ggplot(aes(x = x , y = y)) +
+library("ggplot2")
+ggplot(samps, aes(x = x , y = y)) +
   geom_point() +
   coord_equal()
 ```
 
-We can use pre-compiled stan models for polynomials with degree upto 3 and polynomial with upto 3 indeterminates. This helps avoid compiling stan models. 
+We can use pre-compiled stan models for polynomials with degree upto 3 and polynomial with up to 3 indeterminates. This helps avoid compiling stan models. 
 
 ```{r}
 poly <- mp("x^2 + y^2 + z^2 - 1")
@@ -72,18 +70,17 @@ head(samps)
 `vnorm` has `geom_variety` which is ggplot2 compliant in order to plot 1d varieties. We can plot varieties for single(mpoly object) or multiple(mpolyList object) polynomails `geom_variety()`.
 
 ```{r}
-poly <- mp("y - x^2")
 ggplot() +
- geom_variety(poly = poly) +
+ geom_variety(poly = mp("y - x^2")) +
  coord_equal()
 ```
 
 ```{r}
-p1 <- mp("x^2 + y^2 - 1")
-p2 <- mp("y - x")
-poly <- mpolyList(p1, p2)
 ggplot() +
-  geom_variety(poly = poly , xlim = c(-2, 2), ylim = c(-2, 2)) +
+  geom_variety(
+    poly = mp(c("x^2 + y^2 - 1", "y - x")) ,
+    xlim = c(-2, 2), ylim = c(-2, 2)
+  ) +
   coord_equal()
 ```
 
