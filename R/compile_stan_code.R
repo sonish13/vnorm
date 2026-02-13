@@ -46,14 +46,14 @@ compile_stan_code <- function(poly, custom_stan_code = FALSE, w = FALSE, homo = 
 
   if (!exists("compiled_stan_info", envir = .GlobalEnv)) {
     assign("compiled_stan_info", new_row, envir = .GlobalEnv)
-    message(sprintf("Created registry; registered '%s'", model_name))
+    # message(sprintf("Created registry; registered '%s'", model_name))
   } else {
     compiled_stan_info <- get("compiled_stan_info", envir = .GlobalEnv)
     existing_idx <- which(compiled_stan_info$name == model_name)
 
     if (length(existing_idx) == 0L) {
       compiled_stan_info <- rbind(compiled_stan_info, new_row)
-      message(sprintf("Registered '%s'", model_name))
+      # message(sprintf("Registered '%s'", model_name))
     } else {
       old_path <- compiled_stan_info$path[existing_idx[1]]
       compiled_stan_info$path[existing_idx[1]] <- model_path
@@ -61,7 +61,7 @@ compile_stan_code <- function(poly, custom_stan_code = FALSE, w = FALSE, homo = 
         compiled_stan_info <- compiled_stan_info[-existing_idx[-1], , drop = FALSE]
       }
       if (!identical(old_path, model_path)) {
-        message(sprintf("Refreshed path for '%s'", model_name))
+        # message(sprintf("Refreshed path for '%s'", model_name))
       }
     }
 
