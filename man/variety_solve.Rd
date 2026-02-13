@@ -41,9 +41,10 @@ If \code{stanfit = TRUE}, a list with \code{stanfit} (Stan fit) and \code{result
 }
 \description{
 Estimates the solution of a zero-dimensional variety by sampling with
-\code{\link[=rvnorm]{rvnorm()}} and averaging the draws. For well-behaved varieties, this method works reliably. When multiple
-isolated components exist, the sampler may favor some over others, and the
-posterior mean may fall between true solutions.
+\code{\link[=rvnorm]{rvnorm()}} and averaging the draws. For well-behaved varieties, this method
+works reliably. When multiple isolated components exist, the sampler may
+favor some over others, and the posterior mean may fall between true
+solutions.
 }
 \examples{
 library(mpoly)
