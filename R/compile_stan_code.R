@@ -1,25 +1,37 @@
 #' Compile Stan model for user-defined polynomials
 #'
-#' This function helps to avoid recompiling for polynomials
-#' with the same indeterminate but different coefficients.
+#' This function helps to avoid recompiling for polynomials with the same
+#' indeterminate but different coefficients.
 #'
 #' @param poly An mpoly object.
-#' @param custom_stan_code If `TRUE`, a custom model is compiled even if
-#'   the general case of the polynomial is already included during package installation.
-#'   Defaults to `FALSE`.
-#' @param w A named list of box constraints for vectors to be passed to Stan. See
-#'   [rvnorm()] examples. Defaults to `FALSE`.
+#' @param custom_stan_code If `TRUE`, a custom model is compiled even if the
+#'   general case of the polynomial is already included during package
+#'   installation. Defaults to `FALSE`.
+#' @param w A named list of box constraints for vectors to be passed to Stan.
+#'   See [rvnorm()] examples. Defaults to `FALSE`.
 #' @param homo If `TRUE`, the sampling is done from a homoskedastic variety
 #'   normal distribution. Defaults to `TRUE`.
 #'
-#' This function creates a temporary Stan model for the kind of polynomial the user is
-#' interested in. It also creates a variable `compiled_stan_info` in the global
-#' environment for compiled Stan models that is needed to run `rvnorm` using user-defined Stan codes.
+#'   This function creates a temporary Stan model for the kind of polynomial the
+#'   user is interested in. It also creates a variable `compiled_stan_info` in
+#'   the global environment for compiled Stan models that is needed to run
+#'   `rvnorm` using user-defined Stan codes.
 #'
 #' @export
+#' @examples
+#'
+#' # compile a model that looks like b0 + bx6 x^6 + by6 y^6 for later input
+#' #
+#' p <- mp("x^6 + y^6 - 1") # this is the template polynomial not pre-compiled
+#' samps <- rvnorm(1000, p, sd = .05)
+#' head(samps)
+#' compile_stan_code(p) # allows to change coefficients
+#' p <- mp("x^6 + 8 y^6 - 1")
+#' rvnorm(1e4, p, .05, user_compiled = TRUE)
+#'
+#'
 compile_stan_code <- function(poly, custom_stan_code = FALSE, w = FALSE, homo = TRUE) {
-  if (is.mpolyList(poly)) stop("Cannot compile model for an mpolyList object")
-  if (!is.mpoly(poly)) stop("`poly` should be an mpoly object.")
+  if (!(is.mpoly(poly) | is.mpolyList(poly))) stop("`poly` should be an mpoly or mpolyList object.")
 
   if (!custom_stan_code & is.mpoly(poly)) {
     if (length(mpoly::vars(poly)) < 4 & base::max(mpoly::totaldeg(poly)) < 4) {
@@ -31,22 +43,34 @@ compile_stan_code <- function(poly, custom_stan_code = FALSE, w = FALSE, homo = 
   stan_code <- get_custom_stan_code(poly = poly, w = w, homo = homo)
   model_name <- generate_model_name(poly = poly, w = w, homo = homo)
   model_path <- cmdstanr::write_stan_file(stan_code, dir = tempdir())
-  compiled_stan_info <- data.frame("name" = model_name, "path" = model_path)
+  new_row <- data.frame("name" = model_name, "path" = model_path)
 
   if (!exists("compiled_stan_info", envir = .GlobalEnv)) {
-    assign("compiled_stan_info", compiled_stan_info, envir = .GlobalEnv)
-    message("compiled_stan_info variable created in global environment")
+    assign("compiled_stan_info", new_row, envir = .GlobalEnv)
+    message(sprintf("Created registry; registered '%s'", model_name))
   } else {
     compiled_stan_info <- get("compiled_stan_info", envir = .GlobalEnv)
-    new_row <- data.frame("name" = model_name, "path" = model_path)
-    compiled_stan_info <- rbind(compiled_stan_info, new_row)
-    compiled_stan_info <- dplyr::distinct(compiled_stan_info)
+    existing_idx <- which(compiled_stan_info$name == model_name)
+
+    if (length(existing_idx) == 0L) {
+      compiled_stan_info <- rbind(compiled_stan_info, new_row)
+      message(sprintf("Registered '%s'", model_name))
+    } else {
+      old_path <- compiled_stan_info$path[existing_idx[1]]
+      compiled_stan_info$path[existing_idx[1]] <- model_path
+      if (length(existing_idx) > 1L) {
+        compiled_stan_info <- compiled_stan_info[-existing_idx[-1], , drop = FALSE]
+      }
+      if (!identical(old_path, model_path)) {
+        message(sprintf("Refreshed path for '%s'", model_name))
+      }
+    }
+
     assign("compiled_stan_info", compiled_stan_info, envir = .GlobalEnv)
-    message("compiled_stan_info variable updated in global environment")
   }
 
   cmdstan_model(model_path)
-  return("Model Compiled")
+
 }
 
 get_custom_stan_code <- function(poly, w = FALSE, homo = TRUE) {
@@ -202,7 +226,7 @@ get_custom_stan_code <- function(poly, w = FALSE, homo = TRUE) {
 
     # Model block
     gbar_string <- if (n_vars == n_eqs) "J \\ g" else if (n_vars > n_eqs) "J' * ((J*J') \\ g)" else "(J'*J) \\ (J'*g)"
-    model_block <- paste0("\nmodel {\ntarget += normal_lpdf(0.00 |", gbar_string, ", si);\n}")
+    model_block <- paste0("\nmodel {\n  target += normal_lpdf(0.00 |", gbar_string, ", si);\n}")
     stan_code <- paste0(data_block, params_block, trans_block, model_block)
   }else{
     stop("`poly` should either be an mpoly, or an mpolyList object.")
