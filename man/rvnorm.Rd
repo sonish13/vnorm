@@ -116,8 +116,8 @@ options("mc.cores" = parallel::detectCores() - 1)
 ########################################
 
 # single polynomial
-p <- mpoly::mp("x^2 + y^2 - 1")
-samps <- rvnorm(1000, p, sd = .05, w = 2)
+p <- mp("x^2 + y^2 - 1")
+samps <- rvnorm(1000, p, sd = .05)
 head(samps)
 str(samps)
 plot(samps, asp = 1)

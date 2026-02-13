@@ -27,8 +27,8 @@ Generate samples for the variety normal distribution with mean equal to `poly` a
 For a polynomial $x^2 + y^2 -1$, we can sample using `rvnorm`
 
 ```{r}
-library(vnorm)
-poly <- mpoly::mp("x^2 + y^2 -1")
+library("vnorm")
+poly <- mp("x^2 + y^2 -1")
 samps <- rvnorm(2000, poly, sd = .1)
 head(samps)
 str(samps)
@@ -47,7 +47,7 @@ samps |>
 We can use pre-compiled stan models for polynomials with degree upto 3 and polynomial with upto 3 indeterminates. This helps avoid compiling stan models. 
 
 ```{r}
-poly <- mpoly::mp("x^2 + y^2 + z^2 - 1")
+poly <- mp("x^2 + y^2 + z^2 - 1")
 samps <- rvnorm(2000, poly, sd = 0.1, pre_compiled = TRUE)
 head(samps)
 ```
@@ -55,14 +55,14 @@ head(samps)
 We also want the user to be able to pre-compile models. This can be done with `compile_stan_code`. This helps avoid re-compiling stan model for similar polynomial with different coefficients.
 
 ```{r}
-poly <- mpoly::mp("x^4 + y^4 - 1")
+poly <- mp("x^4 + y^4 - 1")
 compile_stan_code(poly = poly)
 ```
 
 Here we have compiled stan model for polynomial of the type $ax^4 + by^4 -1 $. Now, we can use the pre-compiled model with rvnorm for similar polynomial. The `user_compiled` argument is what we will use for this.
 
 ```{r}
-poly <- mpoly::mp("2 x^4 + 3 y^4 - 1")
+poly <- mp("2 x^4 + 3 y^4 - 1")
 samps <- rvnorm(1000, poly = poly, sd = 0.1, user_compiled = TRUE)
 head(samps)
 ```
@@ -72,7 +72,7 @@ head(samps)
 `vnorm` has `geom_variety` which is ggplot2 compliant in order to plot 1d varieties. We can plot varieties for single(mpoly object) or multiple(mpolyList object) polynomails `geom_variety()`.
 
 ```{r}
-poly <- mpoly::mp("y - x^2")
+poly <- mp("y - x^2")
 ggplot() +
  geom_variety(poly = poly) +
  coord_equal()

@@ -21,8 +21,7 @@
 #' @examples
 #'
 #' # compile a model that looks like b0 + bx6 x^6 + by6 y^6 for later input
-#' #
-#' p <- mp("x^6 + y^6 - 1") # this is the template polynomial not pre-compiled
+#' p <- mp("x^6 + y^6 - 1") # template polynomial
 #' samps <- rvnorm(1000, p, sd = .05)
 #' head(samps)
 #' compile_stan_code(p) # allows to change coefficients

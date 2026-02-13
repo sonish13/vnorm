@@ -141,7 +141,7 @@ library("ggplot2")
 ########################################
 
 x0 <- c(1,1)
-p <- mpoly::mp("x^2 + y^2 - 1")
+p <- mp("x^2 + y^2 - 1")
 (x0_proj <- project_onto_variety(x0, p))
 
 as.function(p)(x0_proj)
@@ -168,7 +168,7 @@ project_onto_variety_gradient_descent(x0, p, method = "line")
 
 # number of variables > 2
 x0 <- c(1,1,1)
-p <- mpoly::mp("x^2 + y^2 + z^2 - 1")
+p <- mp("x^2 + y^2 + z^2 - 1")
 1 / sqrt(3)
 project_onto_variety(x0, p)
 project_onto_variety_lagrange(x0, p)
@@ -181,7 +181,7 @@ project_onto_variety_gradient_descent(x0, p, method = "line")
 ########################################
 
 x0 <- c(1,1)
-p <- mpoly::mp("x^2 + y^2 - 1")
+p <- mp("x^2 + y^2 - 1")
 project_onto_variety(x0, p, message = TRUE)
 project_onto_variety(x0, p, dt = .25, message = TRUE)
 
@@ -203,7 +203,7 @@ project_onto_variety(x0, p, gfunc = gfunc, dgfunc = dgfunc, ddgfunc = ddgfunc)
 ########################################
 
 x0 <- c(1, 1)
-p <- mpoly::mp("x^2 + y^2 - 1")
+p <- mp("x^2 + y^2 - 1")
 
 # Using adaptive time stepping (default)
 x0_proj_adaptive <- project_onto_variety(x0, p, message = TRUE)
@@ -244,7 +244,7 @@ x0_proj_custom_adaptive <- project_onto_variety(
 ########################################
 
 x0 <- c(1,1,1)
-p <- mpoly::mp("x^2 + y^2 + z^2 - 1")
+p <- mp("x^2 + y^2 + z^2 - 1")
 project_onto_variety(x0, p) # adaptive by default
 project_onto_variety(x0, p, adaptive = FALSE, dt = 0.01) # fixed step size
 
@@ -252,14 +252,14 @@ project_onto_variety(x0, p, adaptive = FALSE, dt = 0.01) # fixed step size
 ########################################
 
 x0 <- c(1,1)
-p <- mpoly::mp("(x^2 + y^2)^2 - 2 (x^2 - y^2)")
+p <- mp("(x^2 + y^2)^2 - 2 (x^2 - y^2)")
 (x0_proj <- project_onto_variety(x0, p))
 
 
 cbind(t(x0), t(x0_proj)) |>
   as.data.frame() |> tibble::as_tibble() |>
   purrr::set_names(c("x", "y", "x_proj", "y_proj")) -> df
-p <- mpoly::mp("(x^2 + y^2)^2 - 2 (x^2 - y^2)")
+p <- mp("(x^2 + y^2)^2 - 2 (x^2 - y^2)")
 ggplot() +
   geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2)) +
   coord_equal() +
@@ -279,7 +279,7 @@ library("dplyr")
 
 (p <- mpoly::lissajous(5, 5, 0, 0))
 # (p <- mpoly::lissajous(9, 9, 0, 0))
-# p <- mpoly::mp("x^2 + y^2 - 1")
+# p <- mp("x^2 + y^2 - 1")
 ggplot() +
   geom_variety(poly = p, n = 251) +
  coord_equal() +

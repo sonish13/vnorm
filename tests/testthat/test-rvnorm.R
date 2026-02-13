@@ -1,25 +1,28 @@
-test_that("rvnorm is consistent", {
+
+
+
+test_that("rvnorm() respects RNG seeds", {
   skip_on_cran()
   set.seed(123)
-  samps1 <- rvnorm(1000, mpoly::mp("x^2 + y^2 -1"), sd = 0.1)
+  samps1 <- rvnorm(1000, mp("x^2 + y^2 -1"), sd = 0.1)
   set.seed(123)
-  samps2 <- rvnorm(1000, mpoly::mp("x^2 + y^2 -1"), sd = 0.1)
+  samps2 <- rvnorm(1000, mp("x^2 + y^2 -1"), sd = 0.1)
   expect_equal(samps1, samps2)
 })
 
-test_that("rvnorm has proper output", {
+test_that("rvnorm() has stated output", {
   skip_on_cran()
-  samps1 <- rvnorm(1000, mpoly::mp("x^2 + y^2 -1"), sd = 0.1)
+  samps1 <- rvnorm(1000, mp("x^2 + y^2 -1"), sd = 0.1)
   expect_true(is.data.frame(samps1))
-  samps2 <- rvnorm(1000, mpoly::mp("x^2 + y^2 -1"), sd = 0.1, output = "tibble")
+  samps2 <- rvnorm(1000, mp("x^2 + y^2 -1"), sd = 0.1, output = "tibble")
   expect_true(tibble::is_tibble(samps2))
-  samps3 <- rvnorm(1000, mpoly::mp("x^2 + y^2 -1"), sd = 0.1, output = "stanfit")
+  samps3 <- rvnorm(1000, mp("x^2 + y^2 -1"), sd = 0.1, output = "stanfit")
   expect_true(inherits(samps3, "CmdStanMCMC"))
 })
 
-test_that("rvnorm test for code only portion",{
+test_that("rvnorm(): code_only = TRUE works",{
   skip_on_cran()
-  stan_code <- rvnorm(1000, mpoly::mp("x^2 + y^2 -1"), sd = 0.1, w = 5, code_only = T)
+  stan_code <- rvnorm(1000, mp("x^2 + y^2 -1"), sd = 0.1, w = 5, code_only = TRUE)
   expected_result <- "data {
   real<lower=0> si;
 }
@@ -40,7 +43,7 @@ model {
   expect_equal(stan_code, expected_result)
 })
 
-test_that("rvnorm works with pre_compiled option TRUE", {
+test_that("rvnorm(): pre_compiled == TRUE works", {
   poly <- mp("x^2 + y^2 - 1")
 
   # With pre_compiled = TRUE
@@ -49,7 +52,7 @@ test_that("rvnorm works with pre_compiled option TRUE", {
 
 })
 
-test_that("rvnorm correctly replaces variables in Stan output if poly has non-standard vars", {
+test_that("rvnorm() correctly replaces variables in Stan output if poly has non-standard vars", {
   poly <- mp("a^2 + b^2 - 1")
   result <- rvnorm(n = 10, poly = poly, sd = 0.05)
 
@@ -57,9 +60,11 @@ test_that("rvnorm correctly replaces variables in Stan output if poly has non-st
   expect_true(all(mpoly::vars(poly) %in% colnames(result)))
 })
 
-test_that("rvnorm throws error for invalid poly input", {
-  expect_error(rvnorm(n = 10, poly = 123, sd = 0.05),
-               "`poly` should be either a character vector, mpoly, or mpolyList.")
+test_that("rvnorm() errors for invalid poly input", {
+  expect_error(
+    rvnorm(n = 10, poly = 123, sd = 0.05),
+    "`poly` should be either a character vector, mpoly, or mpolyList."
+  )
 })
 
 

@@ -60,8 +60,8 @@
 #' ########################################
 #'
 #' # single polynomial
-#' p <- mpoly::mp("x^2 + y^2 - 1")
-#' samps <- rvnorm(1000, p, sd = .05, w = 2)
+#' p <- mp("x^2 + y^2 - 1")
+#' samps <- rvnorm(1000, p, sd = .05)
 #' head(samps)
 #' str(samps)
 #' plot(samps, asp = 1)
@@ -311,7 +311,7 @@ rvnorm <- function(n, poly, sd, output = "simple", Sigma = NULL, rejection = FAL
     return(sample)
   }
   output_needs_rewriting <- FALSE
-  if (is.character(poly)) poly <- mpoly::mp(poly)
+  if (is.character(poly)) poly <- mp(poly)
   if (is.mpoly(poly)) {
     n_eqs <- 1L
   } else if (is.mpolyList(poly)) {
