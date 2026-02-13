@@ -37,29 +37,28 @@ This function supports both the heteroskedastic and homoskedastic cases.
 library(mpoly)
 
 ## Univariate usage
-poly_uni <- mp("x")
-pdvnorm(c(-1, 0, 1), poly_uni, sigma = 1)
-pdvnorm(0, poly_uni, sigma = 2, log = TRUE)
+p <- mp("x")
+pdvnorm(c(-1, 0, 1), p, sigma = 1)
+pdvnorm(0, p, sigma = 2, log = TRUE)
 
 ## Multivariate (square) system: two polynomials in two variables
-poly_sq <- mpolyList(mp("x"), mp("y"))
+ps <- mp(c("x", "y"))
 X <- rbind(c(0, 0), c(1, 2), c(-1, 3))
 
 ## Different sigma forms
-pdvnorm(X, poly_sq, sigma = 1,        homo = TRUE)
-pdvnorm(X, poly_sq, sigma = c(1, 2),  homo = TRUE)
-pdvnorm(X, poly_sq, sigma = diag(c(1, 4)), homo = TRUE)
+pdvnorm(X, ps, sigma = 1)
+pdvnorm(X, ps, sigma = c(1, 2))
+pdvnorm(X, ps, sigma = diag(c(1, 4)))
 
 ## Multivariate (underdetermined): one polynomial in two variables
-poly_under <- mpolyList(mp("x + y"))
-X_under <- rbind(c(1, 1), c(2, -1), c(0, 3))
-pdvnorm(X_under, poly_under, sigma = diag(2),   homo = TRUE)
-pdvnorm(X_under, poly_under, sigma = 1,         homo = FALSE)
+p <- mp("x + y")
+X <- rbind(c(1, 1), c(2, -1), c(0, 3))
+pdvnorm(X, p, sigma = 1)
 
 ## Multivariate (overdetermined): three polynomials in two variables
-poly_over <- mpolyList(mp("x"), mp("y"), mp("x + y"))
-X_over <- rbind(c(1, 2), c(0, -1), c(2, 2))
-pdvnorm(X_over, poly_over, sigma = diag(2),    homo = TRUE)
-pdvnorm(X_over, poly_over, sigma = c(1, 2, 3), homo = FALSE)
+p <- mp(c("x", "y", "x + y"))
+X <- rbind(c(1, 2), c(0, -1), c(2, 2))
+pdvnorm(X, p, sigma = diag(2),    homo = TRUE)
+pdvnorm(X, p, sigma = c(1, 2, 3), homo = FALSE)
 
 }
