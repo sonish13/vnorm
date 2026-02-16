@@ -6,7 +6,7 @@
 #' favor some over others, and the posterior mean may fall between true
 #' solutions.
 #'
-#' @param polylist An `mpolyList` or `mpoly` object containing the polynomials.
+#' @param poly An `mpolyList` or `mpoly` object containing the polynomials.
 #' @param sd Numeric scalar, standard deviation used by [rvnorm()] (default:
 #'   `0.01`).
 #' @param n Integer, number of draws used for averaging (default: `1e5`).

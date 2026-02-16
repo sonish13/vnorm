@@ -17,6 +17,8 @@ variety_solve(
 )
 }
 \arguments{
+\item{poly}{An \code{mpolyList} or \code{mpoly} object containing the polynomials.}
+
 \item{sd}{Numeric scalar, standard deviation used by \code{\link[=rvnorm]{rvnorm()}} (default:
 \code{0.01}).}
 
@@ -37,8 +39,6 @@ variety_solve(
 (default: \code{FALSE}).}
 
 \item{...}{Additional arguments passed to \code{\link[=rvnorm]{rvnorm()}}.}
-
-\item{polylist}{An \code{mpolyList} or \code{mpoly} object containing the polynomials.}
 }
 \value{
 If \code{stanfit = FALSE}, a named numeric vector of rounded posterior
