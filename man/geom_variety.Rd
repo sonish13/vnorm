@@ -60,6 +60,9 @@ the plot data. The return value must be a \code{data.frame}, and
 will be used as the layer data. A \code{function} can be created
 from a \code{formula} (e.g. \code{~ head(.x, 10)}).}
 
+\item{geom}{The geometric object to use display data, defaults to
+\code{GeomVariety}.}
+
 \item{position}{A position adjustment to use on the data for this layer. This
 can be used in various ways, including to prevent overplotting and
 improving the display. The \code{position} argument accepts the following:
@@ -101,6 +104,22 @@ lists which parameters it can accept.
 \link[ggplot2:draw_key]{key glyphs}, to change the display of the layer in the legend.
 }}
 
+\item{poly}{An \code{mpoly} or \code{mpolyList} object describing the implicit
+polynomial(s) to plot.}
+
+\item{n}{Number of grid points used in both x and y directions when \code{nx} and
+\code{ny} are not supplied.}
+
+\item{nx, ny}{Number of grid points in the x and y directions.}
+
+\item{xlim, ylim}{Length-2 numeric vectors giving plotting limits.}
+
+\item{shift}{A numeric constant added to the evaluated surface before
+contouring, i.e. the plotted level set is \code{poly + shift = 0}.
+Use this when the polynomial does not cross zero on the plotting grid.
+If \code{shift = 0} and all values have one sign, \code{geom_variety()} prints a
+message suggesting a shift value.}
+
 \item{na.rm}{If \code{FALSE}, the default, missing values are removed with
 a warning. If \code{TRUE}, missing values are silently removed.}
 
@@ -131,10 +150,10 @@ give the stat as \code{"count"}.
 }}
 }
 \description{
-Draw a variety using the biroot and ggplot2.
+Draw a variety using ggplot2.
 }
 \section{Aesthetics}{
- \code{geom_variety()} understands the following aesthetics
+ \code{\link[=geom_variety]{geom_variety()}} understands the following aesthetics
 (required aesthetics are in bold):
 \itemize{
 \item \strong{x}
@@ -158,33 +177,66 @@ by \code{probs} argument.}
 
 \examples{
 
-library(ggplot2)
-library(mpoly)
+library("ggplot2")
 
-# 1) Lemniscate of Bernoulli (∞-shaped)
-p1 <- mp("(x^2 + y^2)^2 - 2 x^2")
+# 1) Ellipse
+p1 <- mp("x^2 + 4 y^2 - 1")
 ggplot() +
-  geom_variety(poly = p1, xlim = c(-2, 2), ylim = c(-2, 2), n = 401) +
+  geom_variety(poly = p1, xlim = c(-2, 2), ylim = c(-2, 2)) +
   coord_equal()
 
-# 2) Folium of Descartes (loop with an asymptote)
-p2 <- mp("x^3 + y^3 - 3 x y")
+# 3) Folium of Descartes (loop with an asymptote) - variety with singularity
+p3 <- mp("x^3 + y^3 - 3 x y")
 ggplot() +
-  geom_variety(poly = p2, xlim = c(-2, 3), ylim = c(-2, 3), n = 401) +
+  geom_variety(poly = p3, xlim = c(-2, 3), ylim = c(-2, 3)) +
   coord_equal()
 
-# 3) "Heart" curve (classic implicit heart)
-p3 <- mp("(x^2 + y^2 - 1)^3 - x^2 y^3")
+# 4) "Heart" curve (classic implicit heart)
+p4 <- mp("(x^2 + y^2 - 1)^3 - x^2 y^3")
 ggplot() +
-  geom_variety(poly = p3, xlim = c(-2, 2), ylim = c(-2, 2), n = 401) +
-  coord_equal()
+  geom_variety(poly = p4, xlim = c(-2, 2), ylim = c(-2, 2)) +
+  coord_equal() +
+  theme(legend.position = "top")
 
-# 4) A 2-polynomial system (mpolyList): circle ∩ hyperbola-like branch overlay
+# 5) A 2-polynomial system (mpolyList): circle ∩ hyperbola-like branch overlay
 #    Useful example showing multiple contours from one call.
 ps <- mp( c( "x^2 + y^2 - 1", "x y - 0.25" ) )
 ggplot() +
-  geom_variety(poly = ps, xlim = c(-2, 2), ylim = c(-2, 2), n = 401) +
+  geom_variety(poly = ps, xlim = c(-2, 2), ylim = c(-2, 2)) +
   coord_equal()
+
+# 5) Using shift for squared polynomials (same variety, no zero crossing on grid)
+library(mpoly)
+p_shift <- mp("x^2 + y^2 - 1")^2
+ggplot() +
+  geom_variety(poly = p_shift, xlim = c(-2, 2), ylim = c(-2, 2)) +
+  coord_equal()
+
+
+
+## known issues
+########################################
+
+# 1) singularities Lemniscate of Bernoulli (∞-shaped)
+p <- mp("(x^2 + y^2)^2 - 2 x^2")
+ggplot() +
+  geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2)) +
+  coord_equal()
+
+# 2) non-zero crossing components
+p <- mp("x^2 + y^2 - 1")
+ggplot() +
+  geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2)) +
+  coord_equal()
+
+ggplot() +
+  geom_variety(poly = p^2, xlim = c(-2, 2), ylim = c(-2, 2)) +
+  coord_equal()
+
+ggplot() +
+  geom_variety(poly = p^2, xlim = c(-2, 2), ylim = c(-2, 2), shift = -0.00101684) +
+  coord_equal()
+
 
 }
 \seealso{

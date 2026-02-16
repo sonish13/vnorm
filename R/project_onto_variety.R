@@ -36,8 +36,6 @@
 #' @param bias A multiple to add to the identity to make the Jacobian
 #'   invertible.
 #' @param adaptive Defaults to \code{TRUE}. Whether to use adaptive stepsizes or not.
-#' @param t_start,t_end Start and end times for homotopy integration (default:
-#'    \code{1} to \code{0}).
 #' @param dt_min,dt_max Minimum and maximum allowed step sizes during adaptive
 #'    integration (default: \code{1e-6} and \code{0.1}).
 #' @param error_tol Tolerance used for adaptive step size control
@@ -55,6 +53,7 @@
 #'
 #' library("ggplot2")
 #'
+#' \dontrun{
 #'
 #' ## basic usage
 #' ########################################
@@ -315,6 +314,7 @@
 #'
 #'
 #'
+#' }
 
 
 

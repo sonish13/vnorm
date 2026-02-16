@@ -31,6 +31,8 @@ rejection_sampler(
 see examples. A If a single number, a box window (-w,w) is applied to all
 variables.}
 
+\item{output}{Either \code{"simple"} or \code{"tibble"} output format.}
+
 \item{dist}{either \code{"norm"} (normal) or \code{"unif"} (uniform).}
 
 \item{homo}{If \code{TRUE}, the sampling is done from homoskedastic variety

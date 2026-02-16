@@ -23,29 +23,32 @@ isoband_z_matrix <- function(data) {
 }
 
 xyz_to_isolines <- function(data, breaks) {
-  isoband::isolines(
-    x = sort(unique0(data$x)),
-    y = sort(unique0(data$y)),
-    z = isoband_z_matrix(data),
+  x <- sort(unique0(data$x))
+  y <- sort(unique0(data$y))
+  z <- isoband_z_matrix(data)
+
+  # contourLines expects rows to index x and columns to index y.
+  grDevices::contourLines(
+    x = x,
+    y = y,
+    z = t(z),
     levels = breaks
   )
 }
 
 iso_to_path <- function(iso, group = 1) {
-  lengths <- vapply(iso, function(x) length(x$x), integer(1))
-
-  if (all(lengths == 0)) {
-    warning("Zero contours were generated")
+  if (length(iso) == 0) {
+    message("Zero contours were generated")
     return(tibble0())
   }
 
-  levels <- names(iso)
+  lengths <- vapply(iso, function(x) length(x$x), integer(1))
+  levels <- vapply(iso, function(x) as.character(x$level), character(1))
   xs <- unlist(lapply(iso, "[[", "x"), use.names = FALSE)
   ys <- unlist(lapply(iso, "[[", "y"), use.names = FALSE)
-  ids <- unlist(lapply(iso, "[[", "id"), use.names = FALSE)
   item_id <- rep(seq_along(iso), lengths)
 
-  groups <- paste(group, sprintf("%03d", item_id), sprintf("%03d", ids), sep = "-")
+  groups <- paste(group, sprintf("%03d", item_id), sep = "-")
   groups <- factor(groups)
 
   tibble0(

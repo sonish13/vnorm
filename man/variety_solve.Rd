@@ -5,11 +5,11 @@
 \title{Solve a Zero-Dimensional Variety}
 \usage{
 variety_solve(
-  polylist,
+  poly,
   sd = 0.01,
   n = 1e+05,
   sig_digit = 3,
-  vars = mpoly::vars(polylist),
+  vars = mpoly::vars(poly),
   inc_warmup = FALSE,
   show_message = FALSE,
   stanfit = FALSE,
@@ -17,27 +17,33 @@ variety_solve(
 )
 }
 \arguments{
-\item{polylist}{An \code{mpolyList} or \code{mpoly} object containing the polynomials.}
-
-\item{sd}{Numeric scalar, standard deviation used by \code{\link[=rvnorm]{rvnorm()}} (default: \code{0.01}).}
+\item{sd}{Numeric scalar, standard deviation used by \code{\link[=rvnorm]{rvnorm()}} (default:
+\code{0.01}).}
 
 \item{n}{Integer, number of draws used for averaging (default: \code{1e5}).}
 
-\item{sig_digit}{Integer, significant digits to round the solution (default: \code{3}).}
+\item{sig_digit}{Integer, significant digits to round the solution (default:
+\code{3}).}
 
-\item{vars}{Character vector of variable names to average; defaults to \code{mpoly::vars(polylist)}.}
+\item{vars}{Character vector of variable names to average; defaults to
+\code{mpoly::vars(polylist)}.}
 
-\item{inc_warmup}{Logical; include warmup draws when extracting (default: \code{FALSE}).}
+\item{inc_warmup}{Logical; include warmup draws when extracting (default:
+\code{FALSE}).}
 
 \item{show_message}{Logical; show Stan sampling messages (default: \code{FALSE}).}
 
-\item{stanfit}{Logical; if \code{TRUE}, return both the Stan fit and the solution (default: \code{FALSE}).}
+\item{stanfit}{Logical; if \code{TRUE}, return both the Stan fit and the solution
+(default: \code{FALSE}).}
 
 \item{...}{Additional arguments passed to \code{\link[=rvnorm]{rvnorm()}}.}
+
+\item{polylist}{An \code{mpolyList} or \code{mpoly} object containing the polynomials.}
 }
 \value{
-If \code{stanfit = FALSE}, a named numeric vector of rounded posterior means.
-If \code{stanfit = TRUE}, a list with \code{stanfit} (Stan fit) and \code{results} (the vector).
+If \code{stanfit = FALSE}, a named numeric vector of rounded posterior
+means. If \code{stanfit = TRUE}, a list with \code{stanfit} (Stan fit) and \code{results}
+(the vector).
 }
 \description{
 Estimates the solution of a zero-dimensional variety by sampling with
@@ -49,12 +55,13 @@ solutions.
 \examples{
 p <- mp(c("x^2 - y", "x^2 + y"))
 
-# Posterior-mean solution only
+
+# posterior-mean solution only
 variety_solve(p, n = 2e4, sd = 0.01, sig_digit = 3)
 
-# Return Stan fit and solution
-variety_solve(p, n = 1e4, stanfit = TRUE)
 
+# return Stan fit and solution
+variety_solve(p, n = 1e4, stanfit = TRUE)
 
 
 }

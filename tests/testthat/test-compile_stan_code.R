@@ -63,16 +63,14 @@ test_that("Compiles model correctly for an mpolyList object", {
   )
 })
 
-test_that("Creates global environment variable `compiled_stan_info`", {
-  p <- mp("x^2 + y^2 - 1")
-  compile_stan_code(p, custom_stan_code = TRUE, w = FALSE, homo = TRUE) |>
-    suppressMessages()
-
-  # check compiled_stan_info is created and the right kind of object
-  expect_true( exists("compiled_stan_info", envir = .GlobalEnv) )
-  compiled_info <- get("compiled_stan_info", envir = .GlobalEnv)
-  expect_true( is.data.frame(compiled_info) )
-  expect_equal( names(compiled_info), c("name", "path") )
+test_that("Creates or updates internal compiled_stan_info cache", {
+  poly <- mp("x^2 + y^2 - 1")
+  compile_stan_code(poly, custom_stan_code = TRUE, w = FALSE, homo = TRUE)
+  compiled_info <- vnorm:::get_compiled_stan_info()
+  expect_true(is.data.frame(compiled_info))
+  expect_gt(nrow(compiled_info), 0)
+  expect_true("name" %in% names(compiled_info))
+  expect_true("path" %in% names(compiled_info))
 })
 
 test_that("Compiles model with box constraints w", {
@@ -120,4 +118,3 @@ test_that("Compiles model with homoskedastic option", {
     )
   )
 })
-

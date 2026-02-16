@@ -14,18 +14,20 @@
 #'
 #' @param n The number of draws desired from each chain after warmup.
 #' @param poly An mpoly object.
-#' @param sd The "standard deviation" component of the normal kernel. sd = Sigma when Sigma is not NULL.
-#' @param Sigma Full covariance matrix or the diagonal(vector) of the covariance matrix.
+#' @param sd The "standard deviation" component of the normal kernel. sd = Sigma
+#'   when Sigma is specified.
+#' @param Sigma Full "covariance" matrix or a vector specifying the diagonal of
+#'   such a matrix.
 #' @param output \code{"simple"}, \code{"tibble"}, \code{"stanfit"}.
 #' @param rejection If \code{TRUE}, rejection sampling is used.
 #' @param chains The number of chains to run for the random number generation,
-#'   see [stan()].
+#'   see \code{stan()}.
 #' @param cores The number of CPU cores to distribute the chains across, see
-#'   [stan()].
-#' @param warmup Number of warmup iterations in [stan()].
+#'   \code{stan()}.
+#' @param warmup Number of warmup iterations in \code{stan()}.
 #' @param inc_warmup If \code{TRUE}, the MCMC warmup steps are included in the
 #'   output.
-#' @param thin [stan()] \code{thin} parameter.
+#' @param thin \code{stan()} \code{thin} parameter.
 #' @param homo If \code{TRUE}, the sampling is done from homoskedastic variety
 #'  normal distribution.
 #' @param verbose \code{TRUE} or \code{FALSE}; determines level of messaging.
@@ -35,13 +37,13 @@
 #' @param w A named list of box constraints for vectors to be passed to Stan,
 #'   see examples. A If a single number, a box window (-w,w) is applied to all
 #'   variables.
-#' @param refresh The \code{refresh} argument of [stan()], which governs how
+#' @param refresh The \code{refresh} argument of \code{stan()}, which governs how
 #'   much information is provided to the user while sampling.
 #' @param pre_compiled Whether to use pre-compiled stan models or not. Available
 #'   for polynomials with three indeterminates and three degrees. Defaults to
 #'   \code{TRUE}.
 #' @param code_only If \code{TRUE}, will only formulate and return Stan code.
-#' @param ... Additional parameters to pass to [stan()].
+#' @param ... Additional parameters to pass to \code{stan()}.
 #' @param user_compiled If\code{TRUE}, user compiled stan program made using
 #' [compile_stan_code] is used. Defaults to \code{FALSE}
 #' @param show_messages If \code{TRUE}, stan sampler messages are shown.
@@ -49,13 +51,14 @@
 #' @name rvnorm
 #' @return Either (1) matrix whose rows are the individual draws from the
 #'   distribution, (2) a [tbl_df-class] object with the draws along with
-#'   additional information, or (3) an object of class [stanfit-class].
+#'   additional information, or (3) an object of class \code{stanfit}.
 #' @examples
 #'
 #'
 #' library("tidyverse")
 #' options("mc.cores" = parallel::detectCores() - 1)
 #'
+#' \dontrun{
 #' ## basic usage
 #' ########################################
 #'
@@ -80,16 +83,7 @@
 #'
 #' ggplot(samps, aes(x, y)) +
 #'   geom_point(aes(color = factor(.chain))) +
-#'   geom_variety(poly = p) +
-#'   coord_equal()
-#'
-#' ggplot(samps, aes(x, y)) +
-#'   geom_point(aes(color = g)) +
-#'   geom_variety(poly = p) +
-#'   scale_color_gradient2(
-#'     low = "firebrick", high = "steelblue",
-#'     mid = "white", midpoint = 0
-#'   ) +
+#'   geom_variety(poly = p, linewidth = 1) +
 #'   coord_equal()
 #'
 #' ggplot(samps, aes(x, y)) +
@@ -290,16 +284,23 @@
 #'
 #' ggplot(samps_normd, aes(x, y)) +
 #'   geom_bin2d(binwidth = .05*c(1,1)) + coord_equal()
+#' }
 
 
 #' @rdname rvnorm
 #' @export
-rvnorm <- function(n, poly, sd, output = "simple", Sigma = NULL, rejection = FALSE ,chains = 4L, warmup = max(500, floor(n / 2)),
-                   inc_warmup = FALSE, thin = 1L,verbose = FALSE,
-                   cores = min(chains, getOption("mc.cores", 1L)), homo = TRUE,
+rvnorm <- function(n, poly, sd, output = "simple", Sigma, homo = TRUE,
                    w, vars, numerator, denominator, refresh = 0L,
                    code_only = FALSE, pre_compiled = TRUE, user_compiled = FALSE,
-                   show_messages = FALSE, ...) {
+                   show_messages = FALSE, ...,
+                   rejection = FALSE,
+                   chains = 4L,
+                   warmup = max(500, floor(n / 2)),
+                   inc_warmup = FALSE,
+                   thin = 1L,
+                   verbose = FALSE,
+                   cores = min(chains, getOption("mc.cores", 1L))
+                   ) {
 
   # Initialization and checks
   if(rejection) {
@@ -319,7 +320,7 @@ rvnorm <- function(n, poly, sd, output = "simple", Sigma = NULL, rejection = FAL
   } else {
     stop("`poly` should be either a character vector, mpoly, or mpolyList.", call. = FALSE)
   }
-  if(!is.null(Sigma)) sd <- Sigma
+  if( !missing(Sigma) ) sd <- Sigma
   n_vars <- length(mpoly::vars(poly))
   if(length(sd) == 1){
     sd = sd
@@ -343,7 +344,22 @@ rvnorm <- function(n, poly, sd, output = "simple", Sigma = NULL, rejection = FAL
   # Model selection and data preparation
   if (user_compiled) { # incase we want use model that user compiled
     model_name <- generate_model_name(poly = poly, homo = homo, w = !missing(w))
+    compiled_stan_info <- get_compiled_stan_info()
+    if (nrow(compiled_stan_info) == 0) {
+      stop(
+        "No compiled model cache found. Run compile_stan_code() first.",
+        call. = FALSE
+      )
+    }
     model_path <- compiled_stan_info$path[compiled_stan_info$name == model_name]
+    if (length(model_path) == 0) {
+      stop(
+        "Requested compiled model not found in cache. ",
+        "Run compile_stan_code() for this polynomial first.",
+        call. = FALSE
+      )
+    }
+    model_path <- model_path[1]
     model <- cmdstan_model(model_path)
     stan_data <- get_coefficeints_data(poly)
     stan_data <- if (missing(w)) c(stan_data, "si" = sd) else c(stan_data, "w" = w, "si" = sd)
@@ -360,7 +376,7 @@ rvnorm <- function(n, poly, sd, output = "simple", Sigma = NULL, rejection = FAL
     num_of_vars <- length(mpoly::vars(poly))
     stan_file_name <- paste(num_of_vars, deg, if (homo) "vn" else "hvn", sep = "_")
     if (!missing(w)) stan_file_name <- paste(stan_file_name, "w", sep = "_")
-    model <- load_precompiled_vnorm_model(stan_file_name)
+    model <- instantiate::stan_package_model(name = stan_file_name, package = "vnorm")
     stan_data <- make_coefficients_data(poly, num_of_vars, deg)
     stan_data <- if (missing(w)) c(stan_data, "si" = sd) else c(stan_data, "w" = w, "si" = sd)
   } else {
@@ -388,6 +404,7 @@ rvnorm <- function(n, poly, sd, output = "simple", Sigma = NULL, rejection = FAL
 
   if (output == "tibble") {
     df <- tibble::as_tibble(samps$draws(format = "df", inc_warmup = inc_warmup))
+    df <- samps$draws(format = "df", inc_warmup = inc_warmup)
     df <- df[(nrow(df) - n + 1):nrow(df), ]
     row.names(df) <- NULL
     df <- cbind(df[, -1], df[, 1])  # Move lp__ to last column
@@ -404,88 +421,6 @@ rvnorm <- function(n, poly, sd, output = "simple", Sigma = NULL, rejection = FAL
   }
 }
 
-find_existing_path <- function(paths) {
-  hits <- paths[file.exists(paths)]
-  if (length(hits) == 0L) return(NA_character_)
-  normalizePath(hits[[1]], winslash = "/", mustWork = TRUE)
-}
-
-sanitize_cache_component <- function(x) {
-  if (length(x) == 0L || is.na(x) || !nzchar(x)) return("unknown")
-  gsub("[^[:alnum:]_.-]", "_", x)
-}
-
-vnorm_stan_cache_dir <- function() {
-  cache_root <- tryCatch(
-    tools::R_user_dir("vnorm", which = "cache"),
-    error = function(e) file.path(tempdir(), "vnorm-cache")
-  )
-  dir.create(cache_root, recursive = TRUE, showWarnings = FALSE)
-
-  cmdstan_version <- tryCatch(
-    as.character(cmdstanr::cmdstan_version()),
-    error = function(e) "unknown"
-  )
-  cmdstan_path <- tryCatch(
-    as.character(cmdstanr::cmdstan_path()),
-    error = function(e) "unknown"
-  )
-
-  file.path(
-    cache_root,
-    "stan",
-    sanitize_cache_component(R.version$platform),
-    paste0("cmdstan-", sanitize_cache_component(cmdstan_version)),
-    paste0("path-", sanitize_cache_component(cmdstan_path))
-  )
-}
-
-precompiled_stan_source_candidates <- function(stan_file_name) {
-  stan_basename <- paste0(stan_file_name, ".stan")
-  package_roots <- unique(c(
-    tryCatch(getNamespaceInfo(asNamespace("vnorm"), "path"), error = function(e) ""),
-    tryCatch(system.file(package = "vnorm"), error = function(e) "")
-  ))
-  package_roots <- package_roots[nzchar(package_roots)]
-  unique(as.vector(rbind(
-    file.path(package_roots, "bin", "stan", stan_basename),
-    file.path(package_roots, "src", "stan", stan_basename)
-  )))
-}
-
-load_precompiled_vnorm_model <- function(stan_file_name) {
-  source_candidates <- precompiled_stan_source_candidates(stan_file_name)
-  source_stan <- find_existing_path(source_candidates)
-  if (is.na(source_stan)) {
-    stop(
-      "Could not locate precompiled Stan source '", stan_file_name, ".stan'. ",
-      "Searched: ", paste(source_candidates, collapse = ", ")
-    )
-  }
-
-  cache_dir <- vnorm_stan_cache_dir()
-  dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
-  cached_stan <- file.path(cache_dir, basename(source_stan))
-  file.copy(source_stan, cached_stan, overwrite = TRUE, copy.date = TRUE)
-
-  cached_exe <- find_existing_path(c(
-    file.path(cache_dir, stan_file_name),
-    file.path(cache_dir, paste0(stan_file_name, ".exe"))
-  ))
-  stan_info <- file.info(cached_stan)
-  exe_info <- if (is.na(cached_exe)) NULL else file.info(cached_exe)
-  needs_compile <- is.na(cached_exe) ||
-    is.na(stan_info$mtime) ||
-    is.null(exe_info) ||
-    is.na(exe_info$mtime) ||
-    (exe_info$mtime < stan_info$mtime)
-
-  if (isTRUE(needs_compile)) {
-    return(cmdstanr::cmdstan_model(stan_file = cached_stan))
-  }
-  return(cmdstanr::cmdstan_model(stan_file = cached_stan, exe_file = cached_exe, compile = FALSE))
-}
-
 
 create_stan_code <- function(poly, sd, n_eqs, w, homo, vars) {
   d <- get("deriv.mpoly", asNamespace("mpoly"))
@@ -500,8 +435,8 @@ create_stan_code <- function(poly, sd, n_eqs, w, homo, vars) {
 
     g_string <- mpoly_to_stan(poly)
     if (homo) {
-      grad <- if (n_vars > 1) deriv(poly, var = mpoly::vars(poly)) else gradient(poly) ^ 2
-      ndg_sq <- Reduce(`+`, grad ^ 2)
+      grad <- if (n_vars > 1) deriv(poly, var = mpoly::vars(poly)) else gradient(poly)
+      ndg_sq <- if (n_vars >1)  Reduce(`+`, grad ^ 2) else grad^2
       ndg_string <- glue::glue("sqrt({mpoly_to_stan(ndg_sq)})")
     } else {
       ndg_string <- "1"
@@ -611,6 +546,8 @@ model {{
   }
   stan_code
 }
+
+
 
 
 

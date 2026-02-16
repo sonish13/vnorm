@@ -1,9 +1,12 @@
 Package: vnorm
 Title: Variety Normal Distribution
 Version: 0.0.0.9000
-Authors@R: c(person("Sonish", "Lamsal", email = "sonish_lamsal1@baylor.edu", role = "aut",comment = c(ORCID = "0009-0007-1098-2211")),
-  person("David", "Kahle", email = "david@kahle.io", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-9999-1558")))
-Description: Sample, project and Visualize Variety Normal Distributions
+Authors@R: c(
+    person("Sonish", "Lamsal", email = "sonish_lamsal1@baylor.edu", role = "aut"),
+    person("David", "Kahle", email = "david@kahle.io", role = c("aut", "cre"))
+  )
+Maintainer: David Kahle <david@kahle.io>
+Description: Samples, projects, and visualizes variety normal distributions.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -11,16 +14,24 @@ RoxygenNote: 7.3.3
 Depends:
     R (>= 4.1.0)
 Imports:
-    mpoly,
     glue,
-    magrittr,
-    isoband,
     vctrs,
     stats,
     ggplot2,
     tibble,
     instantiate,
-    cmdstanr
+    mpoly,
+    cmdstanr,
+    dplyr,
+    MASS,
+    digest,
+    here,
+    readr,
+    scales
 Suggests: 
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    vdiffr,
+    purrr,
+    ggdensity,
+    tidyverse
 Config/testthat/edition: 3

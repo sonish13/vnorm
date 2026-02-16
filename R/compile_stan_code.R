@@ -12,10 +12,9 @@
 #' @param homo If `TRUE`, the sampling is done from a homoskedastic variety
 #'   normal distribution. Defaults to `TRUE`.
 #'
-#'   This function creates a temporary Stan model for the kind of polynomial the
-#'   user is interested in. It also creates a variable `compiled_stan_info` in
-#'   the global environment for compiled Stan models that is needed to run
-#'   `rvnorm` using user-defined Stan codes.
+#' This function creates a temporary Stan model for the kind of polynomial the user is
+#' interested in. It stores compiled model metadata in an internal package cache
+#' needed to run `rvnorm` with `user_compiled = TRUE`.
 #'
 #' @export
 #' @examples
@@ -42,30 +41,15 @@ compile_stan_code <- function(poly, custom_stan_code = FALSE, w = FALSE, homo = 
   stan_code <- get_custom_stan_code(poly = poly, w = w, homo = homo)
   model_name <- generate_model_name(poly = poly, w = w, homo = homo)
   model_path <- cmdstanr::write_stan_file(stan_code, dir = tempdir())
-  new_row <- data.frame("name" = model_name, "path" = model_path)
-
-  if (!exists("compiled_stan_info", envir = .GlobalEnv)) {
-    assign("compiled_stan_info", new_row, envir = .GlobalEnv)
-    # message(sprintf("Created registry; registered '%s'", model_name))
+  info_before <- get_compiled_stan_info()
+  add_compiled_stan_info(name = model_name, path = model_path)
+  info_after <- get_compiled_stan_info()
+  if (nrow(info_before) == 0) {
+    message("compiled_stan_info cache created in package namespace")
+  } else if (nrow(info_after) > nrow(info_before)) {
+    message("compiled_stan_info cache updated in package namespace")
   } else {
-    compiled_stan_info <- get("compiled_stan_info", envir = .GlobalEnv)
-    existing_idx <- which(compiled_stan_info$name == model_name)
-
-    if (length(existing_idx) == 0L) {
-      compiled_stan_info <- rbind(compiled_stan_info, new_row)
-      # message(sprintf("Registered '%s'", model_name))
-    } else {
-      old_path <- compiled_stan_info$path[existing_idx[1]]
-      compiled_stan_info$path[existing_idx[1]] <- model_path
-      if (length(existing_idx) > 1L) {
-        compiled_stan_info <- compiled_stan_info[-existing_idx[-1], , drop = FALSE]
-      }
-      if (!identical(old_path, model_path)) {
-        # message(sprintf("Refreshed path for '%s'", model_name))
-      }
-    }
-
-    assign("compiled_stan_info", compiled_stan_info, envir = .GlobalEnv)
+    message("compiled_stan_info cache already contained this model")
   }
 
   cmdstan_model(model_path)
