@@ -47,17 +47,14 @@ favor some over others, and the posterior mean may fall between true
 solutions.
 }
 \examples{
-library(mpoly)
-f1 <- mp("x^2 - y")
-f2 <- mp("x^2 + y")
-polylist <- mpolyList(f1, f2)
+p <- mp(c("x^2 - y", "x^2 + y"))
 
 # Posterior-mean solution only
-variety_solve(polylist, n = 2e4, sd = 0.01, sig_digit = 3)
+variety_solve(p, n = 2e4, sd = 0.01, sig_digit = 3)
 
 # Return Stan fit and solution
-out <- variety_solve(polylist, n = 1e4, stanfit = TRUE)
-out
+variety_solve(p, n = 1e4, stanfit = TRUE)
+
 
 
 }

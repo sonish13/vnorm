@@ -1,6 +1,3 @@
-
-
-
 test_that("rvnorm() respects RNG seeds", {
   skip_on_cran()
   set.seed(123)
