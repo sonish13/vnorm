@@ -22,6 +22,7 @@
 #'
 #' @examples
 #' library(mpoly)
+#' \dontrun{
 #' f1 <- mp("x^2 - y")
 #' f2 <- mp("x^2 + y")
 #' polylist <- mpolyList(f1, f2)
@@ -32,6 +33,7 @@
 #' # Return Stan fit and solution
 #' out <- variety_solve(polylist, n = 1e4, stanfit = TRUE)
 #' out
+#' }
 #'
 #'
 #'@export
@@ -64,4 +66,3 @@ variety_solve <- function(polylist,
   df <- df |> colMeans() |> round(sig_digit)
   if (stanfit) return(list(stanfit = samps, results = df)) else return(df)
 }
-

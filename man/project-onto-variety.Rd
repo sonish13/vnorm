@@ -119,9 +119,6 @@ not \code{"newton"}.}
 \item{ga}{Learning rate for gradient descent.}
 
 \item{max_ga}{Maximum learning rate for gradient descent line search.}
-
-\item{t_start, t_end}{Start and end times for homotopy integration (default:
-\code{1} to \code{0}).}
 }
 \value{
 A numeric vector the same length as \code{x0}.
@@ -136,6 +133,7 @@ version uses Newton's method on the Lagrangian system.
 
 library("ggplot2")
 
+\dontrun{
 
 ## basic usage
 ########################################
@@ -391,6 +389,7 @@ ggplot(subsamps, aes(x_proj, y_proj)) + geom_point() + coord_equal()
 
 
 
+}
 }
 \references{
 Griffin, Z. and J. Hauenstein (2015). Real solutions to systems

@@ -11,6 +11,7 @@
 #' @param w A named list of box constraints for vectors to be passed to Stan,
 #'   see examples. A If a single number, a box window (-w,w) is applied to all
 #'   variables.
+#' @param output Either `"simple"` or `"tibble"` output format.
 #' @param dist  either `"norm"` (normal) or `"unif"` (uniform).
 #' @param homo If \code{TRUE}, the sampling is done from homoskedastic variety
 #'  normal distribution.
@@ -161,4 +162,3 @@ rejection_sampler <- function(n,
   out
 
 }
-

@@ -60,6 +60,9 @@ the plot data. The return value must be a \code{data.frame}, and
 will be used as the layer data. A \code{function} can be created
 from a \code{formula} (e.g. \code{~ head(.x, 10)}).}
 
+\item{geom}{The geometric object to use display data, defaults to
+\link{GeomVariety}.}
+
 \item{position}{A position adjustment to use on the data for this layer. This
 can be used in various ways, including to prevent overplotting and
 improving the display. The \code{position} argument accepts the following:
@@ -101,6 +104,22 @@ lists which parameters it can accept.
 \link[ggplot2:draw_key]{key glyphs}, to change the display of the layer in the legend.
 }}
 
+\item{poly}{An \code{mpoly} or \code{mpolyList} object describing the implicit
+polynomial(s) to plot.}
+
+\item{n}{Number of grid points used in both x and y directions when \code{nx} and
+\code{ny} are not supplied.}
+
+\item{nx, ny}{Number of grid points in the x and y directions.}
+
+\item{xlim, ylim}{Length-2 numeric vectors giving plotting limits.}
+
+\item{shift}{A numeric constant added to the evaluated surface before
+contouring, i.e. the plotted level set is \code{poly(x, y) + shift = 0}.
+Use this when the polynomial does not cross zero on the plotting grid.
+If \code{shift = 0} and all values have one sign, \code{geom_variety()} prints a
+message suggesting a shift value.}
+
 \item{na.rm}{If \code{FALSE}, the default, missing values are removed with
 a warning. If \code{TRUE}, missing values are silently removed.}
 
@@ -108,18 +127,16 @@ a warning. If \code{TRUE}, missing values are silently removed.}
 \code{NA}, the default, includes if any aesthetics are mapped.
 \code{FALSE} never includes, and \code{TRUE} always includes.
 It can also be a named logical vector to finely select the aesthetics to
-display. To include legend keys for all levels, even
-when no data exists, use \code{TRUE}.  If \code{NA}, all levels are shown in legend,
-but unobserved levels are omitted.}
+display.}
 
 \item{inherit.aes}{If \code{FALSE}, overrides the default aesthetics,
 rather than combining with them. This is most useful for helper functions
 that define both data and aesthetics and shouldn't inherit behaviour from
-the default plot specification, e.g. \code{\link[ggplot2:annotation_borders]{annotation_borders()}}.}
+the default plot specification, e.g. \code{\link[ggplot2:borders]{borders()}}.}
 
 \item{stat}{The statistical transformation to use on the data for this layer.
 When using a \verb{geom_*()} function to construct a layer, the \code{stat}
-argument can be used to override the default coupling between geoms and
+argument can be used the override the default coupling between geoms and
 stats. The \code{stat} argument accepts the following:
 \itemize{
 \item A \code{Stat} ggproto subclass, for example \code{StatCount}.

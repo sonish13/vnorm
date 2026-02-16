@@ -4,22 +4,19 @@
 #'
 #' @param path Path where [compile_stan_code()] was used and files need deletion.
 #' Defaults to the current working directory.
-#' @usage remove_stan_files()
 #'
 #'
 #' @export
 remove_stan_files <- function(path = getwd()) {
-  # Check if the files to be deleted are present
-  if (exists("compiled_stan_info", envir = .GlobalEnv)) {
+  compiled_stan_info <- get_compiled_stan_info()
+
+  if (nrow(compiled_stan_info) > 0) {
     stan_file_names <- compiled_stan_info$path
     exe_file_names <- sub("\\.stan$", "", stan_file_names)
 
-    # Remove the files
     file.remove(stan_file_names[file.exists(stan_file_names)])
     file.remove(exe_file_names[file.exists(exe_file_names)])
-
-    remove(compiled_stan_info, envir = .GlobalEnv)
+    clear_compiled_stan_info()
   }
   message("Files deleted")
 }
-

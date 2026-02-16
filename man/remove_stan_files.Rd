@@ -4,7 +4,7 @@
 \alias{remove_stan_files}
 \title{Remove files created by \code{\link[=compile_stan_code]{compile_stan_code()}}}
 \usage{
-remove_stan_files()
+remove_stan_files(path = getwd())
 }
 \arguments{
 \item{path}{Path where \code{\link[=compile_stan_code]{compile_stan_code()}} was used and files need deletion.

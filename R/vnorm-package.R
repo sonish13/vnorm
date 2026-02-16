@@ -4,7 +4,17 @@
 #' @importFrom instantiate stan_package_model
 #' @importFrom glue glue
 #' @importFrom tibble as_tibble tibble
+#' @importFrom stats coef deriv optimize quantile reorder rnorm runif
+#' @importFrom utils modifyList
 #' @name vnorm
 #' @aliases vnorm vnorm-package
 #' @keywords internal
 "_PACKAGE"
+
+utils::globalVariables(c(
+  "Polynomial",
+  "group",
+  "coef",
+  "deriv",
+  "reorder"
+))

@@ -13,8 +13,8 @@
 #'   normal distribution. Defaults to `TRUE`.
 #'
 #' This function creates a temporary Stan model for the kind of polynomial the user is
-#' interested in. It also creates a variable `compiled_stan_info` in the global
-#' environment for compiled Stan models that is needed to run `rvnorm` using user-defined Stan codes.
+#' interested in. It stores compiled model metadata in an internal package cache
+#' needed to run `rvnorm` with `user_compiled = TRUE`.
 #'
 #' @export
 compile_stan_code <- function(poly, custom_stan_code = FALSE, w = FALSE, homo = TRUE) {
@@ -31,18 +31,15 @@ compile_stan_code <- function(poly, custom_stan_code = FALSE, w = FALSE, homo = 
   stan_code <- get_custom_stan_code(poly = poly, w = w, homo = homo)
   model_name <- generate_model_name(poly = poly, w = w, homo = homo)
   model_path <- cmdstanr::write_stan_file(stan_code, dir = tempdir())
-  compiled_stan_info <- data.frame("name" = model_name, "path" = model_path)
-
-  if (!exists("compiled_stan_info", envir = .GlobalEnv)) {
-    assign("compiled_stan_info", compiled_stan_info, envir = .GlobalEnv)
-    message("compiled_stan_info variable created in global environment")
+  info_before <- get_compiled_stan_info()
+  add_compiled_stan_info(name = model_name, path = model_path)
+  info_after <- get_compiled_stan_info()
+  if (nrow(info_before) == 0) {
+    message("compiled_stan_info cache created in package namespace")
+  } else if (nrow(info_after) > nrow(info_before)) {
+    message("compiled_stan_info cache updated in package namespace")
   } else {
-    compiled_stan_info <- get("compiled_stan_info", envir = .GlobalEnv)
-    new_row <- data.frame("name" = model_name, "path" = model_path)
-    compiled_stan_info <- rbind(compiled_stan_info, new_row)
-    compiled_stan_info <- dplyr::distinct(compiled_stan_info)
-    assign("compiled_stan_info", compiled_stan_info, envir = .GlobalEnv)
-    message("compiled_stan_info variable updated in global environment")
+    message("compiled_stan_info cache already contained this model")
   }
 
   cmdstan_model(model_path)

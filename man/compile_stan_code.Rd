@@ -20,8 +20,8 @@ Defaults to \code{FALSE}.}
 normal distribution. Defaults to \code{TRUE}.
 
 This function creates a temporary Stan model for the kind of polynomial the user is
-interested in. It also creates a variable \code{compiled_stan_info} in the global
-environment for compiled Stan models that is needed to run \code{rvnorm} using user-defined Stan codes.}
+interested in. It stores compiled model metadata in an internal package cache
+needed to run \code{rvnorm} with \code{user_compiled = TRUE}.}
 }
 \description{
 This function helps to avoid recompiling for polynomials

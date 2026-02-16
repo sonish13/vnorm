@@ -44,19 +44,19 @@ rvnorm(
 \item{rejection}{If \code{TRUE}, rejection sampling is used.}
 
 \item{chains}{The number of chains to run for the random number generation,
-see \code{\link[=stan]{stan()}}.}
+see \code{stan()}.}
 
-\item{warmup}{Number of warmup iterations in \code{\link[=stan]{stan()}}.}
+\item{warmup}{Number of warmup iterations in \code{stan()}.}
 
 \item{inc_warmup}{If \code{TRUE}, the MCMC warmup steps are included in the
 output.}
 
-\item{thin}{\code{\link[=stan]{stan()}} \code{thin} parameter.}
+\item{thin}{\code{stan()} \code{thin} parameter.}
 
 \item{verbose}{\code{TRUE} or \code{FALSE}; determines level of messaging.}
 
 \item{cores}{The number of CPU cores to distribute the chains across, see
-\code{\link[=stan]{stan()}}.}
+\code{stan()}.}
 
 \item{homo}{If \code{TRUE}, the sampling is done from homoskedastic variety
 normal distribution.}
@@ -70,7 +70,7 @@ variables.}
 \item{numerator, denominator}{A character(1) containing the printed numerator
 of the variety normal distribution.}
 
-\item{refresh}{The \code{refresh} argument of \code{\link[=stan]{stan()}}, which governs how
+\item{refresh}{The \code{refresh} argument of \code{stan()}, which governs how
 much information is provided to the user while sampling.}
 
 \item{code_only}{If \code{TRUE}, will only formulate and return Stan code.}
@@ -85,12 +85,12 @@ for polynomials with three indeterminates and three degrees. Defaults to
 \item{show_messages}{If \code{TRUE}, stan sampler messages are shown.
 Defaults to \code{FALSE}}
 
-\item{...}{Additional parameters to pass to \code{\link[=stan]{stan()}}.}
+\item{...}{Additional parameters to pass to \code{stan()}.}
 }
 \value{
 Either (1) matrix whose rows are the individual draws from the
 distribution, (2) a \link[tibble:tbl_df-class]{tibble::tbl_df} object with the draws along with
-additional information, or (3) an object of class \linkS4class{stanfit}.
+additional information, or (3) an object of class \code{stanfit}.
 }
 \description{
 Un-normalized density function and random generation for the variety normal
@@ -112,6 +112,7 @@ varieties of varying dimensions?
 library("tidyverse")
 options("mc.cores" = parallel::detectCores() - 1)
 
+\dontrun{
 ## basic usage
 ########################################
 
@@ -136,16 +137,7 @@ ggplot(samps, aes(x, y)) +
 
 ggplot(samps, aes(x, y)) +
   geom_point(aes(color = factor(.chain))) +
-  geom_variety(poly = p) +
-  coord_equal()
-
-ggplot(samps, aes(x, y)) +
-  geom_point(aes(color = g)) +
-  geom_variety(poly = p) +
-  scale_color_gradient2(
-    low = "firebrick", high = "steelblue",
-    mid = "white", midpoint = 0
-  ) +
+  geom_variety(poly = p, linewidth = 1) +
   coord_equal()
 
 ggplot(samps, aes(x, y)) +
@@ -346,4 +338,5 @@ bind_rows(
 
 ggplot(samps_normd, aes(x, y)) +
   geom_bin2d(binwidth = .05*c(1,1)) + coord_equal()
+}
 }

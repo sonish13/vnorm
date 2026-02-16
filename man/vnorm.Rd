@@ -6,14 +6,14 @@
 \alias{vnorm-package}
 \title{vnorm: Variety Normal Distribution}
 \description{
-Sample, project and Visualize Variety Normal Distributions
+Samples, projects, and visualizes variety normal distributions.
 }
 \author{
-\strong{Maintainer}: David Kahle \email{david@kahle.io} (\href{https://orcid.org/0000-0002-9999-1558}{ORCID})
+\strong{Maintainer}: David Kahle \email{david@kahle.io}
 
 Authors:
 \itemize{
-  \item Sonish Lamsal \email{sonish_lamsal1@baylor.edu} (\href{https://orcid.org/0009-0007-1098-2211}{ORCID})
+  \item Sonish Lamsal \email{sonish_lamsal1@baylor.edu}
 }
 
 }
