@@ -9,12 +9,12 @@ compile_stan_code(poly, custom_stan_code = FALSE, w = FALSE, homo = TRUE)
 \arguments{
 \item{poly}{An mpoly object.}
 
-\item{custom_stan_code}{If \code{TRUE}, a custom model is compiled even if
-the general case of the polynomial is already included during package installation.
-Defaults to \code{FALSE}.}
+\item{custom_stan_code}{If \code{TRUE}, a custom model is compiled even if the
+general case of the polynomial is already included during package
+installation. Defaults to \code{FALSE}.}
 
-\item{w}{A named list of box constraints for vectors to be passed to Stan. See
-\code{\link[=rvnorm]{rvnorm()}} examples. Defaults to \code{FALSE}.}
+\item{w}{A named list of box constraints for vectors to be passed to Stan.
+See \code{\link[=rvnorm]{rvnorm()}} examples. Defaults to \code{FALSE}.}
 
 \item{homo}{If \code{TRUE}, the sampling is done from a homoskedastic variety
 normal distribution. Defaults to \code{TRUE}.
@@ -24,6 +24,18 @@ interested in. It stores compiled model metadata in an internal package cache
 needed to run \code{rvnorm} with \code{user_compiled = TRUE}.}
 }
 \description{
-This function helps to avoid recompiling for polynomials
-with the same indeterminate but different coefficients.
+This function helps to avoid recompiling for polynomials with the same
+indeterminate but different coefficients.
+}
+\examples{
+
+# compile a model that looks like b0 + bx6 x^6 + by6 y^6 for later input
+p <- mp("x^6 + y^6 - 1") # template polynomial
+samps <- rvnorm(1000, p, sd = .05)
+head(samps)
+compile_stan_code(p) # allows to change coefficients
+p <- mp("x^6 + 8 y^6 - 1")
+rvnorm(1e4, p, .05, user_compiled = TRUE)
+
+
 }

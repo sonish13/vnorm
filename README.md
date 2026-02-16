@@ -15,47 +15,38 @@ plotting 1d varieties in 2d plots and projection onto varieties.
 Generate samples for the variety normal distribution with mean equal to
 `poly` and “standard deviation” equal to `sd`.
 
-For a polynomial $x^2 + y^2 -1$, we can sample using `rvnorm`
+For a polynomial $x^2 + y^2 - 1$, we can sample using `rvnorm()`
 
 ``` r
-library(vnorm)
-poly <- mpoly::mp("x^2 + y^2 -1")
+library("vnorm")
+poly <- mp("x^2 + y^2 -1")
 samps <- rvnorm(2000, poly, sd = .1)
-#> Running MCMC with 4 sequential chains...
-#> 
-#> Chain 1 finished in 0.2 seconds.
-#> Chain 2 finished in 0.2 seconds.
-#> Chain 3 finished in 0.3 seconds.
-#> Chain 4 finished in 0.2 seconds.
-#> 
-#> All 4 chains finished successfully.
-#> Mean chain execution time: 0.2 seconds.
-#> Total execution time: 1.2 seconds.
+
 head(samps)
-#>           x         y
-#> 1  0.966994  0.405642
-#> 2  0.958511  0.375407
-#> 3  0.394862 -0.967098
-#> 4 -0.736241  0.734586
-#> 5 -0.732316  0.734969
-#> 6 -0.707225  0.701170
+#>            x           y
+#> 1 -1.0545771  0.05768011
+#> 2  0.0340353  1.03350260
+#> 3 -0.7186821 -0.69686675
+#> 4  0.8587407 -0.63292490
+#> 5  0.8193780 -0.60574065
+#> 6  0.8092433 -0.54995186
+
 str(samps)
 #> 'data.frame':    2000 obs. of  2 variables:
-#>  $ x: num  0.967 0.959 0.395 -0.736 -0.732 ...
-#>  $ y: num  0.406 0.375 -0.967 0.735 0.735 ...
+#>  $ x: num  -1.055 0.034 -0.719 0.859 0.819 ...
+#>  $ y: num  0.0577 1.0335 -0.6969 -0.6329 -0.6057 ...
 ```
 
 Let’s plot this with ggplot:
 
 ``` r
-library(ggplot2)
+library("ggplot2")
 #> 
 #> Attaching package: 'ggplot2'
 #> The following object is masked from 'package:mpoly':
 #> 
 #>     vars
-samps |> 
-  ggplot(aes(x = x , y = y)) +
+ggplot(samps, aes(x = x , y = y)) +
   geom_point() +
   coord_equal()
 ```
@@ -63,30 +54,20 @@ samps |>
 <img src="man/figures/README-unnamed-chunk-3-1.png" width="100%" />
 
 We can use pre-compiled stan models for polynomials with degree upto 3
-and polynomial with upto 3 indeterminates. This helps avoid compiling
+and polynomial with up to 3 indeterminates. This helps avoid compiling
 stan models.
 
 ``` r
-poly <- mpoly::mp("x^2 + y^2 + z^2 - 1")
+poly <- mp("x^2 + y^2 + z^2 - 1")
 samps <- rvnorm(2000, poly, sd = 0.1, pre_compiled = TRUE)
-#> Running MCMC with 4 sequential chains...
-#> 
-#> Chain 1 finished in 0.3 seconds.
-#> Chain 2 finished in 0.4 seconds.
-#> Chain 3 finished in 0.3 seconds.
-#> Chain 4 finished in 0.3 seconds.
-#> 
-#> All 4 chains finished successfully.
-#> Mean chain execution time: 0.3 seconds.
-#> Total execution time: 1.6 seconds.
 head(samps)
-#>           x         y          z
-#> 1  0.162459 -0.988889 -0.0092164
-#> 2 -0.497968 -0.547431  0.6876140
-#> 3  0.352122 -0.782564  0.5125490
-#> 4 -0.470062  0.781425  0.4553070
-#> 5 -0.055613  0.521399 -0.8016060
-#> 6  0.126799  0.060375 -0.9487200
+#>            x          y          z
+#> 1  0.7337058  0.3126022  0.4641998
+#> 2  1.0264048  0.4572456  0.2796481
+#> 3 -0.8432177 -0.4828878  0.5819057
+#> 4 -0.9009339 -0.2944216 -0.5003867
+#> 5 -0.1961045 -0.7837302 -0.7070664
+#> 6 -0.5652593  0.5056133 -0.7745399
 ```
 
 We also want the user to be able to pre-compile models. This can be done
@@ -94,10 +75,23 @@ with `compile_stan_code`. This helps avoid re-compiling stan model for
 similar polynomial with different coefficients.
 
 ``` r
-poly <- mpoly::mp("x^4 + y^4 - 1")
+poly <- mp("x^4 + y^4 - 1")
 compile_stan_code(poly = poly)
-#> compiled_stan_info variable created in global environment
-#> [1] "Model Compiled"
+#> Created registry; registered '4e9e149b8c356eb39b2171f795f8bdf4_vn.stan'
+#> data {
+#>   real si;
+#>   real bx4;   real by4;   real b1;
+#> }
+#> parameters {
+#>   real x;
+#>   real y;
+#>  }
+#> model {
+#>   real g = bx4*x^4+by4*y^4+b1;
+#>   real dgx = 4*bx4*x^3;  real dgy = 4*by4*y^3;
+#>   real ndg = sqrt(dgx^2 + dgy^2);
+#>   target += normal_lpdf(0.00 | g/ndg, si); 
+#> }
 ```
 
 Here we have compiled stan model for polynomial of the type \$ax^4 +
@@ -106,26 +100,16 @@ similar polynomial. The `user_compiled` argument is what we will use for
 this.
 
 ``` r
-poly <- mpoly::mp("2 x^4 + 3 y^4 - 1")
+poly <- mp("2 x^4 + 3 y^4 - 1")
 samps <- rvnorm(1000, poly = poly, sd = 0.1, user_compiled = TRUE)
-#> Running MCMC with 4 sequential chains...
-#> 
-#> Chain 1 finished in 0.1 seconds.
-#> Chain 2 finished in 0.1 seconds.
-#> Chain 3 finished in 0.1 seconds.
-#> Chain 4 finished in 0.0 seconds.
-#> 
-#> All 4 chains finished successfully.
-#> Mean chain execution time: 0.1 seconds.
-#> Total execution time: 0.6 seconds.
 head(samps)
-#>          x          y
-#> 1 0.861923  0.3347540
-#> 2 1.010160  0.3768460
-#> 3 0.744661  0.0496880
-#> 4 0.993849  0.0955615
-#> 5 0.961165  0.0962827
-#> 6 0.937857 -0.2780060
+#>            x         y
+#> 1 -0.3800843 0.7903625
+#> 2 -0.3893375 0.7391325
+#> 3  0.8431831 0.3038976
+#> 4  0.8068408 0.2984785
+#> 5  0.8317430 0.3029504
+#> 6  0.6251027 0.7661797
 ```
 
 # Plotting
@@ -135,20 +119,19 @@ head(samps)
 multiple(mpolyList object) polynomails `geom_variety()`.
 
 ``` r
-poly <- mpoly::mp("y - x^2")
 ggplot() +
- geom_variety(poly = poly) +
+ geom_variety(poly = mp("y - x^2")) +
  coord_equal()
 ```
 
 <img src="man/figures/README-unnamed-chunk-7-1.png" width="100%" />
 
 ``` r
-p1 <- mp("x^2 + y^2 - 1")
-p2 <- mp("y - x")
-poly <- mpolyList(p1, p2)
 ggplot() +
-  geom_variety(poly = poly , xlim = c(-2, 2), ylim = c(-2, 2)) +
+  geom_variety(
+    poly = mp(c("x^2 + y^2 - 1", "y - x")) ,
+    xlim = c(-2, 2), ylim = c(-2, 2)
+  ) +
   coord_equal()
 ```
 

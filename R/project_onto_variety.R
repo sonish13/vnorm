@@ -59,7 +59,7 @@
 #' ########################################
 #'
 #' x0 <- c(1,1)
-#' p <- mpoly::mp("x^2 + y^2 - 1")
+#' p <- mp("x^2 + y^2 - 1")
 #' (x0_proj <- project_onto_variety(x0, p))
 #'
 #' as.function(p)(x0_proj)
@@ -88,7 +88,7 @@
 #'
 #' # number of variables > 2
 #' x0 <- c(1,1,1)
-#' p <- mpoly::mp("x^2 + y^2 + z^2 - 1")
+#' p <- mp("x^2 + y^2 + z^2 - 1")
 #' 1 / sqrt(3)
 #' project_onto_variety(x0, p)
 #' project_onto_variety_lagrange(x0, p)
@@ -101,7 +101,7 @@
 #' ########################################
 #'
 #' x0 <- c(1,1)
-#' p <- mpoly::mp("x^2 + y^2 - 1")
+#' p <- mp("x^2 + y^2 - 1")
 #' project_onto_variety(x0, p, message = TRUE)
 #' project_onto_variety(x0, p, dt = .25, message = TRUE)
 #'
@@ -123,7 +123,7 @@
 #' ########################################
 #'
 #' x0 <- c(1, 1)
-#' p <- mpoly::mp("x^2 + y^2 - 1")
+#' p <- mp("x^2 + y^2 - 1")
 #'
 #' # Using adaptive time stepping (default)
 #' x0_proj_adaptive <- project_onto_variety(x0, p, message = TRUE)
@@ -164,7 +164,7 @@
 #' ########################################
 #'
 #' x0 <- c(1,1,1)
-#' p <- mpoly::mp("x^2 + y^2 + z^2 - 1")
+#' p <- mp("x^2 + y^2 + z^2 - 1")
 #' project_onto_variety(x0, p) # adaptive by default
 #' project_onto_variety(x0, p, adaptive = FALSE, dt = 0.01) # fixed step size
 #'
@@ -172,14 +172,14 @@
 #' ########################################
 #'
 #'x0 <- c(1,1)
-#' p <- mpoly::mp("(x^2 + y^2)^2 - 2 (x^2 - y^2)")
+#' p <- mp("(x^2 + y^2)^2 - 2 (x^2 - y^2)")
 #' (x0_proj <- project_onto_variety(x0, p))
 #'
 #'
 #' cbind(t(x0), t(x0_proj)) |>
 #'   as.data.frame() |> tibble::as_tibble() |>
 #'   purrr::set_names(c("x", "y", "x_proj", "y_proj")) -> df
-#' p <- mpoly::mp("(x^2 + y^2)^2 - 2 (x^2 - y^2)")
+#' p <- mp("(x^2 + y^2)^2 - 2 (x^2 - y^2)")
 #'ggplot() +
 #'   geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2)) +
 #'   coord_equal() +
@@ -201,7 +201,7 @@
 #'
 #' (p <- mpoly::lissajous(5, 5, 0, 0))
 #' # (p <- mpoly::lissajous(9, 9, 0, 0))
-#' # p <- mpoly::mp("x^2 + y^2 - 1")
+#' # p <- mp("x^2 + y^2 - 1")
 #' ggplot() +
 #'   geom_variety(poly = p, n = 251) +
 #'  coord_equal() +
@@ -494,7 +494,7 @@ project_onto_variety_lagrange <- function(
 
   # formulate lagrangian
   form <- paste0("(", varorder, " - ", x0, ")^2", collapse = " + ")
-  L <- mpoly::mp(form) + mpoly::mp("la")*poly
+  L <- mp(form) + mp("la")*poly
   dL <- stats::deriv(L, var = c(varorder, "la"))
   dLf <- as.function(dL, varorder = c(varorder, "la"), silent = TRUE)
 
