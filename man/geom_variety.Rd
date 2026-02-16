@@ -215,8 +215,7 @@ ggplot() +
   geom_variety(
     poly = p_shift,
     xlim = c(-2, 2), ylim = c(-2, 2),
-    shift = -0.000576
-  ) +
+    shift = -0.000576) +
   coord_equal()
 
 }
