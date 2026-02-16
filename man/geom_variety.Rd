@@ -194,13 +194,29 @@ ggplot() +
 p3 <- mp("(x^2 + y^2 - 1)^3 - x^2 y^3")
 ggplot() +
   geom_variety(poly = p3, xlim = c(-2, 2), ylim = c(-2, 2), n = 401) +
-  coord_equal()
+  coord_equal() +
+  theme(legend.position = "top")
 
 # 4) A 2-polynomial system (mpolyList): circle ∩ hyperbola-like branch overlay
 #    Useful example showing multiple contours from one call.
 ps <- mp( c( "x^2 + y^2 - 1", "x y - 0.25" ) )
 ggplot() +
   geom_variety(poly = ps, xlim = c(-2, 2), ylim = c(-2, 2), n = 401) +
+  coord_equal()
+
+# 5) Using shift for squared polynomials (same variety, no zero crossing on grid)
+p_shift <- mp("x^2 + y^2 - 1")^2
+ggplot() +
+  geom_variety(poly = p_shift, xlim = c(-2, 2), ylim = c(-2, 2)) +
+  coord_equal()
+
+# apply a small negative shift so the contour is visible
+ggplot() +
+  geom_variety(
+    poly = p_shift,
+    xlim = c(-2, 2), ylim = c(-2, 2),
+    shift = -0.000576
+  ) +
   coord_equal()
 
 }
