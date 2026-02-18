@@ -3,8 +3,8 @@
 #' Delete Stan source and executable files tracked by the internal compile
 #' cache created by [compile_stan_code()].
 #'
-#' @param path Path where [compile_stan_code()] was used and files should be
-#'   deleted. Defaults to the current working directory.
+#' @param path Directory used in [compile_stan_code()].
+#'   Defaults to the current working directory.
 #'
 #'
 #' @export

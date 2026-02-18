@@ -178,7 +178,11 @@ p <- mp(c("3 x", "3 y", "2 x + 2 y", "3 (x^2 + y)", "3 (x^2 - y)"))
 
 samps |>
   select(x, y, starts_with("g")) |>
-  pivot_longer(starts_with("g"), names_to = "equation", values_to = "value") |>
+  pivot_longer(
+    starts_with("g"),
+    names_to = "equation",
+    values_to = "value"
+  ) |>
   ggplot(aes(x, y, color = value)) + geom_point() +
     scale_color_gradient2(mid = "gray80") + coord_equal() +
     facet_wrap(~ equation)

@@ -4,7 +4,11 @@ get_compiled_stan_info <- function() {
   # Read cache metadata (name/path) for user-compiled Stan models.
   info <- .vnorm_state$compiled_stan_info
   if (is.null(info)) {
-    return(data.frame(name = character(), path = character(), stringsAsFactors = FALSE))
+    return(data.frame(
+      name = character(),
+      path = character(),
+      stringsAsFactors = FALSE
+    ))
   }
   info
 }

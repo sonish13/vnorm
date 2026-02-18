@@ -116,7 +116,11 @@ rejection_sampler <- function(n,
       ssdp <- dp^2
     }
 
-    ssdpf <- if (is.constant(ssdp)) function(x) ssdp[[1]][["coef"]] else as.function(ssdp, varorder = vars, silent = TRUE)
+    ssdpf <- if (is.constant(ssdp)) {
+      function(x) ssdp[[1]][["coef"]]
+    } else {
+      as.function(ssdp, varorder = vars, silent = TRUE)
+    }
 
     if (homo) {
       # Normalize by gradient magnitude for approximate arc-length scaling.
@@ -140,7 +144,14 @@ rejection_sampler <- function(n,
   while (n_remaining > 0) {
     # Propose points uniformly inside the box, then accept/reject.
     if (message) cat("\r", strrep(" ", 80))
-    if (message) cat("\r", scales::number_format(big.mark = ",")(n_remaining), " remaining...", sep = "")
+    if (message) {
+      cat(
+        "\r",
+        scales::number_format(big.mark = ",")(n_remaining),
+        " remaining...",
+        sep = ""
+      )
+    }
 
     u <- matrix(nrow = n_remaining, ncol = n_vars, dimnames = list(NULL, vars))
     for (i in seq_len(n_vars)) {

@@ -1,6 +1,11 @@
 test_that("Compiles model correctly for an mpoly object", {
   p <- mp("x^2 + y^2 - 1")
-  result <- compile_stan_code(p, custom_stan_code = TRUE, w = FALSE, homo = TRUE) |>
+  result <- compile_stan_code(
+    p,
+    custom_stan_code = TRUE,
+    w = FALSE,
+    homo = TRUE
+  ) |>
     suppressMessages()
   expect_equal(
     result$code(),
@@ -26,13 +31,21 @@ test_that("Stops if pre-compiled model already exists", {
   p <- mp("x^2 + y^2")
   expect_error(
     compile_stan_code(p, custom_stan_code = FALSE, w = FALSE, homo = TRUE),
-    "Pre-compiled model for the general case already exists.*custom_stan_code = TRUE"
+    paste0(
+      "Pre-compiled model for the general case already exists.",
+      "*custom_stan_code = TRUE"
+    )
   )
 })
 
 test_that("Compiles model correctly for an mpolyList object", {
   p <- mp(c("x^2 + y^2 - 1","y - x"))
-  result <- compile_stan_code(p, custom_stan_code = TRUE, w = FALSE, homo = TRUE) |>
+  result <- compile_stan_code(
+    p,
+    custom_stan_code = TRUE,
+    w = FALSE,
+    homo = TRUE
+  ) |>
     suppressMessages()
   expect_equal(
     result$code(),
@@ -98,7 +111,12 @@ test_that("Compiles model with box constraints w", {
 
 test_that("Compiles model with homoskedastic option", {
   p <- mp("x^2 + y^2 - 1")
-  result <- compile_stan_code(p, custom_stan_code = TRUE, w = FALSE, homo = TRUE)
+  result <- compile_stan_code(
+    p,
+    custom_stan_code = TRUE,
+    w = FALSE,
+    homo = TRUE
+  )
   expect_equal(
     result$code(),
     c(

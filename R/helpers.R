@@ -1,4 +1,6 @@
-make_coefficients_data <- function(poly, num_of_vars, deg, basis = c("x", "y", "z")) {
+make_coefficients_data <- function(
+    poly, num_of_vars, deg, basis = c("x", "y", "z")
+  ) {
   # Build a complete coefficient list (missing terms filled with zero).
   required_coefs <- mpoly::basis_monomials(basis[seq_len(num_of_vars)], deg)
   required_coefs <- lapply(required_coefs, reorder, varorder = basis)
@@ -25,7 +27,8 @@ get_listed_coeficients <- function(coefs) {
 }
 
 get_coefficeints_data <- function(poly) {
-  # Collect named coefficients for either a single polynomial or polynomial list.
+  # Collect named coefficients for either a single polynomial
+  # or polynomial list.
   if (is.mpoly(poly)) {
     data <- get_listed_coeficients(coef(poly))
   } else if (is.mpolyList(poly)) {
@@ -107,7 +110,13 @@ mpoly_to_stan <- function(mpoly) {
 mpolyList_to_stan <- function(mpolyList) {
   # Print a polynomial list as a Stan vector expression payload.
   p <- get("print.mpolyList", asNamespace("mpoly"))
-  result <- p(mpolyList, silent = TRUE, stars = TRUE, plus_pad = 0, times_pad = 0)
+  result <- p(
+    mpolyList,
+    silent = TRUE,
+    stars = TRUE,
+    plus_pad = 0,
+    times_pad = 0
+  )
   result <- gsub("\\*\\*", "^", result)
   result <- paste(result, collapse = ", ")
   result
@@ -155,7 +164,11 @@ get_derivative <- function(var, num_of_vars, deg, basis = c("x", "y", "z")) {
     "1\\*|\\*1",
     "",
     paste0(
-      df_for_der$num_coef, "*", df_for_der$sym_coef, "*", df_for_der$indeterminates,
+      df_for_der$num_coef,
+      "*",
+      df_for_der$sym_coef,
+      "*",
+      df_for_der$indeterminates,
       collapse = "+"
     )
   )

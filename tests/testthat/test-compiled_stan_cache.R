@@ -56,7 +56,11 @@ test_that("rvnorm(user_compiled=TRUE) errors when model is missing in cache", {
   vnorm:::clear_compiled_stan_info()
 
   vnorm:::set_compiled_stan_info(
-    data.frame(name = "other_model", path = "/tmp/other.stan", stringsAsFactors = FALSE)
+    data.frame(
+      name = "other_model",
+      path = "/tmp/other.stan",
+      stringsAsFactors = FALSE
+    )
   )
 
   expect_error(

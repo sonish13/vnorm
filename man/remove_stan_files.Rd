@@ -7,8 +7,8 @@
 remove_stan_files(path = getwd())
 }
 \arguments{
-\item{path}{Path where \code{\link[=compile_stan_code]{compile_stan_code()}} was used and files should be
-deleted. Defaults to the current working directory.}
+\item{path}{Directory used in \code{\link[=compile_stan_code]{compile_stan_code()}}.
+Defaults to the current working directory.}
 }
 \description{
 Delete Stan source and executable files tracked by the internal compile

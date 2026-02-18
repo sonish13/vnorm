@@ -15,7 +15,8 @@
 #'   variety normal pseudo-density. If `FALSE`, compute the heteroskedastic
 #'   pseudo-density.
 #' @param log Logical. If `TRUE`, returns the log of the density.
-#' @return A numeric value (or vector) representing the density evaluated at `x`.
+#' @return A numeric value (or vector) representing the density evaluated at
+#'   `x`.
 #'
 #' @examples
 #'
@@ -53,14 +54,19 @@ pdvnorm <- function(x, poly, sigma, homo = TRUE, log = FALSE) {
   is_multi <- inherits(poly, "mpolyList")
   if (!(is_uni || is_multi)) {
     stop(
-      "'poly' must be either an 'mpoly' (univariate) or an 'mpolyList' (multivariate)."
+      paste0(
+        "'poly' must be either an 'mpoly' (univariate) or an ",
+        "'mpolyList' (multivariate)."
+      )
     )
   }
 
   if (is_uni) {
     # Univariate/single-polynomial path.
     if (!is.numeric(sigma) || length(sigma) != 1 || sigma <= 0) {
-      stop("For univariate case, 'sigma' must be a single positive numeric (sd).")
+      stop(
+        "For univariate case, 'sigma' must be a single positive numeric (sd)."
+      )
     }
     sd <- as.numeric(sigma)
 
@@ -183,7 +189,9 @@ pdvnorm <- function(x, poly, sigma, homo = TRUE, log = FALSE) {
       }
 
       sv <- svd(J)
-      tol <- max(dim(J)) * .Machine$double.eps * ifelse(length(sv$d) > 0, sv$d[1], 0)
+      tol <- max(dim(J)) *
+        .Machine$double.eps *
+        ifelse(length(sv$d) > 0, sv$d[1], 0)
       r <- sum(sv$d > tol)
 
       if (n > m && r == m) {

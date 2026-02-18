@@ -29,17 +29,23 @@
 #'
 #' }
 #'
-compile_stan_code <- function(poly, custom_stan_code = FALSE, w = FALSE, homo = TRUE) {
+compile_stan_code <- function(
+    poly, custom_stan_code = FALSE, w = FALSE, homo = TRUE
+  ) {
   # Validate polynomial class before generating/compiling Stan code.
   if (!(is.mpoly(poly) || is.mpolyList(poly))) {
     stop("`poly` should be an mpoly or mpolyList object.", call. = FALSE)
   }
 
   if (!custom_stan_code && is.mpoly(poly)) {
-    # Reuse shipped templates when available unless user forces a custom compile.
+    # Reuse shipped templates when available unless user forces a custom
+    # compile.
     if (length(mpoly::vars(poly)) < 4 && base::max(mpoly::totaldeg(poly)) < 4) {
       stop(
-        "Pre-compiled model for the general case already exists from installation. ",
+        paste0(
+          "Pre-compiled model for the general case already ",
+          "exists from installation. "
+        ),
         "Use custom_stan_code = TRUE to use a custom model anyway.",
         call. = FALSE
       )
@@ -79,7 +85,10 @@ get_custom_stan_code <- function(poly, w = FALSE, homo = TRUE) {
     var_for_data_block <- get_listed_coeficients(var_for_data_block)
     var_for_data_block <- names(var_for_data_block)
 
-    data_block <- paste(sapply(var_for_data_block, function(x) paste("  real", x)), collapse = "; ")
+    data_block <- paste(
+      sapply(var_for_data_block, function(x) paste("  real", x)),
+      collapse = "; "
+    )
     data_block <- paste0(data_block, ";")
     if (w) {
       data_block <- paste0(data_block, "  real w;")
@@ -101,20 +110,32 @@ get_custom_stan_code <- function(poly, w = FALSE, homo = TRUE) {
     g <- coef_lift(poly)
     g <- mpoly_to_stan(g)
 
-    derivatives <- lapply(vars, helper_for_derivative_for_mpoly_stan_code, poly = poly)
+    derivatives <- lapply(
+      vars,
+      helper_for_derivative_for_mpoly_stan_code,
+      poly = poly
+    )
 
     derivative_names <- sapply(seq_along(vars), function(i) {
       paste0("dg", vars[i])
     })
 
     ndg <- if (homo) {
-      paste0("  real ndg = sqrt(", paste0(derivative_names, "^2", collapse = " + "), ");")
+      paste0(
+        "  real ndg = sqrt(",
+        paste0(derivative_names, "^2", collapse = " + "),
+        ");"
+      )
     } else {
       "  real ndg = 1;"
     }
 
     dg <- sapply(seq_along(vars), function(i) {
-      paste(derivative_names[i], paste(derivatives[[i]], collapse = ""), sep = " = ")
+      paste(
+        derivative_names[i],
+        paste(derivatives[[i]], collapse = ""),
+        sep = " = "
+      )
     })
     dg <- paste0("  real ", dg)
     dg <- paste(dg, collapse = ";")
@@ -140,7 +161,11 @@ get_custom_stan_code <- function(poly, w = FALSE, homo = TRUE) {
     var_for_data_block <- vector("list", length(poly))
     for (i in seq_along(poly)) {
       var_for_data_block[[i]] <- mpoly::monomials(poly[[i]])
-      var_for_data_block[[i]] <- lapply(var_for_data_block[[i]], reorder, varorder = vars[[i]])
+      var_for_data_block[[i]] <- lapply(
+        var_for_data_block[[i]],
+        reorder,
+        varorder = vars[[i]]
+      )
       var_for_data_block[[i]] <- lapply(var_for_data_block[[i]], coef)
       var_for_data_block[[i]] <- unlist(var_for_data_block[[i]])
       var_for_data_block[[i]] <- get_listed_coeficients(var_for_data_block[[i]])
@@ -149,7 +174,10 @@ get_custom_stan_code <- function(poly, w = FALSE, homo = TRUE) {
     }
 
     var_for_data_block <- unlist(var_for_data_block)
-    data_block <- paste(sapply(var_for_data_block, function(x) paste("  real", x)), collapse = "; ")
+    data_block <- paste(
+      sapply(var_for_data_block, function(x) paste("  real", x)),
+      collapse = "; "
+    )
     data_block <- paste0(data_block, ";")
 
     if (w) {
@@ -185,14 +213,23 @@ get_custom_stan_code <- function(poly, w = FALSE, homo = TRUE) {
     }
 
     g <- unlist(g)
-    g <- paste0("  vector[", length(g), "] g = [", paste(g, collapse = ","), "]';")
+    g <- paste0(
+      "  vector[",
+      length(g),
+      "] g = [",
+      paste(g, collapse = ","),
+      "]';"
+    )
 
     if (homo) {
       for (i in seq_along(poly)) {
         derivatives[[i]] <- unlist(derivatives_pre[[i]])
       }
       jac <- paste(
-        sapply(derivatives, function(v) paste0("      [", paste(v, collapse = ","), "]")),
+        sapply(
+          derivatives,
+          function(v) paste0("      [", paste(v, collapse = ","), "]")
+        ),
         collapse = ",\n"
       )
     } else {
@@ -209,11 +246,24 @@ get_custom_stan_code <- function(poly, w = FALSE, homo = TRUE) {
     dg <- paste0("  matrix[", n_eqs, ",", n_vars, "] J = [ \n", jac, "\n    ];")
     trans_block <- paste0("\ntransformed parameters {\n", g, "\n", dg, "\n}\n")
 
-    gbar_string <- if (n_vars == n_eqs) "J \\ g" else if (n_vars > n_eqs) "J' * ((J*J') \\ g)" else "(J'*J) \\ (J'*g)"
-    model_block <- paste0("\nmodel {\n  target += normal_lpdf(0.00 |", gbar_string, ", si);\n}")
+    gbar_string <- if (n_vars == n_eqs) {
+      "J \\ g"
+    } else if (n_vars > n_eqs) {
+      "J' * ((J*J') \\ g)"
+    } else {
+      "(J'*J) \\ (J'*g)"
+    }
+    model_block <- paste0(
+      "\nmodel {\n  target += normal_lpdf(0.00 |",
+      gbar_string,
+      ", si);\n}"
+    )
     stan_code <- paste0(data_block, params_block, trans_block, model_block)
   } else {
-    stop("`poly` should either be an mpoly or an mpolyList object.", call. = FALSE)
+    stop(
+      "`poly` should either be an mpoly or an mpolyList object.",
+      call. = FALSE
+    )
   }
 
   stan_code

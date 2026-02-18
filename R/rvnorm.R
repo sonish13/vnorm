@@ -122,7 +122,11 @@
 #'
 #' samps |>
 #'   select(x, y, starts_with("g")) |>
-#'   pivot_longer(starts_with("g"), names_to = "equation", values_to = "value") |>
+#'   pivot_longer(
+#'     starts_with("g"),
+#'     names_to = "equation",
+#'     values_to = "value"
+#'   ) |>
 #'   ggplot(aes(x, y, color = value)) + geom_point() +
 #'     scale_color_gradient2(mid = "gray80") + coord_equal() +
 #'     facet_wrap(~ equation)
@@ -406,7 +410,12 @@ rvnorm <- function(
 
     deg <- mpoly::totaldeg(poly)
     num_of_vars <- length(mpoly::vars(poly))
-    stan_file_name <- paste(num_of_vars, deg, if (homo) "vn" else "hvn", sep = "_")
+    stan_file_name <- paste(
+      num_of_vars,
+      deg,
+      if (homo) "vn" else "hvn",
+      sep = "_"
+    )
     if (!missing(w)) {
       stan_file_name <- paste(stan_file_name, "w", sep = "_")
     }
@@ -493,7 +502,11 @@ create_stan_code <- function(poly, sd, n_eqs, w, homo, vars) {
 
     g_string <- mpoly_to_stan(poly)
     if (homo) {
-      grad <- if (n_vars > 1) deriv(poly, var = mpoly::vars(poly)) else gradient(poly)
+      grad <- if (n_vars > 1) {
+        deriv(poly, var = mpoly::vars(poly))
+      } else {
+        gradient(poly)
+      }
       ndg_sq <- if (n_vars >1)  Reduce(`+`, grad ^ 2) else grad^2
       ndg_string <- glue::glue("sqrt({mpoly_to_stan(ndg_sq)})")
     } else {
@@ -510,7 +523,9 @@ create_stan_code <- function(poly, sd, n_eqs, w, homo, vars) {
     } else {
       parms <- sapply(seq_along(vars), function(i) {
         if (vars[i] %in% names(w)) {
-          glue::glue("real<lower={w[[vars[i]]][1]},upper={w[[vars[i]]][2]}> {vars[i]};")
+          glue::glue(
+            "real<lower={w[[vars[i]]][1]},upper={w[[vars[i]]][2]}> {vars[i]};"
+          )
         } else {
           glue::glue("real {vars[i]};")
         }
@@ -570,17 +585,40 @@ model {{
     } else {
       parms <- sapply(seq_along(vars), function(i) {
         if (vars[i] %in% names(w)) {
-          sprintf("real<lower=%s,upper=%s> %s;", w[[vars[i]]][1], w[[vars[i]]][2], vars[i])
+          sprintf(
+            "real<lower=%s,upper=%s> %s;",
+            w[[vars[i]]][1],
+            w[[vars[i]]][2],
+            vars[i]
+          )
         } else {
           sprintf("real %s;", vars[i])
         }
       })
       parms <- paste(parms, collapse = "\n  ")
     }
-    data_string <- if (length(sd) == 1) "real<lower=0> si" else paste0("cov_matrix[",n_vars,"] si")
-    model_string <- if (length(sd) == 1) "normal_lpdf(" else " multi_normal_lpdf("
-    mu_string <- if (length(sd) == 1)"0.00" else (paste0("[",paste(rep(0.00, n_vars), collapse = ","),"]'"))
-    gbar_string <- if (n_vars == n_eqs) "J \\ g" else if (n_vars > n_eqs) "J' * ((J*J') \\ g)" else "(J'*J) \\ (J'*g)"
+    data_string <- if (length(sd) == 1) {
+      "real<lower=0> si"
+    } else {
+      paste0("cov_matrix[", n_vars, "] si")
+    }
+    model_string <- if (length(sd) == 1) {
+      "normal_lpdf("
+    } else {
+      " multi_normal_lpdf("
+    }
+    mu_string <- if (length(sd) == 1) {
+      "0.00"
+    } else {
+      paste0("[", paste(rep(0.00, n_vars), collapse = ","), "]'")
+    }
+    gbar_string <- if (n_vars == n_eqs) {
+      "J \\ g"
+    } else if (n_vars > n_eqs) {
+      "J' * ((J*J') \\ g)"
+    } else {
+      "(J'*J) \\ (J'*g)"
+    }
 
     stan_code <- glue::glue(
       "
@@ -604,5 +642,4 @@ model {{
   }
   stan_code
 }
-
 

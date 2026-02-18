@@ -25,7 +25,8 @@ pseudo-density.}
 \item{log}{Logical. If \code{TRUE}, returns the log of the density.}
 }
 \value{
-A numeric value (or vector) representing the density evaluated at \code{x}.
+A numeric value (or vector) representing the density evaluated at
+\code{x}.
 }
 \description{
 Compute a pseudo-density for the variety normal distribution in either the

@@ -21,7 +21,8 @@ test_that("geom_variety works with mpolyList objects", {
   poly1 <- mp("x^2 + y^2 - 1")
   poly2 <- mp("y - x")
   poly_list <- mpolyList(poly1, poly2)
-  p <- ggplot() + geom_variety(poly = poly_list, xlim = c(-2, 2), ylim = c(-2, 2))
+  p <- ggplot() +
+    geom_variety(poly = poly_list, xlim = c(-2, 2), ylim = c(-2, 2))
   expect_true(inherits(p, "ggplot"))
 })
 
@@ -53,7 +54,9 @@ test_that("geom_variety generates valid non-empty contour data", {
   expect_true(all(c("x", "y", "group") %in% names(dat)))
 })
 
-test_that("geom_variety shift generates continuous contours for squared polynomials", {
+test_that(
+  "geom_variety shift generates continuous contours for squared polynomials",
+  {
   poly <- mp("x^2 + y^2 - 1")^2
   p <- ggplot() +
     geom_variety(
@@ -71,7 +74,8 @@ test_that("geom_variety shift generates continuous contours for squared polynomi
   points_per_group <- table(dat$group)
   expect_lte(length(points_per_group), 2)
   expect_true(all(points_per_group >= 20))
-})
+  }
+)
 
 test_that("fragmented shifted contours trigger refinement", {
   poly <- mp("x^2 + y^2 - 1")^2

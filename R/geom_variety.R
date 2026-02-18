@@ -16,12 +16,17 @@
 #'
 #' @section Computed variables:
 #'   \describe{
-#'     \item{probs}{The probability associated with the highest density region, specified
+#'     \item{probs}{The probability associated with the highest density region,
+#'     specified
 #'     by `probs` argument.}
 #'   }
 #'
+#' @param mapping Aesthetic mappings created with [ggplot2::aes()].
+#' @param data Layer data. If `NULL`, data is inherited from the plot.
 #' @param geom The geometric object used to display data; defaults to
 #'   [GeomVariety].
+#' @param position Position adjustment for the layer.
+#' @param ... Additional parameters forwarded to [ggplot2::layer()].
 #' @param n Number of grid points used in both x and y directions when `nx` and
 #'   `ny` are not supplied.
 #' @param nx,ny Number of grid points in the x and y directions.
@@ -68,7 +73,8 @@
 #'   geom_variety(poly = ps, xlim = c(-2, 2), ylim = c(-2, 2)) +
 #'   coord_equal()
 #'
-#' # 5) Using shift for squared polynomials (same variety, no zero crossing on grid)
+#' # 5) Using shift for squared polynomials
+#' # (same variety, no zero crossing on grid)
 #' library(mpoly)
 #' p_shift <- mp("x^2 + y^2 - 1")^2
 #' ggplot() +
@@ -93,7 +99,9 @@
 #'   coord_equal()
 #'
 #' ggplot() +
-#'   geom_variety(poly = p^2, xlim = c(-2, 2), ylim = c(-2, 2), shift = -0.00101684) +
+#'   geom_variety(
+#'     poly = p^2, xlim = c(-2, 2), ylim = c(-2, 2), shift = -0.00101684
+#'   ) +
 #'   coord_equal()
 #'
 #'
@@ -150,7 +158,8 @@ StatVariety <- ggproto(
 
   compute_group = function(
     self, data, scales, na.rm = FALSE,
-    poly, n = 101, nx = n, ny = n, xlim = NULL, ylim = NULL, shift = 0, mul = .05
+    poly, n = 101, nx = n, ny = n, xlim = NULL, ylim = NULL,
+    shift = 0, mul = .05
   ) {
     # Use a denser grid for nonzero shift to reduce fragmented contours.
     nx_eff <- if (shift != 0) max(as.integer(nx), 301L) else as.integer(nx)
@@ -251,7 +260,10 @@ geom_variety <- function(
   mapping <- if (is.null(mapping)) {
     aes(group = after_stat(group), linetype = after_stat(Polynomial))
   } else {
-    modifyList(mapping, aes(group = after_stat(group), linetype = after_stat(Polynomial)))
+    modifyList(
+      mapping,
+      aes(group = after_stat(group), linetype = after_stat(Polynomial))
+    )
   }
 
   layer_obj <- layer(
@@ -272,7 +284,10 @@ geom_variety <- function(
 
   list(
     layer_obj,
-    ggplot2::scale_linetype_discrete(name = NULL, labels = function(l) parse(text = l))
+    ggplot2::scale_linetype_discrete(
+      name = NULL,
+      labels = function(l) parse(text = l)
+    )
   )
 }
 
@@ -383,7 +398,9 @@ collapse_near_duplicate_contours <- function(df, tol) {
   out
 }
 
-variety_paths_with_refinement <- function(poly, rangex, rangey, nx, ny, shift, group) {
+variety_paths_with_refinement <- function(
+    poly, rangex, rangey, nx, ny, shift, group
+  ) {
   # Retry at higher grid resolution if initial contours are fragmented.
   refinement_steps <- c(1L, 2L, 4L)
   best_df <- tibble::tibble()
@@ -426,9 +443,17 @@ check_sign_warning <- function(zvals, shift) {
         "try shift = ", format(-q1, digits = 6), "."
       )
     } else if (near_zero_touch) {
-      message("Using shift = ", format(shift, digits = 6), "; duplicate contours merged.")
+      message(
+        "Using shift = ",
+        format(shift, digits = 6),
+        "; duplicate contours merged."
+      )
     } else {
-      message("All values positive after applying shift = ", format(shift, digits = 6), ".")
+      message(
+        "All values positive after applying shift = ",
+        format(shift, digits = 6),
+        "."
+      )
     }
   } else if (all(signs == -1)) {
     q99 <- quantile(zvals, 0.99, na.rm = TRUE)
@@ -438,9 +463,17 @@ check_sign_warning <- function(zvals, shift) {
         "try shift = ", format(-q99, digits = 6), "."
       )
     } else if (near_zero_touch) {
-      message("Using shift = ", format(shift, digits = 6), "; duplicate contours merged.")
+      message(
+        "Using shift = ",
+        format(shift, digits = 6),
+        "; duplicate contours merged."
+      )
     } else {
-      message("All values negative after applying shift = ", format(shift, digits = 6), ".")
+      message(
+        "All values negative after applying shift = ",
+        format(shift, digits = 6),
+        "."
+      )
     }
   }
 }

@@ -11,14 +11,20 @@ make_stan_files <- function(
   vars <- basis[seq_len(num_of_vars)]
 
   # Build the Stan data block containing polynomial coefficients.
-  var_for_data_block <- mpoly::basis_monomials(basis[seq_len(num_of_vars)], totaldeg)
+  var_for_data_block <- mpoly::basis_monomials(
+    basis[seq_len(num_of_vars)],
+    totaldeg
+  )
   var_for_data_block <- lapply(var_for_data_block, reorder, varorder = basis)
   var_for_data_block <- lapply(var_for_data_block, coef)
   var_for_data_block <- unlist(var_for_data_block)
   var_for_data_block <- get_listed_coeficients(var_for_data_block)
   var_for_data_block <- names(var_for_data_block)
 
-  data_block <- paste(sapply(var_for_data_block, function(x) paste("  real", x)), collapse = "; ")
+  data_block <- paste(
+    sapply(var_for_data_block, function(x) paste("  real", x)),
+    collapse = "; "
+  )
   data_block <- paste0(data_block, ";")
 
   # Build the Stan parameter block (optionally box-constrained by w).
@@ -57,14 +63,24 @@ make_stan_files <- function(
   g <- paste0(g_coef, "*", g_terms, collapse = "+")
   g <- gsub("1\\*|\\*1", "", g)
 
-  derivatives <- lapply(vars, get_derivative, num_of_vars = num_of_vars, deg = totaldeg, basis = vars)
+  derivatives <- lapply(
+    vars,
+    get_derivative,
+    num_of_vars = num_of_vars,
+    deg = totaldeg,
+    basis = vars
+  )
 
   derivative_names <- sapply(seq_along(vars), function(i) {
     paste0("dg", vars[i])
   })
 
   dg <- sapply(seq_along(vars), function(i) {
-    paste(derivative_names[i], paste(derivatives[[i]], collapse = ""), sep = " = ")
+    paste(
+      derivative_names[i],
+      paste(derivatives[[i]], collapse = ""),
+      sep = " = "
+    )
   })
 
   dg <- paste0("  real ", dg)
@@ -88,7 +104,13 @@ make_stan_files <- function(
   )
 
   # Assemble complete Stan program text.
-  stan_code <- paste0(data_block, params_block, trans_block, model_block, sep = "")
+  stan_code <- paste0(
+    data_block,
+    params_block,
+    trans_block,
+    model_block,
+    sep = ""
+  )
 
   filename <- sprintf(
     "%i_%i_%s%s.stan",

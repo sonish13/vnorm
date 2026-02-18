@@ -2,8 +2,16 @@ canonicalize_mpoly <- function(poly) {
   # Normalize term ordering so structurally equivalent polynomials hash equally.
   terms <- unclass(poly)
 
-  degrees <- sapply(terms, function(term) sum(term[names(term) != "coef"], na.rm = TRUE))
-  lex_keys <- sapply(terms, function(term) paste(sort(names(term)[names(term) != "coef"]), collapse = ""))
+  degrees <- sapply(
+    terms,
+    function(term) sum(term[names(term) != "coef"], na.rm = TRUE)
+  )
+  lex_keys <- sapply(
+    terms,
+    function(term) {
+      paste(sort(names(term)[names(term) != "coef"]), collapse = "")
+    }
+  )
 
   sorted_terms <- terms[order(-degrees, lex_keys, method = "radix")]
 
@@ -22,7 +30,11 @@ sort_mpolylist_lexicographically <- function(poly) {
   # Enforce deterministic polynomial ordering before hashing/codegen.
   stopifnot(inherits(poly, "mpolyList"))
 
-  poly_strings <- vapply(poly, function(p) paste(as.character(p), collapse = ""), character(1))
+  poly_strings <- vapply(
+    poly,
+    function(p) paste(as.character(p), collapse = ""),
+    character(1)
+  )
   sorted_indices <- order(poly_strings, method = "radix")
 
   sorted_list <- poly[sorted_indices]
