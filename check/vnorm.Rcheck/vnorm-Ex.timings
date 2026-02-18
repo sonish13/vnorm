@@ -1,7 +1,0 @@
-name	user	system	elapsed
-compile_stan_code	0	0	0	
-geom_variety	2.419	0.039	2.499	
-pdvnorm	0.012	0.001	0.015	
-project-onto-variety	0.004	0.001	0.005	
-rvnorm	0.148	0.016	0.173	
-variety_solve	0.002	0.001	0.003	

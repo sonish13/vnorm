@@ -2,3 +2,8 @@
 .Rhistory
 .Rdata
 .DS_Store
+check/
+*.Rcheck/
+.Rcheck/
+..Rcheck/
+*.tar.gz
