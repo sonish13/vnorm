@@ -84,6 +84,7 @@ for polynomials with three indeterminates and three degrees. Defaults to
 \code{\link[=compile_stan_code]{compile_stan_code()}}. Defaults to \code{FALSE}.}
 
 \item{show_messages}{If \code{TRUE}, Stan sampler messages are shown.}
+
 \item{...}{Additional parameters passed to \code{stan()}.}
 }
 \value{

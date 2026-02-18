@@ -13,11 +13,12 @@
 #'   normal distribution. Defaults to `TRUE`.
 #'
 #' The compiled model metadata is stored in an internal package cache used by
-#' `rvnorm(user_compiled = TRUE)`.
+#' [rvnorm()] with `user_compiled = TRUE`.
 #'
 #' @export
 #' @examples
 #'
+#' \dontrun{
 #' # compile a model that looks like b0 + bx6 x^6 + by6 y^6 for later input
 #' p <- mp("x^6 + y^6 - 1") # template polynomial
 #' samps <- rvnorm(1000, p, sd = .05)
@@ -26,6 +27,7 @@
 #' p <- mp("x^6 + 8 y^6 - 1")
 #' rvnorm(1e4, p, .05, user_compiled = TRUE)
 #'
+#' }
 #'
 compile_stan_code <- function(poly, custom_stan_code = FALSE, w = FALSE, homo = TRUE) {
   # Validate polynomial class before generating/compiling Stan code.

@@ -331,8 +331,8 @@ project_onto_variety <- function(
     dt_min = 1e-6, dt_max = 0.1, error_tol = .01
 ) {
   # Homotopy from t=1 (x0 offset equation) to t=0 (target variety equation).
-  t_start = 1
-  t_end = 0
+  t_start <- 1
+  t_end <- 0
   if (missing(x0)) stop("`x0` must be supplied.")
   if (missing(poly)) stop("`poly` must be supplied.")
 
@@ -341,6 +341,7 @@ project_onto_variety <- function(
   if (missing(gfunc) || missing(dgfunc) || missing(ddgfunc)) {
 
     if (!missing(gfunc) || !missing(dgfunc) || !missing(ddgfunc)) {
+      # If one derivative helper is missing, rebuild all three consistently.
       "If any of `gfunc`, `dgfunc`, or `ddgfunc` is not provided, they are all computed internally."
     }
 

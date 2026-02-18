@@ -27,6 +27,7 @@
 #'
 #' @examples
 #' library(mpoly)
+#' \dontrun{
 #' f1 <- mp("x^2 - y")
 #' f2 <- mp("x^2 + y")
 #' polylist <- mpolyList(f1, f2)
@@ -38,6 +39,7 @@
 #' out <- variety_solve(polylist, n = 1e4, stanfit = TRUE)
 #' out
 #'
+#' }
 #' @export
 variety_solve <- function(polylist,
                           sd = 0.01,

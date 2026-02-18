@@ -151,9 +151,12 @@ get_derivative <- function(var, num_of_vars, deg, basis = c("x", "y", "z")) {
   )
 
   df_for_der <- dplyr::filter(df_for_der, num_coef != 0)
-  out <- paste0(
-    df_for_der$num_coef, "*", df_for_der$sym_coef, "*", df_for_der$indeterminates,
-    collapse = "+"
+  gsub(
+    "1\\*|\\*1",
+    "",
+    paste0(
+      df_for_der$num_coef, "*", df_for_der$sym_coef, "*", df_for_der$indeterminates,
+      collapse = "+"
+    )
   )
-  gsub("1\\*|\\*1", "", out)
 }
