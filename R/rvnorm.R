@@ -1,57 +1,55 @@
 #' The Variety Normal Distribution
 #'
-#' Un-normalized density function and random generation for the variety normal
-#' distribution with mean equal to \code{poly} and "standard deviation" equal to
-#' \code{sd}. Please see details for caveats.
+#' Unnormalized density evaluation and random generation for the variety normal
+#' distribution with mean defined by `poly` and scale `sd`. See Details for
+#' caveats.
 #'
 #' If the variety you are interested in is connected, this strategy should work
-#' well out of the box.  If it isn't, you'll likely need to rely on running
-#' multiple chains, and it is very likely, if not probable, that the sampling
-#' will be biased to one or more of those components and down-sample others.
+#' well out of the box. If it is not, you will likely need multiple chains, and
+#' sampling may become biased toward one or more components while down-sampling
+#' others.
 #' Question: what is the relative likelihood of each component, or an equal unit
 #' of length, on different components? How does this generalize to more
 #' varieties of varying dimensions?
 #'
-#' @param n The number of draws desired from each chain after warmup.
-#' @param poly An mpoly object.
-#' @param sd The "standard deviation" component of the normal kernel. sd = Sigma
-#'   when Sigma is specified.
-#' @param Sigma Full "covariance" matrix or a vector specifying the diagonal of
-#'   such a matrix.
-#' @param output \code{"simple"}, \code{"tibble"}, \code{"stanfit"}.
-#' @param rejection If \code{TRUE}, rejection sampling is used.
+#' @param n Number of draws desired from each chain after warmup.
+#' @param poly An `mpoly` object.
+#' @param sd Scale parameter for the normal kernel. If `Sigma` is supplied,
+#'   `sd` is replaced by `Sigma`.
+#' @param Sigma Full covariance matrix or a diagonal vector of covariance terms.
+#' @param output One of `"simple"`, `"tibble"`, or `"stanfit"`.
+#' @param rejection If `TRUE`, rejection sampling is used.
 #' @param chains The number of chains to run for the random number generation,
-#'   see \code{stan()}.
+#'   see `stan()`.
 #' @param cores The number of CPU cores to distribute the chains across, see
-#'   \code{stan()}.
-#' @param warmup Number of warmup iterations in \code{stan()}.
-#' @param inc_warmup If \code{TRUE}, the MCMC warmup steps are included in the
+#'   `stan()`.
+#' @param warmup Number of warmup iterations in `stan()`.
+#' @param inc_warmup If `TRUE`, the MCMC warmup steps are included in the
 #'   output.
-#' @param thin \code{stan()} \code{thin} parameter.
-#' @param homo If \code{TRUE}, the sampling is done from homoskedastic variety
-#'  normal distribution.
-#' @param verbose \code{TRUE} or \code{FALSE}; determines level of messaging.
-#' @param vars A character vector of the indeterminates in the distribution.
-#' @param numerator,denominator A character(1) containing the printed numerator
-#'   of the variety normal distribution.
+#' @param thin `stan()` `thin` parameter.
+#' @param homo If `TRUE`, sampling is from a homoskedastic variety normal
+#'   distribution.
+#' @param verbose If `TRUE`, print additional progress messages.
+#' @param vars Character vector of polynomial indeterminates.
+#' @param numerator,denominator Character scalars containing printed numerator
+#'   and denominator forms.
 #' @param w A named list of box constraints for vectors to be passed to Stan,
-#'   see examples. A If a single number, a box window (-w,w) is applied to all
+#'   see examples. If a single number, a box window `(-w, w)` is applied to all
 #'   variables.
-#' @param refresh The \code{refresh} argument of \code{stan()}, which governs how
+#' @param refresh The `refresh` argument of `stan()`, which governs how
 #'   much information is provided to the user while sampling.
-#' @param pre_compiled Whether to use pre-compiled stan models or not. Available
+#' @param pre_compiled Whether to use precompiled Stan models. Available
 #'   for polynomials with three indeterminates and three degrees. Defaults to
-#'   \code{TRUE}.
-#' @param code_only If \code{TRUE}, will only formulate and return Stan code.
-#' @param ... Additional parameters to pass to \code{stan()}.
-#' @param user_compiled If\code{TRUE}, user compiled stan program made using
-#' [compile_stan_code] is used. Defaults to \code{FALSE}
-#' @param show_messages If \code{TRUE}, stan sampler messages are shown.
-#' Defaults to \code{FALSE}
+#'   `TRUE`.
+#' @param code_only If `TRUE`, only formulate and return Stan code.
+#' @param ... Additional parameters passed to `stan()`.
+#' @param user_compiled If `TRUE`, use a user-compiled Stan program produced by
+#'   [compile_stan_code()]. Defaults to `FALSE`.
+#' @param show_messages If `TRUE`, Stan sampler messages are shown.
 #' @name rvnorm
 #' @return Either (1) matrix whose rows are the individual draws from the
 #'   distribution, (2) a [tbl_df-class] object with the draws along with
-#'   additional information, or (3) an object of class \code{stanfit}.
+#'   additional information, or (3) an object of class `stanfit`.
 #' @examples
 #'
 #'
@@ -289,60 +287,89 @@
 
 #' @rdname rvnorm
 #' @export
-rvnorm <- function(n, poly, sd, output = "simple", Sigma, homo = TRUE,
-                   w, vars, numerator, denominator, refresh = 0L,
-                   code_only = FALSE, pre_compiled = TRUE, user_compiled = FALSE,
-                   show_messages = FALSE, ...,
-                   rejection = FALSE,
-                   chains = 4L,
-                   warmup = max(500, floor(n / 2)),
-                   inc_warmup = FALSE,
-                   thin = 1L,
-                   verbose = FALSE,
-                   cores = min(chains, getOption("mc.cores", 1L))
-                   ) {
+rvnorm <- function(
+  n, poly, sd, output = "simple", Sigma = NULL, rejection = FALSE,
+  chains = 4L, warmup = max(500, floor(n / 2)), inc_warmup = FALSE,
+  thin = 1L, verbose = FALSE, cores = min(chains, getOption("mc.cores", 1L)),
+  homo = TRUE, w, vars, numerator, denominator, refresh = 0L,
+  code_only = FALSE, pre_compiled = TRUE, user_compiled = FALSE,
+  show_messages = FALSE, ...
+) {
 
-  # Initialization and checks
-  if(rejection) {
-    if(missing(w)) w = 1
-    if (!(is.numeric(sd) && is.vector(sd) && length(sd) == 1L)) stop("This sd is not supported yet for rejection sampler.")
-    sample <- rejection_sampler(n = n, poly = poly , sd = sd, vars = sort(mpoly::vars(poly)),
-                                  w = w, output = output, homo = homo,
-                                  message = verbose)
+  if (rejection) {
+    if (missing(w)) {
+      w <- 1
+    }
+    if (!(is.numeric(sd) && is.vector(sd) && length(sd) == 1L)) {
+      stop("This sd is not supported yet for rejection sampler.")
+    }
+    sample <- rejection_sampler(
+      n = n,
+      poly = poly,
+      sd = sd,
+      vars = sort(mpoly::vars(poly)),
+      w = w,
+      output = output,
+      homo = homo,
+      message = verbose
+    )
     return(sample)
   }
+
   output_needs_rewriting <- FALSE
-  if (is.character(poly)) poly <- mp(poly)
+
+  if (is.character(poly)) {
+    poly <- mp(poly)
+  }
+
   if (is.mpoly(poly)) {
     n_eqs <- 1L
   } else if (is.mpolyList(poly)) {
     n_eqs <- length(poly)
   } else {
-    stop("`poly` should be either a character vector, mpoly, or mpolyList.", call. = FALSE)
+    stop(
+      "`poly` should be either a character vector, mpoly, or mpolyList.",
+      call. = FALSE
+    )
   }
-  if( !missing(Sigma) ) sd <- Sigma
+  if (!is.null(Sigma)) {
+    sd <- Sigma
+  }
   n_vars <- length(mpoly::vars(poly))
-  if(length(sd) == 1){
-    sd = sd
-  } else if (is.vector(sd) & length(sd) == n_vars){
-    sd = diag(sd)
-  } else if (is.matrix(sd) & length(diag(sd)) == n_vars ) {
-    sd = sd
+  if (length(sd) == 1) {
+    sd <- sd
+  } else if (is.vector(sd) && length(sd) == n_vars) {
+    sd <- diag(sd)
+  } else if (is.matrix(sd) && length(diag(sd)) == n_vars) {
+    sd <- sd
   } else {
-    stop("`Sigma` should be a number, vector of length equal to number of
-         variables or matrix with diagonal length equal to number of variables.", call. = FALSE)
+    stop(
+      "`Sigma` should be a number, vector of length equal to number of ",
+      "variables or matrix with diagonal length equal to number of variables.",
+      call. = FALSE
+    )
   }
-  if (refresh) refresh <- if (verbose) max(ceiling(n / 10), 1L) else 0L
-  if (n_eqs > 1) pre_compiled <- FALSE
-  if (n_eqs > 1 || length(mpoly::vars(poly)) > 3 || base::max(mpoly::totaldeg(poly)) > 3)
+
+  if (refresh) {
+    refresh <- if (verbose) max(ceiling(n / 10), 1L) else 0L
+  }
+
+  if (
+    n_eqs > 1 ||
+      length(mpoly::vars(poly)) > 3 ||
+      base::max(mpoly::totaldeg(poly)) > 3
+  ) {
+    # Precompiled binaries only cover a small catalog of low-degree templates.
     pre_compiled <- FALSE
+  }
+
   if (code_only) {
     stan_code <- create_stan_code(poly, sd, n_eqs, w, homo)
     return(stan_code)
   }
 
-  # Model selection and data preparation
-  if (user_compiled) { # incase we want use model that user compiled
+  if (user_compiled) {
+    # Look up a previously compiled user template from the internal cache.
     model_name <- generate_model_name(poly = poly, homo = homo, w = !missing(w))
     compiled_stan_info <- get_compiled_stan_info()
     if (nrow(compiled_stan_info) == 0) {
@@ -351,6 +378,7 @@ rvnorm <- function(n, poly, sd, output = "simple", Sigma, homo = TRUE,
         call. = FALSE
       )
     }
+
     model_path <- compiled_stan_info$path[compiled_stan_info$name == model_name]
     if (length(model_path) == 0) {
       stop(
@@ -359,46 +387,70 @@ rvnorm <- function(n, poly, sd, output = "simple", Sigma, homo = TRUE,
         call. = FALSE
       )
     }
-    model_path <- model_path[1]
-    model <- cmdstan_model(model_path)
+
+    model <- cmdstan_model(model_path[1])
     stan_data <- get_coefficeints_data(poly)
-    stan_data <- if (missing(w)) c(stan_data, "si" = sd) else c(stan_data, "w" = w, "si" = sd)
-  } else if (pre_compiled) { # data and model if/when pre-compiled model is used
-    # replace variable if poly has anything other then x, y or z
+    stan_data <- if (missing(w)) {
+      c(stan_data, "si" = sd)
+    } else {
+      c(stan_data, "w" = w, "si" = sd)
+    }
+  } else if (pre_compiled) {
+    # Remap variable names to x/y/z because shipped models are keyed that way.
     list_for_transformation <- check_and_replace_vars(poly)
     if (!is.null(unlist(list_for_transformation$mapping))) {
       poly <- list_for_transformation$polynomial
       var_info <- list_for_transformation$mapping
       output_needs_rewriting <- TRUE
     }
-    # get name of stan model to use
+
     deg <- mpoly::totaldeg(poly)
     num_of_vars <- length(mpoly::vars(poly))
     stan_file_name <- paste(num_of_vars, deg, if (homo) "vn" else "hvn", sep = "_")
-    if (!missing(w)) stan_file_name <- paste(stan_file_name, "w", sep = "_")
-    model <- instantiate::stan_package_model(name = stan_file_name, package = "vnorm")
+    if (!missing(w)) {
+      stan_file_name <- paste(stan_file_name, "w", sep = "_")
+    }
+
+    model <- instantiate::stan_package_model(
+      name = stan_file_name,
+      package = "vnorm"
+    )
     stan_data <- make_coefficients_data(poly, num_of_vars, deg)
-    stan_data <- if (missing(w)) c(stan_data, "si" = sd) else c(stan_data, "w" = w, "si" = sd)
+    stan_data <- if (missing(w)) {
+      c(stan_data, "si" = sd)
+    } else {
+      c(stan_data, "w" = w, "si" = sd)
+    }
   } else {
-    # create code to run stan model from scratch
+    # Fall back to generating and compiling a temporary Stan model.
     stan_code <- create_stan_code(poly, sd, n_eqs, w, homo, vars)
     stan_file <- write_stan_file(stan_code)
     model <- cmdstan_model(stan_file)
     stan_data <- list("si" = sd)
   }
 
-  # Run Stan sampler
-  samps <- model$sample(data = stan_data, refresh = refresh, iter_warmup = warmup,
-                        iter_sampling = ceiling(n / chains), chains = chains,
-                        parallel_chains = cores, adapt_delta = .999, max_treedepth = 20L,
-                        save_warmup = inc_warmup, show_messages = show_messages, ... = ...)
+  samps <- model$sample(
+    data = stan_data,
+    refresh = refresh,
+    iter_warmup = warmup,
+    iter_sampling = ceiling(n / chains),
+    chains = chains,
+    parallel_chains = cores,
+    adapt_delta = .999,
+    max_treedepth = 20L,
+    save_warmup = inc_warmup,
+    show_messages = show_messages,
+    ...
+  )
 
-  # Parse output and return
   if (output == "simple") {
+    # Keep only the requested post-warmup rows and coordinate columns.
     df <- as.data.frame(samps$draws(format = "df", inc_warmup = inc_warmup))
     df <- df[(nrow(df) - n + 1):nrow(df), mpoly::vars(poly)]
     row.names(df) <- NULL
-    if (output_needs_rewriting) df <- rename_output_df(df, replacement_list = var_info)
+    if (output_needs_rewriting) {
+      df <- rename_output_df(df, replacement_list = var_info)
+    }
     return(df)
   }
 
@@ -407,15 +459,21 @@ rvnorm <- function(n, poly, sd, output = "simple", Sigma, homo = TRUE,
     df <- samps$draws(format = "df", inc_warmup = inc_warmup)
     df <- df[(nrow(df) - n + 1):nrow(df), ]
     row.names(df) <- NULL
-    df <- cbind(df[, -1], df[, 1])  # Move lp__ to last column
-    if (output_needs_rewriting) df <- rename_output_df(df, replacement_list = var_info)
+    # Move lp__ to the last column for a stable display layout.
+    df <- cbind(df[, -1], df[, 1])
+    if (output_needs_rewriting) {
+      df <- rename_output_df(df, replacement_list = var_info)
+    }
     return(tibble::as_tibble(df))
   }
 
   if (output == "stanfit") {
     if (output_needs_rewriting) {
-      message("The stanfit object has variable names as x,y,z instead of the ones on the polynomial.
-              Don't use pre-compiled model if you need the output to have same names as your polynomial")
+      message(
+        "The stanfit object has variable names as x,y,z instead of the ones ",
+        "on the polynomial. Don't use pre-compiled model if you need output ",
+        "names to match your polynomial."
+      )
     }
     return(samps)
   }
@@ -506,10 +564,10 @@ model {{
     # Set variables
     if (missing(w)) {
       parms <- paste(sprintf("real %s;", vars), collapse = "\n  ")
-    } else if(is.numeric(w) && length(w) == 1L) {
+    } else if (is.numeric(w) && length(w) == 1L) {
       parms <- glue::glue("real<lower=-{w},upper={w}> {vars};")
       parms <- paste(parms, collapse = "\n  ")
-    }else {
+    } else {
       parms <- sapply(seq_along(vars), function(i) {
         if (vars[i] %in% names(w)) {
           sprintf("real<lower=%s,upper=%s> %s;", w[[vars[i]]][1], w[[vars[i]]][2], vars[i])
@@ -519,9 +577,9 @@ model {{
       })
       parms <- paste(parms, collapse = "\n  ")
     }
-    data_string <- if(length(sd) == 1) "real<lower=0> si" else paste0("cov_matrix[",n_vars,"] si")
-    model_string <- if(length(sd) == 1) "normal_lpdf(" else " multi_normal_lpdf("
-    mu_string <- if(length(sd) == 1)"0.00" else (paste0("[",paste(rep(0.00, n_vars), collapse = ","),"]'"))
+    data_string <- if (length(sd) == 1) "real<lower=0> si" else paste0("cov_matrix[",n_vars,"] si")
+    model_string <- if (length(sd) == 1) "normal_lpdf(" else " multi_normal_lpdf("
+    mu_string <- if (length(sd) == 1)"0.00" else (paste0("[",paste(rep(0.00, n_vars), collapse = ","),"]'"))
     gbar_string <- if (n_vars == n_eqs) "J \\ g" else if (n_vars > n_eqs) "J' * ((J*J') \\ g)" else "(J'*J) \\ (J'*g)"
 
     stan_code <- glue::glue(
@@ -546,14 +604,6 @@ model {{
   }
   stan_code
 }
-
-
-
-
-
-
-
-
 
 
 

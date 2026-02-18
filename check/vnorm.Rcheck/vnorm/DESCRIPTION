@@ -1,0 +1,23 @@
+Package: vnorm
+Title: Variety Normal Distribution
+Version: 0.0.0.9000
+Authors@R: c(
+    person("Sonish", "Lamsal", email = "sonish_lamsal1@baylor.edu", role = "aut"),
+    person("David", "Kahle", email = "david@kahle.io", role = c("aut", "cre"))
+  )
+Maintainer: David Kahle <david@kahle.io>
+Description: Samples, projects, and visualizes variety normal distributions.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Depends: R (>= 4.1.0)
+Imports: glue, vctrs, stats, ggplot2, tibble, instantiate, mpoly,
+        cmdstanr, dplyr, MASS, digest, scales
+Suggests: testthat (>= 3.0.0), vdiffr, purrr, ggdensity, tidyverse
+Config/testthat/edition: 3
+NeedsCompilation: yes
+Packaged: 2026-02-18 18:00:59 UTC; slamsal
+Author: Sonish Lamsal [aut],
+  David Kahle [aut, cre]
+Built: R 4.5.1; aarch64-apple-darwin20; 2026-02-18 18:01:14 UTC; unix

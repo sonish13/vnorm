@@ -5,11 +5,11 @@
 \title{Solve a Zero-Dimensional Variety}
 \usage{
 variety_solve(
-  poly,
+  polylist,
   sd = 0.01,
   n = 1e+05,
   sig_digit = 3,
-  vars = mpoly::vars(poly),
+  vars = mpoly::vars(polylist),
   inc_warmup = FALSE,
   show_message = FALSE,
   stanfit = FALSE,
@@ -17,15 +17,15 @@ variety_solve(
 )
 }
 \arguments{
-\item{poly}{An \code{mpolyList} or \code{mpoly} object containing the polynomials.}
+\item{polylist}{An \code{mpolyList} or \code{mpoly} object containing the polynomials.}
 
-\item{sd}{Numeric scalar, standard deviation used by \code{\link[=rvnorm]{rvnorm()}} (default:
+\item{sd}{Numeric scalar standard deviation used by \code{\link[=rvnorm]{rvnorm()}} (default:
 \code{0.01}).}
 
 \item{n}{Integer, number of draws used for averaging (default: \code{1e5}).}
 
-\item{sig_digit}{Integer, significant digits to round the solution (default:
-\code{3}).}
+\item{sig_digit}{Integer, significant digits used to round the solution
+(default: \code{3}).}
 
 \item{vars}{Character vector of variable names to average; defaults to
 \code{mpoly::vars(polylist)}.}
@@ -53,15 +53,19 @@ favor some over others, and the posterior mean may fall between true
 solutions.
 }
 \examples{
-p <- mp(c("x^2 - y", "x^2 + y"))
+library(mpoly)
+f1 <- mp("x^2 - y")
+f2 <- mp("x^2 + y")
+polylist <- mpolyList(f1, f2)
 
 
-# posterior-mean solution only
-variety_solve(p, n = 2e4, sd = 0.01, sig_digit = 3)
+# Posterior-mean solution only
+variety_solve(polylist, n = 2e4, sd = 0.01, sig_digit = 3)
 
 
-# return Stan fit and solution
-variety_solve(p, n = 1e4, stanfit = TRUE)
+# Return Stan fit and solution
+out <- variety_solve(polylist, n = 1e4, stanfit = TRUE)
+out
 
 
 }

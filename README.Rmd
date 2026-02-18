@@ -79,8 +79,7 @@ ggplot() +
 ggplot() +
   geom_variety(
     poly = mp(c("x^2 + y^2 - 1", "y - x")) ,
-    xlim = c(-2, 2), ylim = c(-2, 2)
-  ) +
+    xlim = c(-2, 2), ylim = c(-2, 2)) +
   coord_equal()
 ```
 

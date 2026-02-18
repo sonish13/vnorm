@@ -1,16 +1,17 @@
-# This function creates stan files we need for pre-compiling stan models.
-# This is for univariety models
+# Internal helper to generate Stan files for precompiled univariate models.
 
-make_stan_files <- function(num_of_vars,
-                            totaldeg,
-                            homo = TRUE,
-                            w = TRUE,
-                            basis = c("x", "y", "z")) {
+make_stan_files <- function(
+  num_of_vars,
+  totaldeg,
+  homo = TRUE,
+  w = TRUE,
+  basis = c("x", "y", "z")
+) {
+  # Enumerate parameter variable names used by this template.
+  vars <- basis[seq_len(num_of_vars)]
 
-  vars <- basis[seq_along(1:num_of_vars)]
-
-  # Data block
-  var_for_data_block <- mpoly::basis_monomials(basis[seq_along(1:num_of_vars)], totaldeg)
+  # Build the Stan data block containing polynomial coefficients.
+  var_for_data_block <- mpoly::basis_monomials(basis[seq_len(num_of_vars)], totaldeg)
   var_for_data_block <- lapply(var_for_data_block, reorder, varorder = basis)
   var_for_data_block <- lapply(var_for_data_block, coef)
   var_for_data_block <- unlist(var_for_data_block)
@@ -20,13 +21,13 @@ make_stan_files <- function(num_of_vars,
   data_block <- paste(sapply(var_for_data_block, function(x) paste("  real", x)), collapse = "; ")
   data_block <- paste0(data_block, ";")
 
+  # Build the Stan parameter block (optionally box-constrained by w).
   if (w) {
     data_block <- paste0(data_block, "\n  real w;")
   }
 
   data_block <- paste0("data {\n  real si;\n", data_block, "\n}\n")
 
-  # Parameter block
   if (w) {
     params_block <- paste(sapply(vars, function(var) {
       paste0("  real<lower=-", "w", ", upper=", "w", "> ", var, ";")
@@ -39,15 +40,15 @@ make_stan_files <- function(num_of_vars,
 
   params_block <- paste0("parameters {\n", params_block, "\n}\n")
 
-  # Model block
-  g_coef <- mpoly::basis_monomials(basis[seq_along(1:num_of_vars)], totaldeg)
+  # Build the symbolic polynomial g and its derivatives for transformed params.
+  g_coef <- mpoly::basis_monomials(basis[seq_len(num_of_vars)], totaldeg)
   g_coef <- lapply(g_coef, reorder, varorder = basis)
   g_coef <- lapply(g_coef, coef)
   g_coef <- unlist(g_coef)
   g_coef <- get_listed_coeficients(g_coef)
   g_coef <- names(g_coef)
 
-  g_terms <- mpoly::basis_monomials(basis[seq_along(1:num_of_vars)], totaldeg)
+  g_terms <- mpoly::basis_monomials(basis[seq_len(num_of_vars)], totaldeg)
   g_terms <- lapply(g_terms, reorder, varorder = basis)
   g_terms <- lapply(g_terms, mpoly_to_stan)
   g_terms <- unlist(g_terms)
@@ -56,7 +57,6 @@ make_stan_files <- function(num_of_vars,
   g <- paste0(g_coef, "*", g_terms, collapse = "+")
   g <- gsub("1\\*|\\*1", "", g)
 
-  # Derivatives
   derivatives <- lapply(vars, get_derivative, num_of_vars = num_of_vars, deg = totaldeg, basis = vars)
 
   derivative_names <- sapply(seq_along(vars), function(i) {
@@ -78,17 +78,16 @@ make_stan_files <- function(num_of_vars,
     ndg <- "  real ndg = 1;"
   }
 
-  # Transformed parameter block
-
+  # Emit transformed-parameters and model blocks.
   trans_block <- paste0(
     "transformed parameters {\n  real g = ", g, ";\n", dg, ";\n", ndg, "\n}\n"
   )
-  # Model block
+
   model_block <- paste0(
     "model {\n  target += normal_lpdf(0.00 | g/ndg, si); \n}"
   )
 
-  # Complete stan code
+  # Assemble complete Stan program text.
   stan_code <- paste0(data_block, params_block, trans_block, model_block, sep = "")
 
   filename <- sprintf(
@@ -99,8 +98,7 @@ make_stan_files <- function(num_of_vars,
     if (w) "_w" else ""
   )
 
-  # Set path and write files
+  # Write template source into src/stan for package compilation.
   path <- here::here("src", "stan", filename)
   readr::write_lines(stan_code, file = path)
 }
-

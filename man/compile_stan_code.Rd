@@ -2,12 +2,12 @@
 % Please edit documentation in R/compile_stan_code.R
 \name{compile_stan_code}
 \alias{compile_stan_code}
-\title{Compile Stan model for user-defined polynomials}
+\title{Compile a Stan Model for User-Defined Polynomials}
 \usage{
 compile_stan_code(poly, custom_stan_code = FALSE, w = FALSE, homo = TRUE)
 }
 \arguments{
-\item{poly}{An mpoly object.}
+\item{poly}{An \code{mpoly} or \code{mpolyList} object.}
 
 \item{custom_stan_code}{If \code{TRUE}, a custom model is compiled even if the
 general case of the polynomial is already included during package
@@ -16,16 +16,15 @@ installation. Defaults to \code{FALSE}.}
 \item{w}{A named list of box constraints for vectors to be passed to Stan.
 See \code{\link[=rvnorm]{rvnorm()}} examples. Defaults to \code{FALSE}.}
 
-\item{homo}{If \code{TRUE}, the sampling is done from a homoskedastic variety
+\item{homo}{If \code{TRUE}, sampling is done from a homoskedastic variety
 normal distribution. Defaults to \code{TRUE}.
 
-This function creates a temporary Stan model for the kind of polynomial the user is
-interested in. It stores compiled model metadata in an internal package cache
-needed to run \code{rvnorm} with \code{user_compiled = TRUE}.}
+The compiled model metadata is stored in an internal package cache used by
+\code{rvnorm(user_compiled = TRUE)}.}
 }
 \description{
-This function helps to avoid recompiling for polynomials with the same
-indeterminate but different coefficients.
+Compile and cache a Stan model template for a polynomial shape so repeated
+calls to \code{\link[=rvnorm]{rvnorm()}} can reuse the compiled binary.
 }
 \examples{
 

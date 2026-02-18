@@ -6,7 +6,7 @@
 \alias{stat_variety}
 \alias{StatVariety}
 \alias{GeomVariety}
-\title{1d Varieties in 2d}
+\title{One-Dimensional Varieties in Two Dimensions}
 \usage{
 stat_variety(
   mapping = NULL,
@@ -60,8 +60,8 @@ the plot data. The return value must be a \code{data.frame}, and
 will be used as the layer data. A \code{function} can be created
 from a \code{formula} (e.g. \code{~ head(.x, 10)}).}
 
-\item{geom}{The geometric object to use display data, defaults to
-\code{GeomVariety}.}
+\item{geom}{The geometric object used to display data; defaults to
+\link{GeomVariety}.}
 
 \item{position}{A position adjustment to use on the data for this layer. This
 can be used in various ways, including to prevent overplotting and
@@ -150,7 +150,7 @@ give the stat as \code{"count"}.
 }}
 }
 \description{
-Draw a variety using ggplot2.
+Draw implicit polynomial varieties with \code{ggplot2}.
 }
 \section{Aesthetics}{
  \code{\link[=geom_variety]{geom_variety()}} understands the following aesthetics
@@ -198,9 +198,8 @@ ggplot() +
   coord_equal() +
   theme(legend.position = "top")
 
-# 5) A 2-polynomial system (mpolyList): circle ∩ hyperbola-like branch overlay
-#    Useful example showing multiple contours from one call.
-ps <- mp( c( "x^2 + y^2 - 1", "x y - 0.25" ) )
+# 5) A 2-polynomial system (mpolyList): circle and xy = 0.25
+ps <- mp(c("x^2 + y^2 - 1", "x y - 0.25"))
 ggplot() +
   geom_variety(poly = ps, xlim = c(-2, 2), ylim = c(-2, 2)) +
   coord_equal()

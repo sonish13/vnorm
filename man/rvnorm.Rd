@@ -9,7 +9,14 @@ rvnorm(
   poly,
   sd,
   output = "simple",
-  Sigma,
+  Sigma = NULL,
+  rejection = FALSE,
+  chains = 4L,
+  warmup = max(500, floor(n/2)),
+  inc_warmup = FALSE,
+  thin = 1L,
+  verbose = FALSE,
+  cores = min(chains, getOption("mc.cores", 1L)),
   homo = TRUE,
   w,
   vars,
@@ -20,57 +27,20 @@ rvnorm(
   pre_compiled = TRUE,
   user_compiled = FALSE,
   show_messages = FALSE,
-  ...,
-  rejection = FALSE,
-  chains = 4L,
-  warmup = max(500, floor(n/2)),
-  inc_warmup = FALSE,
-  thin = 1L,
-  verbose = FALSE,
-  cores = min(chains, getOption("mc.cores", 1L))
+  ...
 )
 }
 \arguments{
-\item{n}{The number of draws desired from each chain after warmup.}
+\item{n}{Number of draws desired from each chain after warmup.}
 
-\item{poly}{An mpoly object.}
+\item{poly}{An \code{mpoly} object.}
 
-\item{sd}{The "standard deviation" component of the normal kernel. sd = Sigma
-when Sigma is specified.}
+\item{sd}{Scale parameter for the normal kernel. If \code{Sigma} is supplied,
+\code{sd} is replaced by \code{Sigma}.}
 
-\item{output}{\code{"simple"}, \code{"tibble"}, \code{"stanfit"}.}
+\item{output}{One of \code{"simple"}, \code{"tibble"}, or \code{"stanfit"}.}
 
-\item{Sigma}{Full "covariance" matrix or a vector specifying the diagonal of
-such a matrix.}
-
-\item{homo}{If \code{TRUE}, the sampling is done from homoskedastic variety
-normal distribution.}
-
-\item{w}{A named list of box constraints for vectors to be passed to Stan,
-see examples. A If a single number, a box window (-w,w) is applied to all
-variables.}
-
-\item{vars}{A character vector of the indeterminates in the distribution.}
-
-\item{numerator, denominator}{A character(1) containing the printed numerator
-of the variety normal distribution.}
-
-\item{refresh}{The \code{refresh} argument of \code{stan()}, which governs how
-much information is provided to the user while sampling.}
-
-\item{code_only}{If \code{TRUE}, will only formulate and return Stan code.}
-
-\item{pre_compiled}{Whether to use pre-compiled stan models or not. Available
-for polynomials with three indeterminates and three degrees. Defaults to
-\code{TRUE}.}
-
-\item{user_compiled}{If\code{TRUE}, user compiled stan program made using
-\link{compile_stan_code} is used. Defaults to \code{FALSE}}
-
-\item{show_messages}{If \code{TRUE}, stan sampler messages are shown.
-Defaults to \code{FALSE}}
-
-\item{...}{Additional parameters to pass to \code{stan()}.}
+\item{Sigma}{Full covariance matrix or a diagonal vector of covariance terms.}
 
 \item{rejection}{If \code{TRUE}, rejection sampling is used.}
 
@@ -84,10 +54,37 @@ output.}
 
 \item{thin}{\code{stan()} \code{thin} parameter.}
 
-\item{verbose}{\code{TRUE} or \code{FALSE}; determines level of messaging.}
+\item{verbose}{If \code{TRUE}, print additional progress messages.}
 
 \item{cores}{The number of CPU cores to distribute the chains across, see
 \code{stan()}.}
+
+\item{homo}{If \code{TRUE}, sampling is from a homoskedastic variety normal
+distribution.}
+
+\item{w}{A named list of box constraints for vectors to be passed to Stan,
+see examples. If a single number, a box window \verb{(-w, w)} is applied to all
+variables.}
+
+\item{vars}{Character vector of polynomial indeterminates.}
+
+\item{numerator, denominator}{Character scalars containing printed numerator
+and denominator forms.}
+
+\item{refresh}{The \code{refresh} argument of \code{stan()}, which governs how
+much information is provided to the user while sampling.}
+
+\item{code_only}{If \code{TRUE}, only formulate and return Stan code.}
+
+\item{pre_compiled}{Whether to use precompiled Stan models. Available
+for polynomials with three indeterminates and three degrees. Defaults to
+\code{TRUE}.}
+
+\item{user_compiled}{If \code{TRUE}, use a user-compiled Stan program produced by
+\code{\link[=compile_stan_code]{compile_stan_code()}}. Defaults to \code{FALSE}.}
+
+\item{show_messages}{If \code{TRUE}, Stan sampler messages are shown.}
+\item{...}{Additional parameters passed to \code{stan()}.}
 }
 \value{
 Either (1) matrix whose rows are the individual draws from the
@@ -95,15 +92,15 @@ distribution, (2) a \link[tibble:tbl_df-class]{tibble::tbl_df} object with the d
 additional information, or (3) an object of class \code{stanfit}.
 }
 \description{
-Un-normalized density function and random generation for the variety normal
-distribution with mean equal to \code{poly} and "standard deviation" equal to
-\code{sd}. Please see details for caveats.
+Unnormalized density evaluation and random generation for the variety normal
+distribution with mean defined by \code{poly} and scale \code{sd}. See Details for
+caveats.
 }
 \details{
 If the variety you are interested in is connected, this strategy should work
-well out of the box.  If it isn't, you'll likely need to rely on running
-multiple chains, and it is very likely, if not probable, that the sampling
-will be biased to one or more of those components and down-sample others.
+well out of the box. If it is not, you will likely need multiple chains, and
+sampling may become biased toward one or more components while down-sampling
+others.
 Question: what is the relative likelihood of each component, or an equal unit
 of length, on different components? How does this generalize to more
 varieties of varying dimensions?
