@@ -252,18 +252,24 @@ geom_variety <- function(
     show.legend = NA,
     inherit.aes = TRUE
 ) {
-  # Convenience wrapper adding default mapping and parsed linetype legend.
+  # Convenience wrapper adding default mapping.
   if (is.null(data)) {
     data <- ensure_nonempty_data
   }
 
-  mapping <- if (is.null(mapping)) {
-    aes(group = after_stat(group), linetype = after_stat(Polynomial))
-  } else {
+  is_polylist <- is.mpolyList(poly)
+
+  mapping <- if (is.null(mapping) && is_polylist) {
+    aes(group = after_stat(group), colour = after_stat(Polynomial))
+  } else if (is.null(mapping)) {
+    aes(group = after_stat(group))
+  } else if (is_polylist) {
     modifyList(
       mapping,
-      aes(group = after_stat(group), linetype = after_stat(Polynomial))
+      aes(group = after_stat(group), colour = after_stat(Polynomial))
     )
+  } else {
+    modifyList(mapping, aes(group = after_stat(group)))
   }
 
   layer_obj <- layer(
@@ -282,13 +288,14 @@ geom_variety <- function(
     )
   )
 
-  list(
-    layer_obj,
-    ggplot2::scale_linetype_discrete(
-      name = NULL,
-      labels = function(l) parse(text = l)
+  if (is_polylist) {
+    list(
+      layer_obj,
+      ggplot2::guides(colour = ggplot2::guide_legend(title = NULL))
     )
-  )
+  } else {
+    layer_obj
+  }
 }
 
 poly_to_df <- function(poly, xlim, ylim, nx, ny, shift = 0) {
