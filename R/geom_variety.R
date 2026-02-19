@@ -54,33 +54,24 @@
 #'   geom_variety(poly = p1, xlim = c(-2, 2), ylim = c(-2, 2)) +
 #'   coord_equal()
 #'
-#' # 3) Folium of Descartes (loop with an asymptote) - variety with singularity
+#' # 2) Folium of Descartes (loop with an asymptote) - variety with singularity
 #' p3 <- mp("x^3 + y^3 - 3 x y")
 #' ggplot() +
 #'   geom_variety(poly = p3, xlim = c(-2, 3), ylim = c(-2, 3)) +
 #'   coord_equal()
 #'
-#' # 4) "Heart" curve (classic implicit heart)
+#' # 3) "Heart" curve (classic implicit heart)
 #' p4 <- mp("(x^2 + y^2 - 1)^3 - x^2 y^3")
 #' ggplot() +
 #'   geom_variety(poly = p4, xlim = c(-2, 2), ylim = c(-2, 2)) +
 #'   coord_equal() +
 #'   theme(legend.position = "top")
 #'
-#' # 5) A 2-polynomial system (mpolyList): circle and xy = 0.25
+#' # 4) A 2-polynomial system (mpolyList): circle and xy = 0.25
 #' ps <- mp(c("x^2 + y^2 - 1", "x y - 0.25"))
 #' ggplot() +
 #'   geom_variety(poly = ps, xlim = c(-2, 2), ylim = c(-2, 2)) +
 #'   coord_equal()
-#'
-#' # 5) Using shift for squared polynomials
-#' # (same variety, no zero crossing on grid)
-#' library(mpoly)
-#' p_shift <- mp("x^2 + y^2 - 1")^2
-#' ggplot() +
-#'   geom_variety(poly = p_shift, xlim = c(-2, 2), ylim = c(-2, 2)) +
-#'   coord_equal()
-#'
 #'
 #'
 #' ## known issues
@@ -96,6 +87,10 @@
 #' p <- mp("x^2 + y^2 - 1")
 #' ggplot() +
 #'   geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2)) +
+#'   coord_equal()
+#'
+#' ggplot() +
+#'   geom_variety(poly = p^2, xlim = c(-2, 2), ylim = c(-2, 2)) +
 #'   coord_equal()
 #'
 #' ggplot() +
@@ -257,19 +252,13 @@ geom_variety <- function(
     data <- ensure_nonempty_data
   }
 
-  is_polylist <- is.mpolyList(poly)
-
-  mapping <- if (is.null(mapping) && is_polylist) {
+  mapping <- if (is.null(mapping)) {
     aes(group = after_stat(group), colour = after_stat(Polynomial))
-  } else if (is.null(mapping)) {
-    aes(group = after_stat(group))
-  } else if (is_polylist) {
+  } else {
     modifyList(
       mapping,
       aes(group = after_stat(group), colour = after_stat(Polynomial))
     )
-  } else {
-    modifyList(mapping, aes(group = after_stat(group)))
   }
 
   layer_obj <- layer(
@@ -288,14 +277,10 @@ geom_variety <- function(
     )
   )
 
-  if (is_polylist) {
-    list(
-      layer_obj,
-      ggplot2::guides(colour = ggplot2::guide_legend(title = NULL))
-    )
-  } else {
-    layer_obj
-  }
+  list(
+    layer_obj,
+    ggplot2::guides(colour = ggplot2::guide_legend(title = NULL))
+  )
 }
 
 poly_to_df <- function(poly, xlim, ylim, nx, ny, shift = 0) {
