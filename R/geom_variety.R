@@ -84,7 +84,7 @@
 #'   coord_equal()
 #'
 #' # 2) non-zero crossing components
-#' p <- mp("x^2 + y^2 - 1")
+#' p <- mp("y - x")
 #' ggplot() +
 #'   geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2)) +
 #'   coord_equal()
@@ -95,7 +95,7 @@
 #'
 #' ggplot() +
 #'   geom_variety(
-#'     poly = p^2, xlim = c(-2, 2), ylim = c(-2, 2), shift = -0.00101684
+#'     poly = p^2, xlim = c(-2, 2), ylim = c(-2, 2), shift = -0.001936
 #'   ) +
 #'   coord_equal()
 #'

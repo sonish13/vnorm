@@ -136,7 +136,7 @@ ggplot(samps, aes(x, y)) +
   coord_equal()
 
 ggplot(samps, aes(x, y)) +
-  geom_point(aes(color = factor(.chain))) +
+  geom_point(aes(color = factor(.chain)), size = .5) +
   geom_variety(poly = p, linewidth = 1) +
   coord_equal()
 
