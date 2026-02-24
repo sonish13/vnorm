@@ -33,6 +33,7 @@ geom_variety(
   position = "identity",
   ...,
   poly,
+  vary_colour = FALSE,
   shift = 0,
   na.rm = FALSE,
   show.legend = NA,
@@ -42,7 +43,7 @@ geom_variety(
 \arguments{
 \item{mapping}{Aesthetic mappings created with \code{\link[ggplot2:aes]{ggplot2::aes()}}.}
 
-\item{data}{Layer data. If \code{NULL}, data is inherited from the plot.}
+\item{data}{Layer data.}
 
 \item{geom}{The geometric object used to display data; defaults to
 \link{GeomVariety}.}
@@ -59,13 +60,14 @@ polynomial(s) to plot.}
 
 \item{nx, ny}{Number of grid points in the x and y directions.}
 
-\item{xlim, ylim}{Length-2 numeric vectors giving plotting limits.}
+\item{xlim, ylim}{Length-2 numeric vectors giving plotting limits. If not
+supplied, limits are taken from the plot scales.}
 
 \item{shift}{A numeric constant added to the evaluated surface before
 contouring, i.e. the plotted level set is \code{poly + shift = 0}.
-Use this when the polynomial does not cross zero on the plotting grid.
-If \code{shift = 0} and all values have one sign, \code{geom_variety()} prints a
-message suggesting a shift value.}
+This is mainly useful when the polynomial does not cross zero on the
+plotting grid (for example, \code{p^2}). If \code{shift = 0} and all sampled values
+have one sign, \code{geom_variety()} prints a message suggesting a shift value.}
 
 \item{na.rm}{If \code{FALSE}, the default, missing values are removed with
 a warning. If \code{TRUE}, missing values are silently removed.}
@@ -74,18 +76,16 @@ a warning. If \code{TRUE}, missing values are silently removed.}
 \code{NA}, the default, includes if any aesthetics are mapped.
 \code{FALSE} never includes, and \code{TRUE} always includes.
 It can also be a named logical vector to finely select the aesthetics to
-display. To include legend keys for all levels, even
-when no data exists, use \code{TRUE}.  If \code{NA}, all levels are shown in legend,
-but unobserved levels are omitted.}
+display.}
 
 \item{inherit.aes}{If \code{FALSE}, overrides the default aesthetics,
 rather than combining with them. This is most useful for helper functions
 that define both data and aesthetics and shouldn't inherit behaviour from
-the default plot specification, e.g. \code{\link[ggplot2:annotation_borders]{annotation_borders()}}.}
+the default plot specification, e.g. \code{\link[ggplot2:borders]{borders()}}.}
 
 \item{stat}{The statistical transformation to use on the data for this layer.
 When using a \verb{geom_*()} function to construct a layer, the \code{stat}
-argument can be used to override the default coupling between geoms and
+argument can be used the override the default coupling between geoms and
 stats. The \code{stat} argument accepts the following:
 \itemize{
 \item A \code{Stat} ggproto subclass, for example \code{StatCount}.
@@ -95,9 +95,14 @@ give the stat as \code{"count"}.
 \item For more information and other ways to specify the stat, see the
 \link[ggplot2:layer_stats]{layer stat} documentation.
 }}
+
+\item{vary_colour}{Logical. If \code{TRUE}, map colour to the polynomial label so
+users can control per-polynomial colours with \verb{scale_colour_*()}.
+Defaults to \code{FALSE}, which keeps a constant line colour and varies only
+linetype across an \code{mpolyList}.}
 }
 \description{
-Draw implicit polynomial varieties with \code{ggplot2}.
+Plot implicit polynomial varieties with \code{ggplot2}.
 }
 \section{Aesthetics}{
  \code{\link[=geom_variety]{geom_variety()}} understands the following aesthetics
@@ -117,9 +122,9 @@ Draw implicit polynomial varieties with \code{ggplot2}.
 \section{Computed variables}{
 
 \describe{
-\item{probs}{The probability associated with the highest density region,
-specified
-by \code{probs} argument.}
+\item{Polynomial}{A parseable label for the polynomial, useful for
+\code{after_stat(Polynomial)} mappings (for example, linetype or colour).}
+\item{group}{Contour path group identifier used internally by the layer.}
 }
 }
 
@@ -133,51 +138,63 @@ ggplot() +
   geom_variety(poly = p1, xlim = c(-2, 2), ylim = c(-2, 2)) +
   coord_equal()
 
-# 2) Folium of Descartes (loop with an asymptote) - variety with singularity
-p3 <- mp("x^3 + y^3 - 3 x y")
+# Works with standard ggplot2 styling
 ggplot() +
-  geom_variety(poly = p3, xlim = c(-2, 3), ylim = c(-2, 3)) +
+  geom_variety(
+    poly = p1, xlim = c(-2, 2), ylim = c(-2, 2),
+    colour = "steelblue", linewidth = 1
+  ) +
+  coord_equal() +
+  theme_minimal()
+
+# 2) Folium of Descartes (singular variety)
+p2 <- mp("x^3 + y^3 - 3 x y")
+ggplot() +
+  geom_variety(poly = p2, xlim = c(-2, 3), ylim = c(-2, 3)) +
   coord_equal()
 
 # 3) "Heart" curve (classic implicit heart)
-p4 <- mp("(x^2 + y^2 - 1)^3 - x^2 y^3")
+p3 <- mp("(x^2 + y^2 - 1)^3 - x^2 y^3")
 ggplot() +
-  geom_variety(poly = p4, xlim = c(-2, 2), ylim = c(-2, 2)) +
+  geom_variety(poly = p3, xlim = c(-2, 2), ylim = c(-2, 2)) +
   coord_equal() +
   theme(legend.position = "top")
 
 # 4) A 2-polynomial system (mpolyList): circle and xy = 0.25
-ps <- mp(c("x^2 + y^2 - 1", "x y - 0.25"))
+p4 <- mp(c("x^2 + y^2 - 1", "x y - 0.25"))
+# By default, polynomials differ by linetype (not color).
 ggplot() +
-  geom_variety(poly = ps, xlim = c(-2, 2), ylim = c(-2, 2)) +
+  geom_variety(poly = p4, xlim = c(-2, 2), ylim = c(-2, 2)) +
   coord_equal()
 
+# With different colors (optional)
+ggplot() +
+  geom_variety(poly = p4, xlim = c(-2, 2), ylim = c(-2, 2), vary_colour = TRUE) +
+  coord_equal() +
+  scale_colour_manual(values = c("steelblue", "firebrick"))
 
-## known issues
+# You can also customize linetypes and legend placement with ggplot2 scales/themes
+ggplot() +
+  geom_variety(poly = p4, xlim = c(-2, 2), ylim = c(-2, 2), vary_colour = TRUE) +
+  coord_equal() +
+  scale_colour_manual(values = c("steelblue", "firebrick")) +
+  scale_linetype_manual(values = c("solid", "22"), guide = "none") +
+  theme(legend.position = "top")
+
+## common contouring situations
 ########################################
 
-# 1) singularities Lemniscate of Bernoulli (figure-eight shaped)
-p <- mp("(x^2 + y^2)^2 - 2 x^2")
+# 5) Squared polynomial (same zero set, but no sign change on the grid)
+# geom_variety() will suggest a negative shift when no contour is found.
+p5 <- mp("x^2 + y^2 - 1")
 ggplot() +
-  geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2)) +
+  geom_variety(poly = p5^2, xlim = c(-2, 2), ylim = c(-2, 2)) +
   coord_equal()
 
-# 2) non-zero crossing components
-p <- mp("y - x")
+# Use the suggested shift (your printed value may differ slightly).
 ggplot() +
-  geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2)) +
+  geom_variety(poly = p5^2, xlim = c(-2, 2), ylim = c(-2, 2), shift = -0.001) +
   coord_equal()
-
-ggplot() +
-  geom_variety(poly = p^2, xlim = c(-2, 2), ylim = c(-2, 2)) +
-  coord_equal()
-
-ggplot() +
-  geom_variety(
-    poly = p^2, xlim = c(-2, 2), ylim = c(-2, 2), shift = -0.001936
-  ) +
-  coord_equal()
-
 
 }
 \seealso{

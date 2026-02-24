@@ -31,6 +31,7 @@ xyz_to_isolines <- function(data, breaks) {
   x <- sort(unique0(data$x))
   y <- sort(unique0(data$y))
   z <- isoband_z_matrix(data)
+  z <- break_contour_ties(z, x = x, y = y, breaks = breaks)
 
   # contourLines expects rows to index x and columns to index y.
   grDevices::contourLines(
@@ -39,6 +40,27 @@ xyz_to_isolines <- function(data, breaks) {
     z = t(z),
     levels = breaks
   )
+}
+
+break_contour_ties <- function(z, x, y, breaks) {
+  # contourLines is unstable when grid nodes land exactly on the contour level.
+  # Add a tiny deterministic perturbation only at exact/near-exact ties.
+  if (length(breaks) != 1 || !is.finite(breaks)) return(z)
+  lev <- breaks[[1]]
+  if (!any(is.finite(z))) return(z)
+
+  scale_z <- max(abs(z - lev), na.rm = TRUE)
+  tol <- sqrt(.Machine$double.eps) * max(1, scale_z)
+  ties <- is.finite(z) & abs(z - lev) <= tol
+  if (!any(ties)) return(z)
+
+  # z has rows indexed by y and columns indexed by x.
+  phase <- outer(y, x, function(yy, xx) xx + sqrt(2) * yy)
+  sgn <- sign(phase)
+  sgn[sgn == 0] <- 1
+
+  z[ties] <- z[ties] + 4 * tol * sgn[ties]
+  z
 }
 
 iso_to_path <- function(iso, group = 1) {

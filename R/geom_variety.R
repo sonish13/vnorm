@@ -1,6 +1,6 @@
 #' One-Dimensional Varieties in Two Dimensions
 #'
-#' Draw implicit polynomial varieties with `ggplot2`.
+#' Plot implicit polynomial varieties with `ggplot2`.
 #'
 #' @section Aesthetics: [geom_variety()] understands the following aesthetics
 #'   (required aesthetics are in bold):
@@ -16,13 +16,13 @@
 #'
 #' @section Computed variables:
 #'   \describe{
-#'     \item{probs}{The probability associated with the highest density region,
-#'     specified
-#'     by `probs` argument.}
+#'     \item{Polynomial}{A parseable label for the polynomial, useful for
+#'     `after_stat(Polynomial)` mappings (for example, linetype or colour).}
+#'     \item{group}{Contour path group identifier used internally by the layer.}
 #'   }
 #'
 #' @param mapping Aesthetic mappings created with [ggplot2::aes()].
-#' @param data Layer data. If `NULL`, data is inherited from the plot.
+#' @param data Layer data.
 #' @param geom The geometric object used to display data; defaults to
 #'   [GeomVariety].
 #' @param position Position adjustment for the layer.
@@ -30,14 +30,19 @@
 #' @param n Number of grid points used in both x and y directions when `nx` and
 #'   `ny` are not supplied.
 #' @param nx,ny Number of grid points in the x and y directions.
-#' @param xlim,ylim Length-2 numeric vectors giving plotting limits.
+#' @param xlim,ylim Length-2 numeric vectors giving plotting limits. If not
+#'   supplied, limits are taken from the plot scales.
 #' @param poly An `mpoly` or `mpolyList` object describing the implicit
 #'   polynomial(s) to plot.
 #' @param shift A numeric constant added to the evaluated surface before
 #'   contouring, i.e. the plotted level set is `poly + shift = 0`.
-#'   Use this when the polynomial does not cross zero on the plotting grid.
-#'   If `shift = 0` and all values have one sign, `geom_variety()` prints a
-#'   message suggesting a shift value.
+#'   This is mainly useful when the polynomial does not cross zero on the
+#'   plotting grid (for example, `p^2`). If `shift = 0` and all sampled values
+#'   have one sign, `geom_variety()` prints a message suggesting a shift value.
+#' @param vary_colour Logical. If `TRUE`, map colour to the polynomial label so
+#'   users can control per-polynomial colours with `scale_colour_*()`.
+#'   Defaults to `FALSE`, which keeps a constant line colour and varies only
+#'   linetype across an `mpolyList`.
 #'
 #' @inheritParams ggplot2::geom_path
 #' @seealso [geom_path()]
@@ -54,49 +59,62 @@
 #'   geom_variety(poly = p1, xlim = c(-2, 2), ylim = c(-2, 2)) +
 #'   coord_equal()
 #'
-#' # 2) Folium of Descartes (loop with an asymptote) - variety with singularity
-#' p3 <- mp("x^3 + y^3 - 3 x y")
+#' # Works with standard ggplot2 styling
 #' ggplot() +
-#'   geom_variety(poly = p3, xlim = c(-2, 3), ylim = c(-2, 3)) +
+#'   geom_variety(
+#'     poly = p1, xlim = c(-2, 2), ylim = c(-2, 2),
+#'     colour = "steelblue", linewidth = 0.5
+#'   ) +
+#'   coord_equal() +
+#'   theme_minimal()
+#'
+#' # 2) Folium of Descartes (singular variety)
+#' p2 <- mp("x^3 + y^3 - 3 x y")
+#' ggplot() +
+#'   geom_variety(poly = p2, xlim = c(-2, 3), ylim = c(-2, 3)) +
 #'   coord_equal()
 #'
 #' # 3) "Heart" curve (classic implicit heart)
-#' p4 <- mp("(x^2 + y^2 - 1)^3 - x^2 y^3")
+#' p3 <- mp("(x^2 + y^2 - 1)^3 - x^2 y^3")
 #' ggplot() +
-#'   geom_variety(poly = p4, xlim = c(-2, 2), ylim = c(-2, 2)) +
+#'   geom_variety(poly = p3, xlim = c(-2, 2), ylim = c(-2, 2)) +
 #'   coord_equal() +
 #'   theme(legend.position = "top")
 #'
 #' # 4) A 2-polynomial system (mpolyList): circle and xy = 0.25
-#' ps <- mp(c("x^2 + y^2 - 1", "x y - 0.25"))
+#' p4 <- mp(c("x^2 + y^2 - 1", "x y - 0.25"))
+#' # By default, polynomials differ by linetype (not color).
 #' ggplot() +
-#'   geom_variety(poly = ps, xlim = c(-2, 2), ylim = c(-2, 2)) +
+#'   geom_variety(poly = p4, xlim = c(-2, 2), ylim = c(-2, 2)) +
 #'   coord_equal()
 #'
+#' # With different colors (optional)
+#' ggplot() +
+#'   geom_variety(poly = p4, xlim = c(-2, 2), ylim = c(-2, 2), vary_colour = TRUE) +
+#'   coord_equal() +
+#'   scale_colour_manual(values = c("steelblue", "firebrick"))
 #'
-#' ## known issues
+#' # You can also customize linetypes and legend placement with ggplot2 scales/themes
+#' ggplot() +
+#'   geom_variety(poly = p4, xlim = c(-2, 2), ylim = c(-2, 2), vary_colour = TRUE) +
+#'   coord_equal() +
+#'   scale_colour_manual(values = c("steelblue", "firebrick")) +
+#'   scale_linetype_manual(values = c("solid", "22"), guide = "none") +
+#'   theme(legend.position = "top")
+#'
+#' ## common contouring situations
 #' ########################################
 #'
-#' # 1) singularities Lemniscate of Bernoulli (figure-eight shaped)
-#' p <- mp("(x^2 + y^2)^2 - 2 x^2")
+#' # 5) Squared polynomial (same zero set, but no sign change on the grid)
+#' # geom_variety() will suggest a negative shift when no contour is found.
+#' p5 <- mp("x^2 + y^2 - 1")
 #' ggplot() +
-#'   geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2)) +
+#'   geom_variety(poly = p5^2, xlim = c(-2, 2), ylim = c(-2, 2)) +
 #'   coord_equal()
 #'
-#' # 2) non-zero crossing components
-#' p <- mp("y - x")
+#' # Use the suggested shift (your printed value may differ slightly).
 #' ggplot() +
-#'   geom_variety(poly = p, xlim = c(-2, 2), ylim = c(-2, 2)) +
-#'   coord_equal()
-#'
-#' ggplot() +
-#'   geom_variety(poly = p^2, xlim = c(-2, 2), ylim = c(-2, 2)) +
-#'   coord_equal()
-#'
-#' ggplot() +
-#'   geom_variety(
-#'     poly = p^2, xlim = c(-2, 2), ylim = c(-2, 2), shift = -0.001936
-#'   ) +
+#'   geom_variety(poly = p5^2, xlim = c(-2, 2), ylim = c(-2, 2), shift = -0.001) +
 #'   coord_equal()
 #'
 #'
@@ -171,6 +189,11 @@ StatVariety <- ggproto(
     if (is.mpoly(poly)) {
       df0 <- poly_to_df(poly, rangex, rangey, nx_eff, ny_eff, shift = 0)
       check_sign_warning(df0$z, shift)
+      no_sign_change0 <- !has_strict_sign_change(df0$z)
+      if (shift == 0 && no_sign_change0) {
+        message("Zero contours were generated")
+        return(tibble::tibble())
+      }
       df <- variety_paths_with_refinement(
         poly = poly,
         rangex = rangex,
@@ -181,6 +204,9 @@ StatVariety <- ggproto(
         group = data$group[1]
       )
       if (shift != 0) {
+        if (no_sign_change0) {
+          df <- snap_shifted_contours_to_variety(df, poly)
+        }
         # Merge near-coincident offset contours produced by shifted surfaces.
         dx <- (rangex[2] - rangex[1]) / max(nx_eff - 1, 1)
         dy <- (rangey[2] - rangey[1]) / max(ny_eff - 1, 1)
@@ -192,6 +218,11 @@ StatVariety <- ggproto(
       data_list <- lapply(seq_along(poly), function(i) {
         df0 <- poly_to_df(poly[[i]], rangex, rangey, nx_eff, ny_eff, shift = 0)
         check_sign_warning(df0$z, shift)
+        no_sign_change0 <- !has_strict_sign_change(df0$z)
+        if (shift == 0 && no_sign_change0) {
+          message("Zero contours were generated")
+          return(tibble::tibble())
+        }
         df <- variety_paths_with_refinement(
           poly = poly[[i]],
           rangex = rangex,
@@ -202,6 +233,9 @@ StatVariety <- ggproto(
           group = paste0(data$group[1], "_", i)
         )
         if (shift != 0) {
+          if (no_sign_change0) {
+            df <- snap_shifted_contours_to_variety(df, poly[[i]])
+          }
           # Same de-duplication policy for each polynomial in an mpolyList.
           dx <- (rangex[2] - rangex[1]) / max(nx_eff - 1, 1)
           dy <- (rangey[2] - rangey[1]) / max(ny_eff - 1, 1)
@@ -242,23 +276,29 @@ geom_variety <- function(
     position = "identity",
     ...,
     poly,
+    vary_colour = FALSE,
     shift = 0,
     na.rm = FALSE,
     show.legend = NA,
     inherit.aes = TRUE
 ) {
-  # Convenience wrapper adding default mapping.
+  # Default to linetype differences; colour mapping is opt-in via vary_colour.
   if (is.null(data)) {
     data <- ensure_nonempty_data
   }
 
-  mapping <- if (is.null(mapping)) {
-    aes(group = after_stat(group), colour = after_stat(Polynomial))
-  } else {
-    modifyList(
-      mapping,
-      aes(group = after_stat(group), colour = after_stat(Polynomial))
+  default_mapping <- aes(group = after_stat(group), linetype = after_stat(Polynomial))
+  if (isTRUE(vary_colour)) {
+    default_mapping <- modifyList(
+      default_mapping,
+      aes(colour = after_stat(Polynomial))
     )
+  }
+
+  mapping <- if (is.null(mapping)) {
+    default_mapping
+  } else {
+    modifyList(mapping, default_mapping)
   }
 
   layer_obj <- layer(
@@ -277,10 +317,24 @@ geom_variety <- function(
     )
   )
 
-  list(
+  n_poly <- if (is.mpolyList(poly)) length(poly) else 1L
+  out <- list(
     layer_obj,
-    ggplot2::guides(colour = ggplot2::guide_legend(title = NULL))
+    ggplot2::scale_linetype_discrete(
+      name = NULL,
+      labels = function(l) parse(text = l),
+      guide = if (isTRUE(vary_colour)) "none" else "legend"
+    )
   )
+  if (isTRUE(vary_colour)) {
+    out <- c(out, list(ggplot2::guides(
+      colour = ggplot2::guide_legend(
+        title = NULL,
+        override.aes = list(linetype = scales::linetype_pal()(max(1L, n_poly)))
+      )
+    )))
+  }
+  out
 }
 
 poly_to_df <- function(poly, xlim, ylim, nx, ny, shift = 0) {
@@ -323,6 +377,7 @@ path_proximity <- function(df_a, df_b) {
 collapse_near_duplicate_contours <- function(df, tol) {
   # Merge contours that are geometric near-duplicates (common after shift).
   if (nrow(df) == 0) return(df)
+  dup_mult <- 6
 
   groups <- split(df, df$group)
   if (length(groups) <= 1) return(df)
@@ -341,7 +396,7 @@ collapse_near_duplicate_contours <- function(df, tol) {
     g2 <- g_names[2]
     d_cent <- sqrt(sum((centroids[g1, ] - centroids[g2, ])^2))
     d_path <- path_proximity(groups[[g1]], groups[[g2]])
-    if (d_cent <= 3 * tol && d_path <= 3 * tol) {
+    if (d_cent <= dup_mult * tol && d_path <= dup_mult * tol) {
       k <- if (nrow(groups[[g2]]) > nrow(groups[[g1]])) g2 else g1
       out <- groups[[k]]
       out$group <- factor(out$group)
@@ -364,10 +419,10 @@ collapse_near_duplicate_contours <- function(df, tol) {
         if (removed[[h]]) next
 
         d_cent <- sqrt(sum((centroids[g, ] - centroids[h, ])^2))
-        if (d_cent > 3 * tol) next
+        if (d_cent > dup_mult * tol) next
 
         d_path <- path_proximity(groups[[g]], groups[[h]])
-        if (d_path <= 3 * tol) {
+        if (d_path <= dup_mult * tol) {
           cluster <- c(cluster, h)
         }
       }
@@ -387,6 +442,36 @@ collapse_near_duplicate_contours <- function(df, tol) {
   out <- dplyr::bind_rows(groups[unique(keep)])
   out$group <- factor(out$group)
   out$piece <- as.integer(out$group)
+
+  # Post-merge cleanup: drop tiny fragments that hug a dominant contour.
+  out_groups <- split(out, out$group)
+  if (length(out_groups) >= 2) {
+    sizes <- vapply(out_groups, nrow, integer(1))
+    g_main <- names(out_groups)[which.max(sizes)]
+    main_df <- out_groups[[g_main]]
+    main_n <- nrow(main_df)
+
+    drop_groups <- character(0)
+    for (g in names(out_groups)) {
+      if (identical(g, g_main)) next
+      frag_df <- out_groups[[g]]
+      frag_n <- nrow(frag_df)
+      if (frag_n > max(25L, as.integer(0.8 * main_n))) next
+
+      # One-sided distance is the right test here: a short fragment can lie on
+      # top of the main path while the symmetric distance stays large.
+      d_path_frag <- mean_nn_distance(frag_df, main_df)
+      if (d_path_frag <= 20 * tol) {
+        drop_groups <- c(drop_groups, g)
+      }
+    }
+
+    if (length(drop_groups) > 0) {
+      out <- out[!(out$group %in% drop_groups), , drop = FALSE]
+      out$group <- factor(out$group)
+      out$piece <- as.integer(out$group)
+    }
+  }
   out
 }
 
@@ -418,21 +503,165 @@ variety_paths_with_refinement <- function(
   best_df
 }
 
+snap_shifted_contours_to_variety <- function(df, poly) {
+  # For no-sign-change polynomials (e.g., squared factors), shift generates a
+  # nearby level set. Snap those points back to poly = 0 to recover topology.
+  if (nrow(df) == 0) return(df)
+  if (!all(c("x", "y") %in% names(df))) return(df)
+
+  proj <- tryCatch({
+    varorder <- c("x", "y")
+    gfunc <- as.function(poly, varorder = varorder, silent = TRUE)
+    dg <- stats::deriv(poly, var = varorder)
+    dgfunc <- as.function(dg, varorder = varorder, silent = TRUE)
+
+    x <- as.matrix(df[, c("x", "y"), drop = FALSE])
+
+    # Typical contour-point spacing for step capping.
+    dseg <- sqrt(diff(x[, 1])^2 + diff(x[, 2])^2)
+    dseg <- dseg[is.finite(dseg) & dseg > 0]
+    base_step <- if (length(dseg) > 0) stats::median(dseg) else 0.05
+    if (!is.finite(base_step) || base_step <= 0) base_step <- 0.05
+    # Squared-polynomial correction is usually underpowered near singularities;
+    # allow larger but still bounded steps.
+    max_step <- 12 * base_step
+    snap_gains <- c(0.5, 1, 2, 4)
+
+    for (iter in seq_len(12L)) {
+      vals <- as.numeric(gfunc(x))
+      if (!all(is.finite(vals))) break
+
+      grads <- t(vapply(
+        seq_len(nrow(x)),
+        function(i) as.numeric(dgfunc(x[i, ])),
+        numeric(2)
+      ))
+      g2 <- rowSums(grads * grads)
+      g2_fin <- g2[is.finite(g2)]
+      g2_scale <- if (length(g2_fin) > 0) max(1, max(g2_fin)) else 1
+      g2_tol <- 1e3 * .Machine$double.eps * g2_scale
+      ok <- is.finite(g2) & g2 > g2_tol
+      if (!any(ok)) break
+
+      step0 <- matrix(0, nrow = nrow(x), ncol = 2)
+      step0[ok, ] <- (vals[ok] / (g2[ok] + g2_tol)) * grads[ok, , drop = FALSE]
+
+      best_x <- x
+      best_abs <- abs(vals)
+      best_abs[!is.finite(best_abs)] <- Inf
+
+      for (gain in snap_gains) {
+        step <- gain * step0
+
+        # Prevent jumping across branches near singular crossings.
+        step_norm <- sqrt(rowSums(step * step))
+        too_big <- is.finite(step_norm) & step_norm > max_step
+        if (any(too_big)) {
+          step[too_big, ] <- step[too_big, , drop = FALSE] *
+            (max_step / step_norm[too_big])
+        }
+
+        x_trial <- x - step
+        vals_trial <- as.numeric(gfunc(x_trial))
+        abs_trial <- abs(vals_trial)
+        abs_trial[!is.finite(abs_trial)] <- Inf
+
+        improve <- ok & (abs_trial < best_abs)
+        if (any(improve)) {
+          best_x[improve, ] <- x_trial[improve, , drop = FALSE]
+          best_abs[improve] <- abs_trial[improve]
+        }
+      }
+
+      x <- best_x
+
+      best_fin <- best_abs[is.finite(best_abs)]
+      if (length(best_fin) == 0) break
+      max_abs_new <- max(best_fin)
+      if (is.finite(max_abs_new) && max_abs_new <= 1e-8) break
+    }
+
+    x
+  }, error = function(e) NULL)
+
+  if (is.null(proj)) return(df)
+  proj <- as.matrix(proj)
+  if (!all(dim(proj) == c(nrow(df), 2L))) return(df)
+  bad <- !is.finite(proj[, 1]) | !is.finite(proj[, 2])
+  if (any(bad)) {
+    proj[bad, ] <- as.matrix(df[bad, c("x", "y"), drop = FALSE])
+  }
+
+  df$x <- proj[, 1]
+  df$y <- proj[, 2]
+  split_large_projected_jumps(df)
+}
+
+split_large_projected_jumps <- function(df) {
+  # Projection can collapse different shifted components onto the same variety,
+  # creating jumps within a path. Split those jumps before plotting.
+  if (nrow(df) == 0 || !"group" %in% names(df)) return(df)
+
+  groups <- split(df, df$group)
+  if (length(groups) == 0) return(df)
+
+  out <- lapply(seq_along(groups), function(i) {
+    g <- groups[[i]]
+    if (nrow(g) <= 2) return(g)
+    dx <- diff(g$x)
+    dy <- diff(g$y)
+    d <- sqrt(dx * dx + dy * dy)
+    d_pos <- d[is.finite(d) & d > 0]
+    if (length(d_pos) == 0) return(g)
+    base <- stats::median(d_pos, na.rm = TRUE)
+    if (!is.finite(base) || base <= 0) return(g)
+    cut_idx <- which(d > 8 * base)
+    if (length(cut_idx) == 0) return(g)
+
+    seg_id <- cumsum(c(TRUE, seq_len(nrow(g) - 1) %in% cut_idx))
+    g$group <- factor(paste0(as.character(g$group[1]), "_s", seg_id))
+    g
+  })
+
+  out <- dplyr::bind_rows(out)
+  out$group <- factor(out$group)
+  out$piece <- as.integer(out$group)
+  out
+}
+
+has_strict_sign_change <- function(zvals) {
+  # True only when the field takes both positive and negative values,
+  # ignoring near-zero floating-point noise.
+  z <- zvals[is.finite(zvals)]
+  if (length(z) == 0) return(FALSE)
+  scale_z <- max(abs(z), na.rm = TRUE)
+  tol <- 100 * sqrt(.Machine$double.eps) * max(1, scale_z)
+  any(z > tol, na.rm = TRUE) && any(z < -tol, na.rm = TRUE)
+}
+
 check_sign_warning <- function(zvals, shift) {
   # Emit user guidance when grid values do not cross zero.
-  signs <- sign(zvals[zvals != 0])
-  if (length(signs) == 0) return()
-
-  scale_z <- max(abs(zvals), na.rm = TRUE)
+  z <- zvals[is.finite(zvals)]
+  if (length(z) == 0) return()
+  scale_z <- max(abs(z), na.rm = TRUE)
   tol <- sqrt(.Machine$double.eps) * max(1, scale_z)
-  near_zero_touch <- min(abs(zvals), na.rm = TRUE) <= tol
+  signs <- ifelse(z > tol, 1L, ifelse(z < -tol, -1L, 0L))
+  signs <- signs[signs != 0]
+  if (length(signs) == 0) return()
+  near_zero_touch <- min(abs(z), na.rm = TRUE) <= tol
 
   if (all(signs == 1)) {
-    q1 <- quantile(zvals, 0.01, na.rm = TRUE)
+    z_pos <- z[z > tol]
+    q_small <- if (length(z_pos) > 0) {
+      stats::quantile(z_pos, 0.01, na.rm = TRUE)
+    } else {
+      tol
+    }
+    q_small <- max(as.numeric(q_small), tol)
     if (shift == 0) {
       message(
         "All values are positive on the plotting grid; ",
-        "try shift = ", format(-q1, digits = 6), "."
+        "try shift = ", format(-q_small, digits = 6), "."
       )
     } else if (near_zero_touch) {
       message(
@@ -448,11 +677,17 @@ check_sign_warning <- function(zvals, shift) {
       )
     }
   } else if (all(signs == -1)) {
-    q99 <- quantile(zvals, 0.99, na.rm = TRUE)
+    z_neg <- z[z < -tol]
+    q_large <- if (length(z_neg) > 0) {
+      stats::quantile(z_neg, 0.99, na.rm = TRUE)
+    } else {
+      -tol
+    }
+    q_large <- min(as.numeric(q_large), -tol)
     if (shift == 0) {
       message(
         "All values are negative on the plotting grid; ",
-        "try shift = ", format(-q99, digits = 6), "."
+        "try shift = ", format(-q_large, digits = 6), "."
       )
     } else if (near_zero_touch) {
       message(
