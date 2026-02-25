@@ -18,6 +18,7 @@ jobs:
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           needs: coverage
+          extra-repositories: https://mc-stan.org/r-packages/
           extra-packages: any::covr
 
       - name: Run test coverage
