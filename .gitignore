@@ -7,3 +7,4 @@ check/
 .Rcheck/
 ..Rcheck/
 *.tar.gz
+inst/paper/

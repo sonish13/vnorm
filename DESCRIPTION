@@ -30,6 +30,7 @@ Imports:
     readr
 Suggests: 
     testthat (>= 3.0.0),
+    withr,
     vdiffr,
     purrr,
     ggdensity,
