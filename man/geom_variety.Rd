@@ -105,11 +105,12 @@ linetype across an \code{mpolyList}.}
 Plot implicit polynomial varieties with \code{ggplot2}.
 }
 \section{Aesthetics}{
- \code{\link[=geom_variety]{geom_variety()}} understands the following aesthetics
-(required aesthetics are in bold):
+ \code{\link[=geom_variety]{geom_variety()}} understands the following aesthetics.
+\code{x} and \code{y} are computed by the stat, so users typically do not map them
+manually:
 \itemize{
-\item \strong{x}
-\item \strong{y}
+\item x
+\item y
 \item alpha
 \item color
 \item group
@@ -142,7 +143,7 @@ ggplot() +
 ggplot() +
   geom_variety(
     poly = p1, xlim = c(-2, 2), ylim = c(-2, 2),
-    colour = "steelblue", linewidth = 1
+    colour = "steelblue", linewidth = 0.5
   ) +
   coord_equal() +
   theme_minimal()
@@ -195,6 +196,7 @@ ggplot() +
 ggplot() +
   geom_variety(poly = p5^2, xlim = c(-2, 2), ylim = c(-2, 2), shift = -0.001) +
   coord_equal()
+
 
 }
 \seealso{

@@ -19,17 +19,18 @@ rejection_sampler(
 )
 }
 \arguments{
-\item{n}{The number of draws desired from each chain after warmup.}
+\item{n}{The number of accepted draws to return.}
 
-\item{poly}{An \code{mpoly} object.}
+\item{poly}{An \code{mpoly} object or an \code{mpolyList} object.}
 
 \item{sd}{The "standard deviation" component of the normal kernel.}
 
 \item{vars}{A character vector of the indeterminates in the distribution.}
 
-\item{w}{A named list of box constraints for vectors to be passed to Stan,
-see examples. If a single number, a box window \verb{(-w, w)} is applied to all
-variables.}
+\item{w}{Proposal box constraints. If a single number, a box window
+\verb{(-w, w)} is applied to all variables. If length 2, the same interval is
+used for all variables. A named list can be used to specify bounds for
+each variable.}
 
 \item{output}{Either \code{"simple"} or \code{"tibble"} output format.}
 
@@ -50,4 +51,25 @@ A matrix or tibble containing the accepted samples.
 \description{
 Perform rejection sampling to generate draws from a
 variety normal distribution.
+}
+\examples{
+\dontrun{
+library("mpoly")
+
+# Single polynomial (circle)
+p1 <- mp("x^2 + y^2 - 1")
+set.seed(1)
+rejection_sampler(100, p1, sd = 0.05, w = 1.5)
+
+# Uniform band proposal around the variety, returning a tibble
+rejection_sampler(
+  100, p1, sd = 0.05, w = c(-1.5, 1.5),
+  dist = "unif", output = "tibble"
+)
+
+# Two-polynomial system (upper/lower acceptance geometry differs by `homo`)
+p2 <- mp(c("x^2 + y^2 - 1", "y"))
+rejection_sampler(50, p2, sd = 0.05, w = 1.5, homo = TRUE)
+rejection_sampler(50, p2, sd = c(0.05, 0.05), w = 1.5, homo = FALSE)
+}
 }

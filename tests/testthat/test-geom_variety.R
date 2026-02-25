@@ -1,16 +1,3 @@
-poly_to_df <- function(poly, xlim, ylim, nx, ny) {
-  if (!is.mpoly(poly)) poly <- mp(poly)
-  f <- as.function(x = poly, varorder = c("x", "y"), silent = TRUE)
-
-  df <- expand.grid(
-    "x" = seq(xlim[1], xlim[2], length.out = nx),
-    "y" = seq(ylim[1], ylim[2], length.out = ny)
-  )
-
-  df$z <- with(df, f(cbind(x, y)))
-  df
-}
-
 test_that("geom_variety works with mpoly objects", {
   poly <- mp("y - x")
   p <- ggplot() + geom_variety(poly = poly, xlim = c(-2, 2), ylim = c(-2, 2))
@@ -24,6 +11,42 @@ test_that("geom_variety works with mpolyList objects", {
   p <- ggplot() +
     geom_variety(poly = poly_list, xlim = c(-2, 2), ylim = c(-2, 2))
   expect_true(inherits(p, "ggplot"))
+})
+
+test_that("geom_variety maps linetype by polynomial for mpolyList", {
+  poly_list <- mpolyList(mp("x^2 + y^2 - 1"), mp("y - x"))
+  p <- ggplot() +
+    geom_variety(poly = poly_list, xlim = c(-2, 2), ylim = c(-2, 2))
+
+  built <- ggplot2::ggplot_build(p)
+  expect_gt(length(unique(built$data[[1]]$linetype)), 1)
+})
+
+test_that("geom_variety keeps a single default colour for mpolyList", {
+  poly_list <- mpolyList(mp("x^2 + y^2 - 1"), mp("y - x"))
+  p <- ggplot() +
+    geom_variety(poly = poly_list, xlim = c(-2, 2), ylim = c(-2, 2))
+
+  built <- ggplot2::ggplot_build(p)
+  expect_equal(length(unique(built$data[[1]]$colour)), 1)
+})
+
+test_that("geom_variety supports scale_colour_manual with vary_colour", {
+  poly_list <- mpolyList(mp("x^2 + y^2 - 1"), mp("y - x"))
+  p <- NULL
+  expect_no_warning(
+    p <- ggplot() +
+      geom_variety(
+        poly = poly_list,
+        xlim = c(-2, 2),
+        ylim = c(-2, 2),
+        vary_colour = TRUE
+      ) +
+      ggplot2::scale_colour_manual(values = c("steelblue", "tomato"))
+  )
+
+  built <- ggplot2::ggplot_build(p)
+  expect_gt(length(unique(built$data[[1]]$colour)), 1)
 })
 
 test_that("geom_variety handles xlim and ylim parameters", {
@@ -106,8 +129,39 @@ test_that("duplicate shifted contours are collapsed", {
   expect_lte(length(unique(dat$group)), 2)
 })
 
+test_that("shifted repeated-line contours collapse to one visible path", {
+  p <- ggplot() +
+    geom_variety(
+      poly = mp("y - x")^2,
+      xlim = c(-2, 2),
+      ylim = c(-2, 2),
+      shift = -0.001936
+    )
+  dat <- ggplot2::ggplot_build(p)$data[[1]]
+  expect_lte(length(unique(dat$group)), 1)
+  expect_lt(diff(range(dat$y - dat$x, na.rm = TRUE)), 0.02)
+})
+
 test_that("shift suggestion is emitted as message when shift is zero", {
   poly <- mp("(x^2 + y^2 - 1)^2")
   p <- ggplot() + geom_variety(poly = poly, xlim = c(-2, 2), ylim = c(-2, 2))
   expect_message(ggplot2::ggplot_build(p), "try shift =")
+})
+
+test_that("no-shift repeated crossing polynomial does not emit bogus point contour", {
+  poly <- mp("y^2 - x^2")^2
+  p <- ggplot() + geom_variety(poly = poly, xlim = c(-2, 2), ylim = c(-2, 2))
+  built <- NULL
+  expect_message(built <- ggplot2::ggplot_build(p), "Zero contours were generated")
+  dat <- built$data[[1]]
+  expect_equal(nrow(dat), 0)
+})
+
+test_that("shift suggestion for repeated crossing polynomial is nonzero", {
+  poly <- mp("y^2 - x^2")^2
+  p <- ggplot() + geom_variety(poly = poly, xlim = c(-2, 2), ylim = c(-2, 2))
+  msgs <- testthat::capture_messages(ggplot2::ggplot_build(p))
+  suggestion <- msgs[grepl("try shift =", msgs, fixed = TRUE)]
+  expect_true(length(suggestion) >= 1)
+  expect_false(any(grepl("try shift = 0\\.?$", suggestion)))
 })

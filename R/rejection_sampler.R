@@ -3,13 +3,14 @@
 #' Perform rejection sampling to generate draws from a
 #' variety normal distribution.
 #'
-#' @param n The number of draws desired from each chain after warmup.
-#' @param poly An `mpoly` object.
+#' @param n The number of accepted draws to return.
+#' @param poly An `mpoly` object or an `mpolyList` object.
 #' @param sd The "standard deviation" component of the normal kernel.
 #' @param vars A character vector of the indeterminates in the distribution.
-#' @param w A named list of box constraints for vectors to be passed to Stan,
-#'   see examples. If a single number, a box window `(-w, w)` is applied to all
-#'   variables.
+#' @param w Proposal box constraints. If a single number, a box window
+#'   `(-w, w)` is applied to all variables. If length 2, the same interval is
+#'   used for all variables. A named list can be used to specify bounds for
+#'   each variable.
 #' @param output Either `"simple"` or `"tibble"` output format.
 #' @param dist Either `"norm"` (normal) or `"unif"` (uniform).
 #' @param homo If `TRUE`, sampling is done from a homoskedastic variety normal
@@ -19,6 +20,27 @@
 #' @param message If `TRUE`, print progress messages showing remaining samples.
 #'
 #' @return A matrix or tibble containing the accepted samples.
+#'
+#' @examples
+#' \dontrun{
+#' library("mpoly")
+#'
+#' # Single polynomial (circle)
+#' p1 <- mp("x^2 + y^2 - 1")
+#' set.seed(1)
+#' rejection_sampler(100, p1, sd = 0.05, w = 1.5)
+#'
+#' # Uniform band proposal around the variety, returning a tibble
+#' rejection_sampler(
+#'   100, p1, sd = 0.05, w = c(-1.5, 1.5),
+#'   dist = "unif", output = "tibble"
+#' )
+#'
+#' # Two-polynomial system (upper/lower acceptance geometry differs by `homo`)
+#' p2 <- mp(c("x^2 + y^2 - 1", "y"))
+#' rejection_sampler(50, p2, sd = 0.05, w = 1.5, homo = TRUE)
+#' rejection_sampler(50, p2, sd = c(0.05, 0.05), w = 1.5, homo = FALSE)
+#' }
 
 
 
@@ -65,16 +87,60 @@ rejection_sampler <- function(n,
     if (is.vector(sd)) {
       # Scalar/diagonal scale case.
       if (homo) {
-        pbar <- function(x) {
-          g <- pf(x)
-          J <- dpf(x)
-          as.numeric(g %*% solve(tcrossprod(J), g))
+        if (length(sd) == 1) {
+          pbar <- function(x) {
+            g <- pf(x)
+            J <- dpf(x)
+            as.numeric(g %*% solve(tcrossprod(J), g))
+          }
+          log_ptilde <- function(x) -pbar(x) / (2 * sd^2)
+          ptilde <- function(x) exp(-pbar(x) / (2 * sd^2))
+        } else {
+          if (length(sd) != n_vars) {
+            stop(
+              "When `poly` is an `mpolyList` and `homo = TRUE`, ",
+              "length(`sd`) must be 1, `length(vars)`, or a covariance matrix.",
+              call. = FALSE
+            )
+          }
+          pbar <- function(x) {
+            g <- pf(x)
+            J <- dpf(x)
+            if (n_vars == n_polys) {
+              J_inv <- solve(J)
+            } else {
+              J_inv <- MASS::ginv(J)
+            }
+            v <- (J_inv %*% g) / sd
+            as.numeric(crossprod(v))
+          }
+          log_ptilde <- function(x) -pbar(x) / 2
+          ptilde <- function(x) exp(-pbar(x) / 2)
         }
       } else {
-        pbar <- function(x) pf(x)^2
+        if (length(sd) == 1) {
+          pbar <- function(x) {
+            g <- as.numeric(pf(x))
+            sum(g^2)
+          }
+          log_ptilde <- function(x) -pbar(x) / (2 * sd^2)
+          ptilde <- function(x) exp(-pbar(x) / (2 * sd^2))
+        } else {
+          if (length(sd) != n_polys) {
+            stop(
+              "When `poly` is an `mpolyList` and `homo = FALSE`, ",
+              "length(`sd`) must be 1, `length(poly)`, or a covariance matrix.",
+              call. = FALSE
+            )
+          }
+          pbar <- function(x) {
+            g <- as.numeric(pf(x))
+            sum((g / sd)^2)
+          }
+          log_ptilde <- function(x) -pbar(x) / 2
+          ptilde <- function(x) exp(-pbar(x) / 2)
+        }
       }
-      log_ptilde <- function(x) -pbar(x) / (2 * sd^2)
-      ptilde <- function(x) exp(-pbar(x) / (2 * sd^2))
     } else if (is.matrix(sd)) {
       # Full covariance case via spectral decomposition.
       eig_sd <- eigen(sd, symmetric = TRUE)
@@ -95,7 +161,10 @@ rejection_sampler <- function(n,
           as.numeric(crossprod(sqrt_sd_inv %*% J_inv %*% g))
         }
       } else {
-        pbar <- function(x) pf(x)^2
+        pbar <- function(x) {
+          g <- as.numeric(pf(x))
+          as.numeric(crossprod(sqrt_sd_inv %*% g))
+        }
       }
 
       log_ptilde <- function(x) -pbar(x) / 2

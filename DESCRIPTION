@@ -25,11 +25,14 @@ Imports:
     dplyr,
     MASS,
     digest,
-    scales
+    scales,
+    here,
+    readr
 Suggests: 
     testthat (>= 3.0.0),
     vdiffr,
     purrr,
     ggdensity,
-    tidyverse
+    tidyverse,
+    covr
 Config/testthat/edition: 3

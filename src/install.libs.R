@@ -26,11 +26,22 @@ bin_stan <- file.path(bin, "stan")
 dir.create(bin_stan, recursive = TRUE, showWarnings = FALSE)
 src_stan <- normalizePath("stan", winslash = "/", mustWork = TRUE)
 bin_stan <- normalizePath(bin_stan, winslash = "/", mustWork = TRUE)
+running_r_cmd_check_parent <- nzchar(Sys.getenv("_R_CHECK_PACKAGE_NAME_"))
 callr::r(
-  func = function(src_stan, bin_stan) {
+  func = function(src_stan, bin_stan, running_r_cmd_check_parent) {
     sanitize_component <- function(x) {
       gsub("[^[:alnum:]_.-]", "_", x)
     }
+    running_r_cmd_check <- isTRUE(running_r_cmd_check_parent) ||
+      nzchar(Sys.getenv("_R_CHECK_PACKAGE_NAME_"))
+    precompile_opt <- tolower(Sys.getenv("VNORM_PRECOMPILE_STAN", "false"))
+    if (!precompile_opt %in% c("auto", "true", "false")) precompile_opt <- "auto"
+    enable_stan_binaries <- switch(
+      precompile_opt,
+      "true" = TRUE,
+      "false" = FALSE,
+      "auto" = !running_r_cmd_check
+    )
 
     model_binary_exists <- function(dir, model_stem) {
       candidates <- c(
@@ -119,8 +130,22 @@ callr::r(
     }, logical(1))
 
     models_to_compile <- file.path(cache_stan, model_files[needs_compile])
-    if (length(models_to_compile) > 0) {
-      instantiate::stan_package_compile(models = models_to_compile)
+    if (enable_stan_binaries && length(models_to_compile) > 0) {
+      tryCatch(
+        instantiate::stan_package_compile(models = models_to_compile),
+        error = function(e) {
+          warning(
+            "Skipping Stan model precompilation during installation: ",
+            conditionMessage(e),
+            call. = FALSE
+          )
+        }
+      )
+    } else if (!enable_stan_binaries) {
+      message(
+        "Skipping Stan binary precompilation/copy during installation ",
+        "(set VNORM_PRECOMPILE_STAN=true to override)."
+      )
     }
 
     has_binary <- vapply(model_stems, function(model_stem) {
@@ -144,14 +169,20 @@ callr::r(
     }
 
     file.copy(file.path(cache_stan, model_files), bin_stan, overwrite = TRUE)
-    for (model_stem in model_stems) {
-      for (suffix in c("", ".exe")) {
-        model_binary <- file.path(cache_stan, paste0(model_stem, suffix))
-        if (file.exists(model_binary)) {
-          file.copy(model_binary, bin_stan, overwrite = TRUE)
+    if (enable_stan_binaries) {
+      for (model_stem in model_stems) {
+        for (suffix in c("", ".exe")) {
+          model_binary <- file.path(cache_stan, paste0(model_stem, suffix))
+          if (file.exists(model_binary)) {
+            file.copy(model_binary, bin_stan, overwrite = TRUE)
+          }
         }
       }
     }
   },
-  args = list(src_stan = src_stan, bin_stan = bin_stan)
+  args = list(
+    src_stan = src_stan,
+    bin_stan = bin_stan,
+    running_r_cmd_check_parent = running_r_cmd_check_parent
+  )
 )

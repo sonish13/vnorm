@@ -2,4 +2,16 @@
 ^\.Rproj\.user$
 ^LICENSE\.md$
 inst/setup.R
+^inst/paper($|/)
 ^README\.Rmd$
+^check-local\.R$
+^check-coverage\.R$
+^\.github($|/)
+^src/stan/[0-9][0-9]*_[0-9][0-9]*_hvn$
+^src/stan/[0-9][0-9]*_[0-9][0-9]*_hvn_w$
+^src/stan/[0-9][0-9]*_[0-9][0-9]*_vn$
+^src/stan/[0-9][0-9]*_[0-9][0-9]*_vn_w$
+^src/stan/[0-9][0-9]*_[0-9][0-9]*_hvn[.]exe$
+^src/stan/[0-9][0-9]*_[0-9][0-9]*_hvn_w[.]exe$
+^src/stan/[0-9][0-9]*_[0-9][0-9]*_vn[.]exe$
+^src/stan/[0-9][0-9]*_[0-9][0-9]*_vn_w[.]exe$

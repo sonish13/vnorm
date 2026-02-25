@@ -8,7 +8,8 @@ pdvnorm(x, poly, sigma, homo = TRUE, log = FALSE)
 }
 \arguments{
 \item{x}{A numeric vector of length equal to the number of variables in
-\code{poly}, or a numeric matrix/data frame with that many columns.}
+\code{poly}, or a numeric matrix/data frame with that many columns (one row per
+evaluation point).}
 
 \item{poly}{An \code{mpoly} object (single polynomial) or an \code{mpolyList} object
 (multiple polynomials).}
@@ -25,40 +26,41 @@ pseudo-density.}
 \item{log}{Logical. If \code{TRUE}, returns the log of the density.}
 }
 \value{
-A numeric value (or vector) representing the density evaluated at
+A numeric scalar or vector containing the pseudo-density evaluated at
 \code{x}.
 }
 \description{
-Compute a pseudo-density for the variety normal distribution in either the
-homoskedastic or heteroskedastic setting.
+Evaluate the variety normal pseudo-density in either the homoskedastic or
+heteroskedastic setting.
 }
 \examples{
 
-library(mpoly)
+library("mpoly")
 
-## Univariate usage
-p <- mp("x")
-pdvnorm(c(-1, 0, 1), p, sigma = 1)
-pdvnorm(0, p, sigma = 2, log = TRUE)
+## Single polynomial in one variable
+p1 <- mp("x")
+pdvnorm(c(-1, 0, 1), p1, sigma = 1)
+pdvnorm(0, p1, sigma = 2, log = TRUE)
 
 ## Multivariate (square) system: two polynomials in two variables
-ps <- mp(c("x", "y"))
-X <- rbind(c(0, 0), c(1, 2), c(-1, 3))
+p2 <- mp(c("x", "y"))
+x2 <- rbind(c(0, 0), c(1, 2), c(-1, 3))
 
 ## Different sigma forms
-pdvnorm(X, ps, sigma = 1)
-pdvnorm(X, ps, sigma = c(1, 2))
-pdvnorm(X, ps, sigma = diag(c(1, 4)))
+pdvnorm(x2, p2, sigma = 1)
+pdvnorm(x2, p2, sigma = c(1, 2))
+pdvnorm(x2, p2, sigma = diag(c(1, 4)))
 
 ## Multivariate (underdetermined): one polynomial in two variables
-p <- mp("x + y")
-X <- rbind(c(1, 1), c(2, -1), c(0, 3))
-pdvnorm(X, p, sigma = 1)
+p3 <- mp("x + y")
+x3 <- rbind(c(1, 1), c(2, -1), c(0, 3))
+pdvnorm(x3, p3, sigma = 1)
+pdvnorm(as.data.frame(x3), p3, sigma = 1)
 
 ## Multivariate (overdetermined): three polynomials in two variables
-p <- mp(c("x", "y", "x + y"))
-X <- rbind(c(1, 2), c(0, -1), c(2, 2))
-pdvnorm(X, p, sigma = diag(2),    homo = TRUE)
-pdvnorm(X, p, sigma = c(1, 2, 3), homo = FALSE)
+p4 <- mp(c("x", "y", "x + y"))
+x4 <- rbind(c(1, 2), c(0, -1), c(2, 2))
+pdvnorm(x4, p4, sigma = diag(2),    homo = TRUE)
+pdvnorm(x4, p4, sigma = c(1, 2, 3), homo = FALSE)
 
 }
