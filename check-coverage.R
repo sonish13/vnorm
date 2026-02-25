@@ -17,6 +17,7 @@ install_path <- tempfile(pattern = "vnorm-covr-lib-")
 
 cov <- covr::package_coverage(type = "tests", install_path = install_path)
 pct <- covr::percent_coverage(cov)
+xml_out <- Sys.getenv("VNORM_COVERAGE_XML", unset = "")
 
 cat(sprintf("Total coverage: %.2f%%\n", pct))
 cov_df <- as.data.frame(cov)
@@ -38,6 +39,19 @@ if (pct < min_cov) {
     ),
     call. = FALSE
   )
+}
+
+if (nzchar(xml_out)) {
+  tryCatch(
+    {
+      covr::to_cobertura(cov, filename = xml_out)
+    },
+    error = function(e) {
+      xml <- covr::to_cobertura(cov)
+      writeLines(as.character(xml), con = xml_out)
+    }
+  )
+  cat(sprintf("\nWrote Cobertura XML: %s\n", xml_out))
 }
 
 invisible(cov)
