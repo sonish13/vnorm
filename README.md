@@ -3,16 +3,25 @@
 
 # vnorm
 
+<img src="man/figures/logo.png" align="right" width="180" />
+
+[![CRAN
+status](https://img.shields.io/badge/CRAN-not%20released-lightgrey)](https://cran.r-project.org/package=vnorm)
+[![repo
+status](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+[![Coverage](https://github.com/sonish13/vnorm/actions/workflows/coverage.yaml/badge.svg?branch=main)](https://github.com/sonish13/vnorm/actions/workflows/coverage.yaml)
+![coverage](https://img.shields.io/badge/coverage-84%25-brightgreen)
+
 The goal of vnorm is to sample from variety normal distributions. For
-faster computation, several models are pre-compiled upon installation.
-See below for more information. The package also enables users to be
-able to pre-compile models for certain polynomials and let them use it
-for similar polynomials with different coefficients. Other usage include
-plotting 1d varieties in 2d plots and projection onto varieties.
+faster computation, several models are pre-compiled on installation. The
+package also lets users pre-compile models for one polynomial shape and
+reuse them for related polynomials with different coefficients. Other
+uses include plotting 1D varieties in 2D and projecting points onto
+varieties.
 
 # Sampling from a variety
 
-Generate samples for the variety normal distribution with mean equal to
+Generate samples from the variety normal distribution with mean equal to
 `poly` and “standard deviation” equal to `sd`.
 
 For a polynomial $x^2 + y^2 - 1$, we can sample using `rvnorm()`
@@ -21,26 +30,32 @@ For a polynomial $x^2 + y^2 - 1$, we can sample using `rvnorm()`
 library("vnorm")
 poly <- mp("x^2 + y^2 -1")
 samps <- rvnorm(2000, poly, sd = .1)
+#> Pre-compiled Stan model not available (Stan model file "" not found.); falling back to regular rvnorm sampling.
 
 head(samps)
-#>            x           y
-#> 1  1.0424484 -0.28906861
-#> 2  0.2049675 -1.00055820
-#> 3  1.0135166  0.05365435
-#> 4 -0.9547829  0.57457430
-#> 5 -0.8960134  0.55345625
-#> 6 -0.8669832 -0.67256449
+#>            x          y
+#> 1  0.8887164 -0.7311284
+#> 2 -0.1166871 -0.9240324
+#> 3 -0.1723317 -0.9846079
+#> 4 -0.1945000  0.9704444
+#> 5 -0.9364913 -0.3389791
+#> 6  0.9615501  0.2898830
 
 str(samps)
 #> 'data.frame':    2000 obs. of  2 variables:
-#>  $ x: num  1.042 0.205 1.014 -0.955 -0.896 ...
-#>  $ y: num  -0.2891 -1.0006 0.0537 0.5746 0.5535 ...
+#>  $ x: num  0.889 -0.117 -0.172 -0.194 -0.936 ...
+#>  $ y: num  -0.731 -0.924 -0.985 0.97 -0.339 ...
 ```
 
 Let’s plot this with ggplot:
 
 ``` r
 library("ggplot2")
+#> 
+#> Attaching package: 'ggplot2'
+#> The following object is masked from 'package:vnorm':
+#> 
+#>     vars
 ggplot(samps, aes(x = x , y = y)) +
   geom_point() +
   coord_equal()
@@ -48,26 +63,26 @@ ggplot(samps, aes(x = x , y = y)) +
 
 <img src="man/figures/README-unnamed-chunk-3-1.png" width="100%" />
 
-We can use pre-compiled stan models for polynomials with degree upto 3
-and polynomial with up to 3 indeterminates. This helps avoid compiling
-stan models.
+We can use pre-compiled Stan models for polynomials with degree up to 3
+and at most 3 indeterminates. This avoids repeated Stan compilation.
 
 ``` r
 poly <- mp("x^2 + y^2 + z^2 - 1")
 samps <- rvnorm(2000, poly, sd = 0.1, pre_compiled = TRUE)
+#> Pre-compiled Stan model not available (Stan model file "" not found.); falling back to regular rvnorm sampling.
 head(samps)
-#>            x          y          z
-#> 1  0.1717313  0.9413607 -0.2781185
-#> 2 -1.0008663  0.1067377 -0.2108402
-#> 3 -0.6693839 -0.3007711  0.8025284
-#> 4 -0.6221259 -0.3855109  0.8487881
-#> 5 -0.6262169 -0.3494986  0.8351000
-#> 6 -0.1479208 -0.3299650  0.7932027
+#>            x           y          z
+#> 1 -0.5028331  0.96101968 -0.2335738
+#> 2  0.7597490  0.03645026  0.8039279
+#> 3 -0.3761774 -0.37603488 -0.9074592
+#> 4  0.5714691 -0.26910431  0.9604254
+#> 5 -0.2763946  1.07031320  0.2693057
+#> 6 -0.6681854  0.35681038  0.8555868
 ```
 
 We also want the user to be able to pre-compile models. This can be done
-with `compile_stan_code`. This helps avoid re-compiling stan model for
-similar polynomial with different coefficients.
+with \[compile_stan_code()\]. This helps avoid re-compiling Stan models
+for similar polynomials with different coefficients.
 
 ``` r
 poly <- mp("x^4 + y^4 - 1")
@@ -89,29 +104,28 @@ compile_stan_code(poly = poly)
 #> }
 ```
 
-Here we have compiled stan model for polynomial of the type \$ax^4 +
-by^4 -1 \$. Now, we can use the pre-compiled model with rvnorm for
-similar polynomial. The `user_compiled` argument is what we will use for
-this.
+Here we compile a Stan model for polynomials of the form
+$ax^4 + by^4 - 1$. We can then reuse that model in `rvnorm()` for
+similar polynomials by setting `user_compiled = TRUE`.
 
 ``` r
 poly <- mp("2 x^4 + 3 y^4 - 1")
 samps <- rvnorm(1000, poly = poly, sd = 0.1, user_compiled = TRUE)
 head(samps)
 #>            x          y
-#> 1 -0.1605150 -0.5952134
-#> 2  0.5758295 -1.3549004
-#> 3  0.5715470 -1.3394425
-#> 4  0.7518394 -0.8295126
-#> 5 -0.4074930 -0.8722190
-#> 6 -0.3683330 -0.8202659
+#> 1 -0.8406088 -0.2269716
+#> 2 -0.7994750 -0.5159492
+#> 3 -0.7906269  0.4938070
+#> 4 -0.7830172  0.4300515
+#> 5 -0.8491667  0.4526503
+#> 6 -0.3709381  0.7529136
 ```
 
 # Plotting
 
-`vnorm` has `geom_variety` which is ggplot2 compliant in order to plot
-1d varieties. We can plot varieties for single(mpoly object) or
-multiple(mpolyList object) polynomails `geom_variety()`.
+`vnorm` includes `geom_variety()`, a ggplot2-compatible geom for
+plotting 1D varieties. It supports single-polynomial (`mpoly`) and
+multi-polynomial (`mpolyList`) inputs.
 
 ``` r
 ggplot() +
@@ -125,8 +139,7 @@ ggplot() +
 ggplot() +
   geom_variety(
     poly = mp(c("x^2 + y^2 - 1", "y - x")) ,
-    xlim = c(-2, 2), ylim = c(-2, 2)
-  ) +
+    xlim = c(-2, 2), ylim = c(-2, 2)) +
   coord_equal()
 ```
 
@@ -140,5 +153,5 @@ You can install the development version of vnorm from
 ``` r
 if (!requireNamespace("devtools")) install.packages("devtools")
 devtools::install_github("dkahle/mpoly")
-devtools::install_github("sonish13/vnorm)
+devtools::install_github("sonish13/vnorm")
 ```
