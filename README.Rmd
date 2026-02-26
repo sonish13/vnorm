@@ -459,6 +459,3 @@ additional examples is in preparation and will be shared separately.
   systems of polynomial equations and parameter continuation*. *Advances in
   Geometry*, 15(2), 173--187.
   [doi:10.1515/advgeom-2015-0004](https://doi.org/10.1515/advgeom-2015-0004)
-- Schenck, Henry (2015). *Book Review: Numerically solving polynomial systems
-  with Bertini*. *Bulletin of the American Mathematical Society*, 53(1),
-  179--186. [doi:10.1090/bull/1520](https://doi.org/10.1090/bull/1520)
