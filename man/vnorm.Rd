@@ -6,6 +6,8 @@
 \alias{vnorm-package}
 \title{vnorm: Variety Normal Distribution}
 \description{
+\if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
+
 Samples, projects, and visualizes variety normal distributions.
 }
 \author{

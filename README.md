@@ -9,7 +9,7 @@
 status](https://img.shields.io/badge/CRAN-not%20released-lightgrey)](https://cran.r-project.org/package=vnorm)
 [![repo
 status](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
-[![codecov](https://codecov.io/gh/sonish13/vnorm/branch/main/graph/badge.svg)](https://app.codecov.io/gh/sonish13/vnorm)
+[![codecov](https://codecov.io/gh/sonish13/vnorm/graph/badge.svg)](https://app.codecov.io/gh/sonish13/vnorm)
 
 `vnorm` provides tools for sampling, visualizing, and projecting near
 real algebraic varieties defined by polynomial equations. It implements

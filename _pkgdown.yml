@@ -1,0 +1,7 @@
+template:
+  bootstrap: 5
+
+home:
+  strip_header: true
+
+url: https://sonish13.github.io/vnorm/
