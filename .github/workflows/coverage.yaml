@@ -18,7 +18,9 @@ jobs:
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           needs: coverage
-          extra-packages: any::covr
+          extra-packages: |
+            stan-dev/cmdstanr
+            any::covr
 
       - name: Run test coverage
         env:
