@@ -1,4 +1,13 @@
+skip_if_no_cmdstan <- function() {
+  skip_if_not_installed("cmdstanr")
+  ver <- tryCatch(cmdstanr::cmdstan_version(), error = function(e) NULL)
+  if (is.null(ver)) {
+    skip("Skipping compile_stan_code tests: CmdStan path has not been set.")
+  }
+}
+
 test_that("Compiles model correctly for an mpoly object", {
+  skip_if_no_cmdstan()
   p <- mp("x^2 + y^2 - 1")
   result <- compile_stan_code(
     p,
@@ -39,6 +48,7 @@ test_that("Stops if pre-compiled model already exists", {
 })
 
 test_that("Compiles model correctly for an mpolyList object", {
+  skip_if_no_cmdstan()
   p <- mp(c("x^2 + y^2 - 1","y - x"))
   result <- compile_stan_code(
     p,
@@ -76,6 +86,7 @@ test_that("Compiles model correctly for an mpolyList object", {
 })
 
 test_that("Creates or updates internal compiled_stan_info cache", {
+  skip_if_no_cmdstan()
   poly <- mp("x^2 + y^2 - 1")
   compile_stan_code(poly, custom_stan_code = TRUE, w = FALSE, homo = TRUE)
   compiled_info <- vnorm:::get_compiled_stan_info()
@@ -86,6 +97,7 @@ test_that("Creates or updates internal compiled_stan_info cache", {
 })
 
 test_that("Compiles model with box constraints w", {
+  skip_if_no_cmdstan()
   p <- mp("x^2 + y^2 - 1")
   result <- compile_stan_code(p, custom_stan_code = TRUE, w = 1, homo = TRUE)
   expect_equal(
@@ -110,6 +122,7 @@ test_that("Compiles model with box constraints w", {
 })
 
 test_that("Compiles model with homoskedastic option", {
+  skip_if_no_cmdstan()
   p <- mp("x^2 + y^2 - 1")
   result <- compile_stan_code(
     p,
