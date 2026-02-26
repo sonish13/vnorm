@@ -9,6 +9,7 @@ Maintainer: David Kahle <david@kahle.io>
 Description: Samples, projects, and visualizes variety normal distributions.
 License: MIT + file LICENSE
 Encoding: UTF-8
+Additional_repositories: https://mc-stan.org/r-packages/
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Depends:
