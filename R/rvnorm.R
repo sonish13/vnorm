@@ -436,7 +436,7 @@ rvnorm <- function(
         NULL
       }
     )
-    if (is.null(model)) {
+    if (is.null(model) || !file.exists(model$exe_file())) {
       poly <- poly_original
       output_needs_rewriting <- output_needs_rewriting_original
       stan_code <- create_stan_code(poly, sd, n_eqs, w, homo, vars)
