@@ -10,6 +10,15 @@
 
 Samples, projects, and visualizes variety normal distributions.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://sonish13.github.io/vnorm/}
+  \item \url{https://github.com/sonish13/vnorm}
+  \item Report bugs at \url{https://github.com/sonish13/vnorm/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: David Kahle \email{david@kahle.io}
 
