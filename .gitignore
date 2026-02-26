@@ -8,3 +8,6 @@ check/
 ..Rcheck/
 *.tar.gz
 inst/paper/
+README.html
+Rplots.pdf
+man/figures/logo-preview.png

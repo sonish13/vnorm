@@ -6,7 +6,11 @@ inst/setup.R
 ^README\.Rmd$
 ^check-local\.R$
 ^check-coverage\.R$
+^README\.html$
+^Rplots\.pdf$
 ^\.github($|/)
+^inst/logo($|/)
+^man/figures/logo-preview\.png$
 ^src/stan/[0-9][0-9]*_[0-9][0-9]*_hvn$
 ^src/stan/[0-9][0-9]*_[0-9][0-9]*_hvn_w$
 ^src/stan/[0-9][0-9]*_[0-9][0-9]*_vn$
