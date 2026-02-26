@@ -10,6 +10,7 @@ knitr::opts_chunk$set(
   comment = "#>",
   fig.path = "man/figures/README-",
   out.width = "72%",
+  out.extra = 'style="display:block; margin: 0 auto;"',
   fig.width = 4.8,
   fig.height = 3.0,
   fig.align = "center"
@@ -428,7 +429,7 @@ point, and the open circles show the successive iterates. The adaptive method is
 the default because it typically reaches the variety in fewer steps while
 maintaining the error tolerance.
 
-## Performance Notes
+## Pre-compiled Models
 
 `vnorm` includes pre-compiled Stan models for common polynomial structures (up to
 three variables and total degree at most three). For repeated work with a custom
@@ -445,9 +446,9 @@ samps_new <- rvnorm(1000, poly = p_new, sd = 0.1, user_compiled = TRUE)
 
 ## Learn More
 
-The accompanying paper describes the variety normal distribution, projection and
-sampling methods, and package applications in more detail. The README focuses on
-the main user-facing workflow: sample, visualize, evaluate, and project.
+The README focuses on the main user-facing workflow: sample, visualize,
+evaluate, and project. A longer manuscript with the mathematical background and
+additional examples is in preparation and will be shared separately.
 
 ## References
 
