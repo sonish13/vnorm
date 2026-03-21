@@ -68,6 +68,8 @@ variety_solve <- function(polylist,
   )
 
   df <- as.data.frame(samps$draws(format = "df", inc_warmup = inc_warmup))
+
+  # take the last n post-warmup draws
   df <- df[(nrow(df) - n + 1):nrow(df), mpoly::vars(polylist), drop = FALSE]
   row.names(df) <- NULL
   df <- df |> colMeans() |> round(sig_digit)

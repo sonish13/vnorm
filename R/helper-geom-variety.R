@@ -70,6 +70,7 @@ collapse_near_duplicate_contours <- function(df, tol) {
     }
   }
 
+  # greedy clustering: group nearby contours by centroid, merge closest
   removed <- stats::setNames(rep(FALSE, length(groups)), g_names)
   keep <- character(0)
 
@@ -215,6 +216,7 @@ snap_shifted_contours_to_variety <- function(df, poly) {
       best_abs <- abs(vals)
       best_abs[!is.finite(best_abs)] <- Inf
 
+      # try multiple step gains; keep the one that best reduces the residual
       for (gain in snap_gains) {
         step <- gain * step0
 
@@ -283,6 +285,7 @@ split_large_projected_jumps <- function(df) {
     cut_idx <- which(d > 8 * base)
     if (length(cut_idx) == 0) return(g)
 
+    # assign new group ids at detected jumps using cumulative split index
     seg_id <- cumsum(c(TRUE, seq_len(nrow(g) - 1) %in% cut_idx))
     g$group <- factor(paste0(as.character(g$group[1]), "_s", seg_id))
     g

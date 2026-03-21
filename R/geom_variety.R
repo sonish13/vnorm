@@ -137,8 +137,7 @@ stat_variety <- function(
     show.legend = NA,
     inherit.aes = TRUE
 ) {
-  # Thin wrapper that wires StatVariety into ggplot2::layer().
-  if (is.null(data)) data <- ensure_nonempty_data
+  if (is.null(data)) data <- ensure_nonempty_data # ggplot2 needs at least one row
 
   layer(
     data = data,
@@ -216,6 +215,7 @@ StatVariety <- ggproto(
       df$Polynomial <- as.character(mpoly_to_stan(poly))
       return(df)
     } else if (is.mpolyList(poly)) {
+      # process each polynomial independently, then combine
       data_list <- lapply(seq_along(poly), function(i) {
         df0 <- poly_to_df(poly[[i]], rangex, rangey, nx_eff, ny_eff, shift = 0)
         check_sign_warning(df0$z + shift, shift)
@@ -296,6 +296,7 @@ geom_variety <- function(
     )
   }
 
+  # user mappings override defaults; group and linetype always set
   mapping <- if (is.null(mapping)) {
     default_mapping
   } else {

@@ -107,6 +107,7 @@ make_multivariety_stan_codes <- function(num_of_vars,
     for (i in seq_len(num_of_poly)) {
       derivatives[[i]] <- unlist(derivatives_pre[[i]])
     }
+    # empty derivative expressions (from constant terms) become zero
     derivatives <- lapply(derivatives, function(v) {
       v[v == "**"] <- 0
       v

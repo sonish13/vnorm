@@ -343,15 +343,14 @@ rvnorm <- function(
       call. = FALSE
     )
   }
+  # resolve sd/Sigma into a single value for stan
   sigma_stan <- if (!is.null(Sigma)) Sigma else sd
   n_vars <- length(mpoly::vars(poly))
   if (is.numeric(sigma_stan) && length(sigma_stan) == 1) {
-    # scalar sd — pass directly to Stan
   } else if (is.vector(sigma_stan) && length(sigma_stan) == n_vars) {
     sigma_stan <- diag(sigma_stan)
   } else if (is.matrix(sigma_stan) &&
     nrow(sigma_stan) == n_vars && ncol(sigma_stan) == n_vars) {
-    # full covariance matrix — pass directly to Stan
   } else {
     stop(
       "`Sigma` should be a scalar, a vector of length equal to the number of ",
@@ -481,11 +480,11 @@ rvnorm <- function(
     show_messages = show_messages,
     ...
   )
+  # seed is injected separately to avoid passing NULL to cmdstan
   if (!is.null(seed)) sample_args$seed <- seed
   samps <- do.call(model$sample, sample_args)
 
   if (output == "simple") {
-    # Drop warmup excess; when inc_warmup keep all rows.
     df <- as.data.frame(samps$draws(format = "df", inc_warmup = inc_warmup))
     if (!inc_warmup) df <- tail(df, n)
     df <- df[, mpoly::vars(poly), drop = FALSE]
@@ -500,7 +499,6 @@ rvnorm <- function(
     df <- as.data.frame(samps$draws(format = "df", inc_warmup = inc_warmup))
     if (!inc_warmup) df <- tail(df, n)
     row.names(df) <- NULL
-    # Move lp__ to the last column for a stable display layout.
     df <- cbind(df[, -1], df[, 1])
     if (output_needs_rewriting) {
       df <- rename_output_df(df, replacement_list = var_info)

@@ -78,12 +78,14 @@ rejection_sampler <- function(n,
       dpfs[[i]] <- as.function(dp[[i]], varorder = vars, silent = TRUE)
     }
 
+    # assemble jacobian row-by-row from per-polynomial gradients
     dpf <- function(x) {
       mat <- matrix(NA_real_, nrow = n_polys, ncol = n_vars)
       for (i in seq_len(n_polys)) mat[i, ] <- dpfs[[i]](x)
       mat
     }
 
+    # build the acceptance kernel based on sd shape and homo setting
     if (is.vector(sd)) {
       # Scalar/diagonal scale case.
       if (homo) {
@@ -176,6 +178,7 @@ rejection_sampler <- function(n,
     dp <- deriv(poly, vars)
     if (correct_dp_coefficients) dp <- normalize_coefficients(dp)
 
+    # sum of squared partial derivatives (gradient norm squared)
     if (n_vars > 1) {
       ssdp <- mp("0")
       for (i in seq_len(n_vars)) {
@@ -194,6 +197,8 @@ rejection_sampler <- function(n,
     if (homo) {
       # Normalize by gradient magnitude for approximate arc-length scaling.
       pbar <- function(x) pf(x) / sqrt(ssdpf(x))
+
+      # log-space arithmetic avoids overflow of pbar(x)^2
       log_ptilde <- function(x) {
         -exp((2 * log(abs(pf(x))) - log(ssdpf(x))) - log(2) - 2 * log(sd))
       }
@@ -210,8 +215,9 @@ rejection_sampler <- function(n,
 
   mat <- matrix(nrow = 0, ncol = n_vars, dimnames = list(NULL, vars))
   n_remaining <- n
+
+  # rejection loop: propose uniformly in box, accept by kernel
   while (n_remaining > 0) {
-    # Propose points uniformly inside the box, then accept/reject.
     if (message) cat("\r", strrep(" ", 80))
     if (message) {
       cat(

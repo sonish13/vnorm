@@ -1,17 +1,14 @@
 # Unexported functions from ggplot2
 
 `%||%` <- function(x, y) {
-  # Return y only when x is NULL.
   if (is.null(x)) y else x
 }
 
 tibble0 <- function(...) {
-  # Keep names untouched to mirror ggplot internals.
   tibble::tibble(..., .name_repair = "minimal")
 }
 
 unique0 <- function(x, ...) {
-  # Safe unique helper that preserves NULL.
   if (is.null(x)) x else vctrs::vec_unique(x, ...)
 }
 
@@ -55,6 +52,7 @@ break_contour_ties <- function(z, x, y, breaks) {
   if (!any(ties)) return(z)
 
   # z has rows indexed by y and columns indexed by x.
+  # irrational offset (sqrt(2)) ensures no two grid points get the same perturbation sign
   phase <- outer(y, x, function(yy, xx) xx + sqrt(2) * yy)
   sgn <- sign(phase)
   sgn[sgn == 0] <- 1
@@ -90,12 +88,10 @@ iso_to_path <- function(iso, group = 1) {
 }
 
 empty <- function(df) {
-  # Treat NULL/waiver/zero-row data as empty.
   is.null(df) || nrow(df) == 0 || ncol(df) == 0 || inherits(df, "waiver")
 }
 
 ensure_nonempty_data <- function(data) {
-  # Provide a minimal placeholder row so stat/geom compute_group can run.
   if (empty(data)) {
     tibble0(group = 1, .size = 1)
   } else {

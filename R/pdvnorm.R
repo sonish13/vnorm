@@ -95,6 +95,8 @@ pdvnorm <- function(x, poly, sigma, homo = TRUE, log = FALSE) {
       grad_g_obj <- mpoly::gradient(poly)
       if (mean(is.constant(grad_g_obj)) == 1) {
         const <- unname(unlist(grad_g_obj))
+
+        # force() ensures const is evaluated in this iteration, not lazily
         force(const)
         grad_g <- function(...) const
       } else {
@@ -173,6 +175,8 @@ pdvnorm <- function(x, poly, sigma, homo = TRUE, log = FALSE) {
     grad_fun[[i]] <- deriv(poly[[i]], var = vars)
     if (mean(is.constant(grad_fun[[i]])) == 1) {
       const <- unname(unlist(grad_fun[[i]]))
+
+      # force() captures the current iteration's constant, not the final one
       force(const)
       grad_fun[[i]] <- function(...) {
         const
@@ -184,6 +188,7 @@ pdvnorm <- function(x, poly, sigma, homo = TRUE, log = FALSE) {
     }
   }
 
+  # cholesky factor for efficient mahalanobis distance
   L <- tryCatch(
     chol(Sigma),
     error = function(e) {

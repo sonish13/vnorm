@@ -13,6 +13,7 @@ canonicalize_mpoly <- function(poly) {
     }
   )
 
+  # sort: highest total degree first, then lexicographic variable order
   sorted_terms <- terms[order(-degrees, lex_keys, method = "radix")]
 
   structure(sorted_terms, class = "mpoly")
@@ -49,7 +50,7 @@ helper_for_derivative_for_mpoly_stan_code <- function(var, poly) {
 }
 
 helper_for_coef_lift_for_mpolylist <- function(p, i) {
-  # Lift coefficients and suffix them by polynomial index i.
+  # replace numeric coefficients with symbolic names (e.g. bx2_1) for stan
   monos <- monomials(p, unit = TRUE)
   printed_monos <- print(monos, silent = TRUE)
   printed_monos <- gsub("\\^", "", printed_monos)

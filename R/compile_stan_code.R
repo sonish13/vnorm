@@ -32,7 +32,6 @@
 compile_stan_code <- function(
     poly, custom_stan_code = FALSE, windowed = FALSE, homo = TRUE
   ) {
-  # Validate polynomial class before generating/compiling Stan code.
   if (!(is.mpoly(poly) || is.mpolyList(poly))) {
     stop("`poly` should be an mpoly or mpolyList object.", call. = FALSE)
   }
@@ -158,6 +157,7 @@ get_custom_stan_code <- function(poly, windowed = FALSE, homo = TRUE) {
       vars[[i]] <- vars(poly[[i]])
     }
 
+    # extract and suffix coefficients per polynomial for stan data block
     var_for_data_block <- vector("list", length(poly))
     for (i in seq_along(poly)) {
       var_for_data_block[[i]] <- mpoly::monomials(poly[[i]])

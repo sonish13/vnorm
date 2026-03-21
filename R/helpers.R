@@ -62,6 +62,7 @@ get_derivative <- function(var, num_of_vars, deg, basis = c("x", "y", "z")) {
   sym_coef <- get_listed_coeficients(sym_coef)
   sym_coef <- names(sym_coef)
 
+  # pair numeric coefficients, symbolic names, and monomial terms for stan output
   df_for_der <- data.frame(
     num_coef = num_coef,
     indeterminates = indeterminates,
@@ -69,6 +70,8 @@ get_derivative <- function(var, num_of_vars, deg, basis = c("x", "y", "z")) {
   )
 
   df_for_der <- dplyr::filter(df_for_der, num_coef != 0)
+
+  # strip trivial 1* factors from the derivative expression
   gsub(
     "1\\*|\\*1",
     "",

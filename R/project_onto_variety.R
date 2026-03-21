@@ -401,6 +401,7 @@ project_onto_variety_lagrange <- function(
     )
     H <- function(v) do.call(rbind, lapply(ddLf, function(f) f(v)))
 
+    # initialize lagrange multiplier by minimizing stationarity residual
     la0 <- stats::optimize(
       function(.) sum(dLf(c(x0, .))^2),
       lower = 0,
@@ -532,6 +533,7 @@ project_onto_variety_gradient_descent <- function(
       xn_1 <- xn
       direction_2 <- dp2f(xn_2)
       direction_1 <- dp2f(xn_1)
+      # barzilai-borwein step size from successive gradient difference
       ga <- abs(
         sum((xn_1 - xn_2) * (direction_1 - direction_2))
       ) / sum((direction_1 - direction_2)^2)
