@@ -14,7 +14,7 @@ make_coefficients_data <- function(
   required_coefs
 }
 
-get_coefficeints_data <- function(poly) {
+get_coefficients_data <- function(poly) {
   # Collect named coefficients for either a single polynomial
   # or polynomial list.
   if (is.mpoly(poly)) {

@@ -4,7 +4,7 @@ make_stan_files <- function(
   num_of_vars,
   totaldeg,
   homo = TRUE,
-  w = TRUE,
+  windowed = TRUE,
   basis = c("x", "y", "z")
 ) {
   # Enumerate parameter variable names used by this template.
@@ -28,13 +28,13 @@ make_stan_files <- function(
   data_block <- paste0(data_block, ";")
 
   # Build the Stan parameter block (optionally box-constrained by w).
-  if (w) {
+  if (windowed) {
     data_block <- paste0(data_block, "\n  real w;")
   }
 
   data_block <- paste0("data {\n  real si;\n", data_block, "\n}\n")
 
-  if (w) {
+  if (windowed) {
     params_block <- paste(sapply(vars, function(var) {
       paste0("  real<lower=-", "w", ", upper=", "w", "> ", var, ";")
     }), collapse = "\n")
@@ -117,10 +117,10 @@ make_stan_files <- function(
     length(vars),
     totaldeg,
     if (homo) "vn" else "hvn",
-    if (w) "_w" else ""
+    if (windowed) "_w" else ""
   )
 
   # Write template source into src/stan for package compilation.
-  path <- here::here("src", "stan", filename)
-  readr::write_lines(stan_code, file = path)
+  path <- file.path("src", "stan", filename)
+  writeLines(stan_code, con = path)
 }

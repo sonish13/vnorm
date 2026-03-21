@@ -9,6 +9,10 @@ inst/setup.R
 ^README\.html$
 ^Rplots\.pdf$
 ^\.github($|/)
+^\.claude($|/)
+^_pkgdown\.yml$
+^docs($|/)
+^pkgdown($|/)
 ^inst/logo($|/)
 ^man/figures/logo-preview\.png$
 ^src/stan/[0-9][0-9]*_[0-9][0-9]*_hvn$

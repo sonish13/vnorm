@@ -76,7 +76,7 @@ coef_lift_mpolylist_for_generating_names <- function(poly) {
   lifted_mpolylist
 }
 
-generate_model_name <- function(poly, w = FALSE, homo = TRUE) {
+generate_model_name <- function(poly, windowed = FALSE, homo = TRUE) {
   # Build deterministic cache key from canonicalized polynomial structure.
   if (is.mpoly(poly)) {
     g <- canonicalize_mpoly(poly)
@@ -93,6 +93,6 @@ generate_model_name <- function(poly, w = FALSE, homo = TRUE) {
     "%s_%s%s.stan",
     g,
     if (homo) "vn" else "hvn",
-    if (w) "_w" else ""
+    if (windowed) "_w" else ""
   )
 }

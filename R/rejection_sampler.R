@@ -242,8 +242,8 @@ rejection_sampler <- function(n,
       n_remaining <- n_remaining - n_accept
     }
   }
-  cat("\r", strrep(" ", 80))
-  cat("\r")
+  if (message) cat("\r", strrep(" ", 80))
+  if (message) cat("\r")
   row.names(mat) <- NULL
   out <- if (output == "tibble") tibble::as_tibble(mat) else mat
   out

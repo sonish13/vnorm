@@ -4,7 +4,7 @@ make_multivariety_stan_codes <- function(num_of_vars,
                                          totaldeg,
                                          num_of_poly,
                                          homo = TRUE,
-                                         w = TRUE,
+                                         windowed = TRUE,
                                          basis = c("x", "y", "z")) {
   # Track variable sets for each polynomial in the system.
   vars <- list()
@@ -37,7 +37,7 @@ make_multivariety_stan_codes <- function(num_of_vars,
   )
   data_block <- paste0(data_block, ";")
 
-  if (w) {
+  if (windowed) {
     data_block <- paste0(data_block, "\n  real w;")
   }
 
@@ -45,7 +45,7 @@ make_multivariety_stan_codes <- function(num_of_vars,
 
   # Parameter declarations for the union of variables across equations.
   vars_for_params <- unique(unlist(vars))
-  if (w) {
+  if (windowed) {
     params_block <- paste(sapply(vars_for_params, function(var) {
       paste0("  real<lower=-", "w", ", upper=", "w", "> ", var, ";")
     }), collapse = "\n")

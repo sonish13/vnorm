@@ -7,8 +7,8 @@
 #' @param custom_stan_code If `TRUE`, a custom model is compiled even if the
 #'   general case of the polynomial is already included during package
 #'   installation. Defaults to `FALSE`.
-#' @param w A named list of box constraints for vectors to be passed to Stan.
-#'   See [rvnorm()] examples. Defaults to `FALSE`.
+#' @param windowed If `TRUE`, the compiled Stan model includes a window (box
+#'   constraint) parameter `w` in its data block. Defaults to `FALSE`.
 #' @param homo If `TRUE`, sampling is done from a homoskedastic variety
 #'   normal distribution. Defaults to `TRUE`.
 #'
@@ -30,7 +30,7 @@
 #' }
 #'
 compile_stan_code <- function(
-    poly, custom_stan_code = FALSE, w = FALSE, homo = TRUE
+    poly, custom_stan_code = FALSE, windowed = FALSE, homo = TRUE
   ) {
   # Validate polynomial class before generating/compiling Stan code.
   if (!(is.mpoly(poly) || is.mpolyList(poly))) {
@@ -52,8 +52,8 @@ compile_stan_code <- function(
     }
   }
 
-  stan_code <- get_custom_stan_code(poly = poly, w = w, homo = homo)
-  model_name <- generate_model_name(poly = poly, w = w, homo = homo)
+  stan_code <- get_custom_stan_code(poly = poly, windowed = windowed, homo = homo)
+  model_name <- generate_model_name(poly = poly, windowed = windowed, homo = homo)
   # Write source to a temp .stan file and cache the mapping for rvnorm().
   model_path <- cmdstanr::write_stan_file(stan_code, dir = tempdir())
   info_before <- get_compiled_stan_info()
@@ -70,7 +70,7 @@ compile_stan_code <- function(
   cmdstan_model(model_path)
 }
 
-get_custom_stan_code <- function(poly, w = FALSE, homo = TRUE) {
+get_custom_stan_code <- function(poly, windowed = FALSE, homo = TRUE) {
   if (is.mpoly(poly)) {
     # Single-polynomial program: scalar g and scalar normalized distance.
     poly <- canonicalize_mpoly(poly)
@@ -90,13 +90,13 @@ get_custom_stan_code <- function(poly, w = FALSE, homo = TRUE) {
       collapse = "; "
     )
     data_block <- paste0(data_block, ";")
-    if (w) {
+    if (windowed) {
       data_block <- paste0(data_block, "  real w;")
     }
     data_block <- paste0("data {\n  real si;\n", data_block, "\n}\n")
 
     # Parameter block: unconstrained or box-constrained coordinates.
-    if (w) {
+    if (windowed) {
       params_block <- paste(sapply(vars, function(var) {
         paste0("  real<lower=-", "w", ", upper=", "w", "> ", var, ";")
       }), collapse = "\n")
@@ -180,13 +180,13 @@ get_custom_stan_code <- function(poly, w = FALSE, homo = TRUE) {
     )
     data_block <- paste0(data_block, ";")
 
-    if (w) {
+    if (windowed) {
       data_block <- paste0(data_block, "\n  real w;")
     }
 
     data_block <- paste0("data {\n  real si;\n", data_block, "\n}\n")
     vars_for_params <- unique(unlist(vars))
-    if (w) {
+    if (windowed) {
       params_block <- paste(sapply(vars_for_params, function(var) {
         paste0("  real<lower=-", "w", ", upper=", "w", "> ", var, ";")
       }), collapse = "\n")
