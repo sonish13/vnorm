@@ -1,5 +1,5 @@
-# Internal Stan code generation helper used by rvnorm().
-# Split out from rvnorm.R so coverage for rvnorm() can be assessed separately.
+# internal Stan code generation helper used by rvnorm()
+# split out from rvnorm.R so coverage for rvnorm() can be assessed separately
 
 create_stan_code <- function(poly, sd, n_eqs, w, homo, vars) {
   d <- get("deriv.mpoly", asNamespace("mpoly"))
@@ -84,7 +84,7 @@ model {{
       }
     }
 
-    # format jacobian rows as stan matrix literal
+    # format Jacobian rows as Stan matrix literal
     printed_jac <- apply(printed_jac, 1, paste, collapse = ", ")
     printed_jac <- paste("      [", printed_jac, "]", collapse = ", \n")
     printed_jac <- paste0("[\n", printed_jac, "\n    ]")

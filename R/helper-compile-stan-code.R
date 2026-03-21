@@ -1,5 +1,5 @@
 canonicalize_mpoly <- function(poly) {
-  # Normalize term ordering so structurally equivalent polynomials hash equally.
+  # normalize term ordering so structurally equivalent polynomials hash equally
   terms <- unclass(poly)
 
   degrees <- sapply(
@@ -20,7 +20,7 @@ canonicalize_mpoly <- function(poly) {
 }
 
 canonicalize_mpolylist <- function(poly) {
-  # Canonicalize each polynomial in a list.
+  # canonicalize each polynomial in a list
   stopifnot(inherits(poly, "mpolyList"))
 
   canonicalized_list <- lapply(poly, canonicalize_mpoly)
@@ -28,7 +28,7 @@ canonicalize_mpolylist <- function(poly) {
 }
 
 sort_mpolylist_lexicographically <- function(poly) {
-  # Enforce deterministic polynomial ordering before hashing/codegen.
+  # enforce deterministic polynomial ordering before hashing/codegen
   stopifnot(inherits(poly, "mpolyList"))
 
   poly_strings <- vapply(
@@ -43,14 +43,14 @@ sort_mpolylist_lexicographically <- function(poly) {
 }
 
 helper_for_derivative_for_mpoly_stan_code <- function(var, poly) {
-  # Return derivative expression in Stan syntax for one variable.
+  # return derivative expression in Stan syntax for one variable
   lifted_poly <- mpoly::coef_lift(poly)
   derivative <- deriv(lifted_poly, var)
   mpoly_to_stan(derivative)
 }
 
 helper_for_coef_lift_for_mpolylist <- function(p, i) {
-  # replace numeric coefficients with symbolic names (e.g. bx2_1) for stan
+  # replace numeric coefficients with symbolic names (e.g. bx2_1) for Stan
   monos <- monomials(p, unit = TRUE)
   printed_monos <- print(monos, silent = TRUE)
   printed_monos <- gsub("\\^", "", printed_monos)
@@ -64,21 +64,21 @@ helper_for_coef_lift_for_mpolylist <- function(p, i) {
 }
 
 helper_for_derivative_for_mpolylist_stan_code <- function(var, poly, i) {
-  # Derivative helper for mpolyList code generation.
+  # derivative helper for mpolyList code generation
   lifted_poly <- helper_for_coef_lift_for_mpolylist(poly, i)
   derivative <- deriv(lifted_poly, var)
   mpoly_to_stan(derivative)
 }
 
 coef_lift_mpolylist_for_generating_names <- function(poly) {
-  # Lift all polynomials so model naming depends on structure, not coefficients.
+  # lift all polynomials so model naming depends on structure, not coefficients
   lifted_mpolylist <- lapply(poly, coef_lift)
   class(lifted_mpolylist) <- "mpolyList"
   lifted_mpolylist
 }
 
 generate_model_name <- function(poly, windowed = FALSE, homo = TRUE) {
-  # Build deterministic cache key from canonicalized polynomial structure.
+  # build deterministic cache key from canonicalized polynomial structure
   if (is.mpoly(poly)) {
     g <- canonicalize_mpoly(poly)
     g <- coef_lift(g)

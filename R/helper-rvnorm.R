@@ -4,7 +4,7 @@ make_coefficients_data <- function(
   # enumerate all monomials up to degree; zero-fill any not in poly
   monos <- mpoly::basis_monomials(basis[seq_len(num_of_vars)], deg)
 
-  # single pass: reorder, extract coef name, convert to stan name
+  # single pass: reorder, extract coef name, convert to Stan name
   stan_names <- vapply(monos, function(m) {
     nm <- names(coef(reorder(m, varorder = basis)))
     nm <- gsub("\\s+", "", nm)
@@ -19,8 +19,8 @@ make_coefficients_data <- function(
 }
 
 get_coefficients_data <- function(poly) {
-  # Collect named coefficients for either a single polynomial
-  # or polynomial list.
+  # collect named coefficients for either a single polynomial
+  # or polynomial list
   if (is.mpoly(poly)) {
     data <- get_listed_coeficients(coef(poly))
   } else if (is.mpolyList(poly)) {
@@ -45,7 +45,7 @@ get_coefficients_data <- function(poly) {
 }
 
 check_and_replace_vars <- function(p) {
-  # Map arbitrary variable names to x/y/z for precompiled Stan templates.
+  # map arbitrary variable names to x/y/z for precompiled Stan templates
   current_vars <- mpoly::vars(p)
   num_vars <- length(current_vars)
   target_vars <- list(
@@ -82,7 +82,7 @@ check_and_replace_vars <- function(p) {
 }
 
 rename_output_df <- function(df, replacement_list) {
-  # Restore original variable names in output after x/y/z remapping.
+  # restore original variable names in output after x/y/z remapping
   names(df) <- sapply(names(df), function(col) {
     if (col %in% names(replacement_list)) {
       replacement_list[[col]]

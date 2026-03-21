@@ -47,7 +47,7 @@ variety_solve <- function(polylist,
                           show_message = FALSE,
                           stanfit = FALSE,
                           ...) {
-  # Solve by sampling then averaging projected draws coordinate-wise.
+  # solve by sampling then averaging projected draws coordinate-wise
   if (!inherits(polylist, "mpoly") && !inherits(polylist, "mpolyList")) {
     stop("`polylist` must be an mpoly or mpolyList object.", call. = FALSE)
   }

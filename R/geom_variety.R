@@ -174,7 +174,7 @@ StatVariety <- ggproto(
     poly, n = 101, nx = n, ny = n, xlim = NULL, ylim = NULL,
     shift = 0, mul = .05
   ) {
-    # Use a denser grid for nonzero shift to reduce fragmented contours.
+    # use a denser grid for nonzero shift to reduce fragmented contours
     nx_eff <- if (shift != 0) max(as.integer(nx), 301L) else as.integer(nx)
     ny_eff <- if (shift != 0) max(as.integer(ny), 301L) else as.integer(ny)
 
@@ -207,7 +207,7 @@ StatVariety <- ggproto(
         if (no_sign_change0) {
           df <- snap_shifted_contours_to_variety(df, poly)
         }
-        # Merge near-coincident offset contours produced by shifted surfaces.
+        # merge near-coincident offset contours produced by shifted surfaces
         dx <- (rangex[2] - rangex[1]) / max(nx_eff - 1, 1)
         dy <- (rangey[2] - rangey[1]) / max(ny_eff - 1, 1)
         df <- collapse_near_duplicate_contours(df, tol = 0.75 * max(dx, dy))
@@ -237,7 +237,7 @@ StatVariety <- ggproto(
           if (no_sign_change0) {
             df <- snap_shifted_contours_to_variety(df, poly[[i]])
           }
-          # Same de-duplication policy for each polynomial in an mpolyList.
+          # same de-duplication policy for each polynomial in an mpolyList
           dx <- (rangex[2] - rangex[1]) / max(nx_eff - 1, 1)
           dy <- (rangey[2] - rangey[1]) / max(ny_eff - 1, 1)
           df <- collapse_near_duplicate_contours(df, tol = 0.75 * max(dx, dy))
@@ -283,7 +283,7 @@ geom_variety <- function(
     show.legend = NA,
     inherit.aes = TRUE
 ) {
-  # Default to linetype differences; colour mapping is opt-in via vary_colour.
+  # default to linetype differences; colour mapping is opt-in via vary_colour
   if (is.null(data)) {
     data <- ensure_nonempty_data
   }

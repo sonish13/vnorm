@@ -343,7 +343,7 @@ rvnorm <- function(
       call. = FALSE
     )
   }
-  # resolve sd/Sigma into a single value for stan
+  # resolve sd/Sigma into a single value for Stan
   sigma_stan <- if (!is.null(Sigma)) Sigma else sd
   n_vars <- length(mpoly::vars(poly))
   if (is.numeric(sigma_stan) && length(sigma_stan) == 1) {
@@ -369,7 +369,7 @@ rvnorm <- function(
       length(mpoly::vars(poly)) > 3 ||
       base::max(mpoly::totaldeg(poly)) > 3
   ) {
-    # Precompiled binaries only cover a small catalog of low-degree templates.
+    # precompiled binaries only cover a small catalog of low-degree templates
     pre_compiled <- FALSE
   }
 
@@ -379,7 +379,7 @@ rvnorm <- function(
   }
 
   if (user_compiled) {
-    # Look up a previously compiled user template from the internal cache.
+    # look up a previously compiled user template from the internal cache
     model_name <- generate_model_name(
       poly = poly, homo = homo, windowed = !missing(w)
     )
@@ -410,7 +410,7 @@ rvnorm <- function(
   } else if (pre_compiled) {
     poly_original <- poly
     output_needs_rewriting_original <- output_needs_rewriting
-    # Remap variable names to x/y/z because shipped models are keyed that way.
+    # remap variable names to x/y/z because shipped models are keyed that way
     list_for_transformation <- check_and_replace_vars(poly_original)
     if (!is.null(unlist(list_for_transformation$mapping))) {
       poly <- list_for_transformation$polynomial
@@ -460,7 +460,7 @@ rvnorm <- function(
       }
     }
   } else {
-    # Fall back to generating and compiling a temporary Stan model.
+    # fall back to generating and compiling a temporary Stan model
     stan_code <- create_stan_code(poly, sigma_stan, n_eqs, w, homo, vars)
     stan_file <- write_stan_file(stan_code)
     model <- cmdstan_model(stan_file)
@@ -480,7 +480,7 @@ rvnorm <- function(
     show_messages = show_messages,
     ...
   )
-  # seed is injected separately to avoid passing NULL to cmdstan
+  # seed is injected separately to avoid passing NULL to cmdStan
   if (!is.null(seed)) sample_args$seed <- seed
   samps <- do.call(model$sample, sample_args)
 

@@ -37,8 +37,8 @@ compile_stan_code <- function(
   }
 
   if (!custom_stan_code && is.mpoly(poly)) {
-    # Reuse shipped templates when available unless user forces a custom
-    # compile.
+    # reuse shipped templates when available unless user forces a custom
+    # compile
     if (length(mpoly::vars(poly)) < 4 && base::max(mpoly::totaldeg(poly)) < 4) {
       stop(
         paste0(
@@ -53,7 +53,7 @@ compile_stan_code <- function(
 
   stan_code <- get_custom_stan_code(poly = poly, windowed = windowed, homo = homo)
   model_name <- generate_model_name(poly = poly, windowed = windowed, homo = homo)
-  # Write source to a temp .stan file and cache the mapping for rvnorm().
+  # write source to a temp .Stan file and cache the mapping for rvnorm()
   model_path <- cmdstanr::write_stan_file(stan_code, dir = tempdir())
   info_before <- get_compiled_stan_info()
   add_compiled_stan_info(name = model_name, path = model_path)
@@ -71,12 +71,12 @@ compile_stan_code <- function(
 
 get_custom_stan_code <- function(poly, windowed = FALSE, homo = TRUE) {
   if (is.mpoly(poly)) {
-    # Single-polynomial program: scalar g and scalar normalized distance.
+    # single-polynomial program: scalar g and scalar normalized distance
     poly <- canonicalize_mpoly(poly)
     vars <- mpoly::vars(poly)
     num_of_vars <- length(vars)
 
-    # Data block: lifted coefficients (+ optional box width w).
+    # data block: lifted coefficients (+ optional box width w)
     var_for_data_block <- mpoly::monomials(poly)
     var_for_data_block <- lapply(var_for_data_block, reorder, varorder = vars)
     var_for_data_block <- lapply(var_for_data_block, coef)
@@ -94,7 +94,7 @@ get_custom_stan_code <- function(poly, windowed = FALSE, homo = TRUE) {
     }
     data_block <- paste0("data {\n  real si;\n", data_block, "\n}\n")
 
-    # Parameter block: unconstrained or box-constrained coordinates.
+    # parameter block: unconstrained or box-constrained coordinates
     if (windowed) {
       params_block <- paste(sapply(vars, function(var) {
         paste0("  real<lower=-", "w", ", upper=", "w", "> ", var, ";")
@@ -146,7 +146,7 @@ get_custom_stan_code <- function(poly, windowed = FALSE, homo = TRUE) {
 
     stan_code <- paste0(data_block, params_block, model_block, sep = "")
   } else if (is.mpolyList(poly)) {
-    # Multi-polynomial program: vector g and matrix Jacobian J.
+    # multi-polynomial program: vector g and matrix Jacobian J
     poly <- canonicalize_mpolylist(poly)
     poly <- sort_mpolylist_lexicographically(poly)
     n_eqs <- length(poly)
@@ -157,7 +157,7 @@ get_custom_stan_code <- function(poly, windowed = FALSE, homo = TRUE) {
       vars[[i]] <- vars(poly[[i]])
     }
 
-    # extract and suffix coefficients per polynomial for stan data block
+    # extract and suffix coefficients per polynomial for Stan data block
     var_for_data_block <- vector("list", length(poly))
     for (i in seq_along(poly)) {
       var_for_data_block[[i]] <- mpoly::monomials(poly[[i]])

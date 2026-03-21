@@ -1,4 +1,4 @@
-# Internal helper to generate Stan files for precompiled univariate models.
+# internal helper to generate Stan files for precompiled univariate models
 
 make_stan_files <- function(
   num_of_vars,
@@ -7,10 +7,10 @@ make_stan_files <- function(
   windowed = TRUE,
   basis = c("x", "y", "z")
 ) {
-  # Enumerate parameter variable names used by this template.
+  # enumerate parameter variable names used by this template
   vars <- basis[seq_len(num_of_vars)]
 
-  # Build the Stan data block containing polynomial coefficients.
+  # build the Stan data block containing polynomial coefficients
   var_for_data_block <- mpoly::basis_monomials(
     basis[seq_len(num_of_vars)],
     totaldeg
@@ -27,7 +27,7 @@ make_stan_files <- function(
   )
   data_block <- paste0(data_block, ";")
 
-  # Build the Stan parameter block (optionally box-constrained by w).
+  # build the Stan parameter block (optionally box-constrained by w)
   if (windowed) {
     data_block <- paste0(data_block, "\n  real w;")
   }
@@ -46,7 +46,7 @@ make_stan_files <- function(
 
   params_block <- paste0("parameters {\n", params_block, "\n}\n")
 
-  # Build the symbolic polynomial g and its derivatives for transformed params.
+  # build the symbolic polynomial g and its derivatives for transformed params
   g_coef <- mpoly::basis_monomials(basis[seq_len(num_of_vars)], totaldeg)
   g_coef <- lapply(g_coef, reorder, varorder = basis)
   g_coef <- lapply(g_coef, coef)
@@ -94,7 +94,7 @@ make_stan_files <- function(
     ndg <- "  real ndg = 1;"
   }
 
-  # Emit transformed-parameters and model blocks.
+  # emit transformed-parameters and model blocks
   trans_block <- paste0(
     "transformed parameters {\n  real g = ", g, ";\n", dg, ";\n", ndg, "\n}\n"
   )
@@ -103,7 +103,7 @@ make_stan_files <- function(
     "model {\n  target += normal_lpdf(0.00 | g/ndg, si); \n}"
   )
 
-  # Assemble complete Stan program text.
+  # assemble complete Stan program text
   stan_code <- paste0(
     data_block,
     params_block,
@@ -120,7 +120,7 @@ make_stan_files <- function(
     if (windowed) "_w" else ""
   )
 
-  # Write template source into src/stan for package compilation.
+  # write template source into src/Stan for package compilation
   path <- file.path("src", "stan", filename)
   writeLines(stan_code, con = path)
 }

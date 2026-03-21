@@ -1,4 +1,4 @@
-# Unexported functions from ggplot2
+# unexported functions from ggplot2
 
 `%||%` <- function(x, y) {
   if (is.null(x)) y else x
@@ -13,7 +13,7 @@ unique0 <- function(x, ...) {
 }
 
 isoband_z_matrix <- function(data) {
-  # Convert long xyz table into a regular z-matrix for contouring.
+  # convert long xyz table into a regular z-matrix for contouring
   x_pos <- as.integer(factor(data$x, levels = sort(unique0(data$x))))
   y_pos <- as.integer(factor(data$y, levels = sort(unique0(data$y))))
   nrow <- max(y_pos)
@@ -24,13 +24,13 @@ isoband_z_matrix <- function(data) {
 }
 
 xyz_to_isolines <- function(data, breaks) {
-  # Compute contour lines at the requested break levels.
+  # compute contour lines at the requested break levels
   x <- sort(unique0(data$x))
   y <- sort(unique0(data$y))
   z <- isoband_z_matrix(data)
   z <- break_contour_ties(z, x = x, y = y, breaks = breaks)
 
-  # contourLines expects rows to index x and columns to index y.
+  # contourLines expects rows to index x and columns to index y
   grDevices::contourLines(
     x = x,
     y = y,
@@ -40,8 +40,8 @@ xyz_to_isolines <- function(data, breaks) {
 }
 
 break_contour_ties <- function(z, x, y, breaks) {
-  # contourLines is unstable when grid nodes land exactly on the contour level.
-  # Add a tiny deterministic perturbation only at exact/near-exact ties.
+  # contourLines is unstable when grid nodes land exactly on the contour level
+  # add a tiny deterministic perturbation only at exact/near-exact ties
   if (length(breaks) != 1 || !is.finite(breaks)) return(z)
   lev <- breaks[[1]]
   if (!any(is.finite(z))) return(z)
@@ -51,7 +51,7 @@ break_contour_ties <- function(z, x, y, breaks) {
   ties <- is.finite(z) & abs(z - lev) <= tol
   if (!any(ties)) return(z)
 
-  # z has rows indexed by y and columns indexed by x.
+  # z has rows indexed by y and columns indexed by x
   # irrational offset (sqrt(2)) ensures no two grid points get the same perturbation sign
   phase <- outer(y, x, function(yy, xx) xx + sqrt(2) * yy)
   sgn <- sign(phase)
@@ -62,7 +62,7 @@ break_contour_ties <- function(z, x, y, breaks) {
 }
 
 iso_to_path <- function(iso, group = 1) {
-  # Convert contourLines output into a path tibble for GeomPath.
+  # convert contourLines output into a path tibble for GeomPath
   if (length(iso) == 0) {
     message("Zero contours were generated")
     return(tibble0())
