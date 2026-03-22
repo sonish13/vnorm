@@ -117,7 +117,7 @@ model {{
     model_string <- if (length(sd) == 1) {
       "normal_lpdf("
     } else {
-      " multi_normal_lpdf("
+      "multi_normal_lpdf("
     }
     mu_string <- if (length(sd) == 1) {
       "0.00"

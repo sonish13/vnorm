@@ -296,7 +296,7 @@ geom_variety <- function(
     )
   }
 
-  # user mappings override defaults; group and linetype always set
+  # defaults override user mappings so group and linetype stay wired to stat
   mapping <- if (is.null(mapping)) {
     default_mapping
   } else {

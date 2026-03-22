@@ -437,9 +437,8 @@ rvnorm <- function(
       ),
       error = function(e) {
         message(
-          "Pre-compiled Stan model not available (",
-          conditionMessage(e),
-          "); falling back to regular rvnorm sampling."
+          "pre-compiled Stan model not available; ",
+          "falling back to regular rvnorm sampling"
         )
         NULL
       }

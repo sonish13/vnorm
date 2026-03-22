@@ -415,7 +415,7 @@ project_onto_variety_lagrange <- function(
     while (
       sum(abs(dLf(xn))) > tol &&
       sum(abs(xn - xn_1)) > tol_x &&
-      count <= maxit
+      count < maxit
     ) {
       xn_1 <- xn
       xn <- xn_1 + solve( H(xn_1), -dLf(xn_1) )
@@ -436,8 +436,7 @@ project_onto_variety_lagrange <- function(
       function(.) sum(dLf(.))^2,
       method = method,
       ...
-    )$par[1:2]
-    xn <- xn[seq_along(varorder)]
+    )$par[seq_len(length(varorder))]
 
   }
 
@@ -528,15 +527,18 @@ project_onto_variety_gradient_descent <- function(
     if (message) message(paste(round(xn, 5), collapse = " "))
 
     count <- 0
-    while (abs(p2f(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count <= maxit) {
+    while (abs(p2f(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count < maxit) {
       xn_2 <- xn_1
       xn_1 <- xn
       direction_2 <- dp2f(xn_2)
       direction_1 <- dp2f(xn_1)
       # Barzilai-Borwein step size from successive gradient difference
-      ga <- abs(
-        sum((xn_1 - xn_2) * (direction_1 - direction_2))
-      ) / sum((direction_1 - direction_2)^2)
+      denom <- sum((direction_1 - direction_2)^2)
+      ga <- if (denom > 0) {
+        abs(sum((xn_1 - xn_2) * (direction_1 - direction_2))) / denom
+      } else {
+        max_ga
+      }
       xn   <- xn_1 - ga*direction_1
       count <- count + 1
       if (message) message(paste(round(xn, 5), collapse = " "))
@@ -556,7 +558,7 @@ project_onto_variety_gradient_descent <- function(
     if (message) message(paste(round(xn, 5), collapse = " "))
 
     count <- 0
-    while (abs(p2f(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count <= maxit) {
+    while (abs(p2f(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count < maxit) {
       xn_1 <- xn
       direction <- dp2f(xn_1)
       ga <- stats::optimize(
@@ -578,7 +580,7 @@ project_onto_variety_gradient_descent <- function(
     if (message) message(paste(round(xn, 5), collapse = " "))
 
     count <- 0
-    while (abs(p2f(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count <= maxit) {
+    while (abs(p2f(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count < maxit) {
       xn_1 <- xn
       direction <- dp2f(xn_1)
       xn   <- xn_1 - ga*direction
@@ -661,7 +663,7 @@ project_onto_variety_newton <- function(
   if (message) message(paste(round(xn, 5), collapse = " "))
 
   count <- 0
-  while (abs(p2f(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count <= maxit) {
+  while (abs(p2f(xn)) > tol && sum(abs(xn-xn_1)) > tol_x && count < maxit) {
     xn_1 <- xn
     direction <- solve(ddp2f(xn_1), -dp2f(xn_1))
     if (method == "line") {
