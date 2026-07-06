@@ -12,9 +12,11 @@ rvnorm(
   Sigma = NULL,
   rejection = FALSE,
   chains = 4L,
-  warmup = max(500, floor(n/2)),
+  warmup = max(500, ceiling(n/chains/2)),
   inc_warmup = FALSE,
   thin = 1L,
+  adapt_delta = 0.999,
+  max_treedepth = 20L,
   verbose = FALSE,
   cores = min(chains, getOption("mc.cores", 1L)),
   homo = TRUE,
@@ -53,12 +55,17 @@ positive-definite covariance matrix matching the Stan target dimension.}
 \item{chains}{The number of chains to run for the random number generation,
 see \code{stan()}.}
 
-\item{warmup}{Number of warmup iterations in \code{stan()}.}
+\item{warmup}{Number of warmup iterations in \code{stan()}. By default this is
+conservative and scales with the number of post-warmup draws per chain.}
 
 \item{inc_warmup}{If \code{TRUE}, the MCMC warmup steps are included in the
 output.}
 
 \item{thin}{\code{stan()} \code{thin} parameter.}
+
+\item{adapt_delta, max_treedepth}{Conservative CmdStan sampling defaults.
+Pass smaller values only when you are comfortable with the resulting
+diagnostics.}
 
 \item{verbose}{If \code{TRUE}, print additional progress messages.}
 
@@ -97,9 +104,9 @@ reproducibility. Note that R's \code{set.seed()} does not control Stan's RNG.}
 \item{...}{Additional parameters passed to \code{stan()}.}
 }
 \value{
-Either (1) matrix whose rows are the individual draws from the
-distribution, (2) a \link[tibble:tbl_df-class]{tibble::tbl_df} object with the draws along with
-additional information, or (3) an object of class \code{stanfit}.
+Either (1) a data frame whose rows are the individual draws from the
+distribution, (2) a \link[tibble:tbl_df-class]{tbl_df} object with the draws along with
+additional information, or (3) an object of class \code{CmdStanMCMC}.
 }
 \description{
 Unnormalized density evaluation and random generation for the variety normal
@@ -119,6 +126,7 @@ varieties of varying dimensions?
 
 
 library("tidyverse")
+library("mpoly")
 options("mc.cores" = parallel::detectCores() - 1)
 
 \dontrun{

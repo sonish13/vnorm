@@ -6,4 +6,9 @@ test_that(".onLoad sets cmdstanr version-check option", {
   get(".onLoad", asNamespace("vnorm"), inherits = FALSE)("vnorm", "vnorm")
 
   expect_true(isTRUE(getOption("cmdstanr_no_ver_check")))
+
+  options(cmdstanr_no_ver_check = FALSE)
+  get(".onLoad", asNamespace("vnorm"), inherits = FALSE)("vnorm", "vnorm")
+
+  expect_false(getOption("cmdstanr_no_ver_check"))
 })

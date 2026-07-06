@@ -14,7 +14,7 @@ test_that("make_stan_files writes expected univariate Stan template", {
   expect_true(file.exists(path))
   txt <- paste(readLines(path, warn = FALSE), collapse = "\n")
   expect_match(txt, "data \\{")
-  expect_match(txt, "real si;")
+  expect_match(txt, "real<lower=0> si;")
   expect_match(txt, "real<lower=-w, upper=w> x;")
   expect_match(txt, "normal_lpdf\\(0\\.00 \\| g/ndg, si\\)")
 })

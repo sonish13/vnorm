@@ -15,11 +15,7 @@ make_stan_files <- function(
     basis[seq_len(num_of_vars)],
     totaldeg
   )
-  var_for_data_block <- lapply(var_for_data_block, reorder, varorder = basis)
-  var_for_data_block <- lapply(var_for_data_block, coef)
-  var_for_data_block <- unlist(var_for_data_block)
-  var_for_data_block <- get_listed_coeficients(var_for_data_block)
-  var_for_data_block <- names(var_for_data_block)
+  var_for_data_block <- stan_coef_names(var_for_data_block, varorder = basis)
 
   data_block <- paste(
     sapply(var_for_data_block, function(x) paste("  real", x)),
@@ -32,7 +28,7 @@ make_stan_files <- function(
     data_block <- paste0(data_block, "\n  real w;")
   }
 
-  data_block <- paste0("data {\n  real si;\n", data_block, "\n}\n")
+  data_block <- paste0("data {\n  real<lower=0> si;\n", data_block, "\n}\n")
 
   if (windowed) {
     params_block <- paste(sapply(vars, function(var) {
@@ -48,11 +44,7 @@ make_stan_files <- function(
 
   # build the symbolic polynomial g and its derivatives for transformed params
   g_coef <- mpoly::basis_monomials(basis[seq_len(num_of_vars)], totaldeg)
-  g_coef <- lapply(g_coef, reorder, varorder = basis)
-  g_coef <- lapply(g_coef, coef)
-  g_coef <- unlist(g_coef)
-  g_coef <- get_listed_coeficients(g_coef)
-  g_coef <- names(g_coef)
+  g_coef <- stan_coef_names(g_coef, varorder = basis)
 
   g_terms <- mpoly::basis_monomials(basis[seq_len(num_of_vars)], totaldeg)
   g_terms <- lapply(g_terms, reorder, varorder = basis)

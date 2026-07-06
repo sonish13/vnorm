@@ -211,7 +211,7 @@ ggplot() +
     poly = p6,
     xlim = c(-2, 2),
     ylim = c(-2, 2),
-    vary_colour = TRUE
+    vary_color = TRUE
   ) +
   coord_equal() +
   scale_colour_manual(values = c("steelblue", "firebrick")) +

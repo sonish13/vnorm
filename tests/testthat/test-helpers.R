@@ -1,12 +1,28 @@
-test_that("get_listed_coeficients converts coefficient names to Stan-style names", {
+test_that("get_listed_coefficients converts coefficient names to Stan-style names", {
   coefs <- c(1, 2, 3)
   names(coefs) <- c("1", "x", "x^2 y")
 
-  out <- get_listed_coeficients(coefs)
+  out <- get_listed_coefficients(coefs)
 
   expect_true(is.list(out))
   expect_equal(names(out), c("b1", "bx", "bx2y"))
   expect_equal(unname(unlist(out)), unname(coefs))
+})
+
+test_that("Stan coefficient names canonicalize monomial variable order", {
+  p_scrambled <- mp("y x + x^2 - 1")
+  p_canonical <- mp("x y + x^2 - 1")
+
+  scrambled_data <- make_coefficients_data(p_scrambled, num_of_vars = 2, deg = 2)
+  canonical_data <- make_coefficients_data(p_canonical, num_of_vars = 2, deg = 2)
+
+  expect_equal(scrambled_data, canonical_data)
+  expect_equal(scrambled_data[["bxy"]], 1)
+  expect_false("byx" %in% names(scrambled_data))
+  expect_equal(
+    get_coefficients_data(p_scrambled),
+    get_coefficients_data(p_canonical)
+  )
 })
 
 test_that("make_coefficients_data fills missing basis coefficients with zero", {

@@ -3,8 +3,6 @@
 \name{geom_variety}
 \alias{geom_variety}
 \alias{stat_variety}
-\alias{StatVariety}
-\alias{GeomVariety}
 \title{One-Dimensional Varieties in Two Dimensions}
 \usage{
 stat_variety(
@@ -33,7 +31,7 @@ geom_variety(
   position = "identity",
   ...,
   poly,
-  vary_colour = FALSE,
+  vary_color = FALSE,
   shift = 0,
   projection = c("auto", "on", "off"),
   na.rm = FALSE,
@@ -107,7 +105,7 @@ give the stat as \code{"count"}.
 \link[ggplot2:layer_stats]{layer stat} documentation.
 }}
 
-\item{vary_colour}{Logical. If \code{TRUE}, map colour to the polynomial label so
+\item{vary_color}{Logical. If \code{TRUE}, map colour to the polynomial label so
 users can control per-polynomial colours with \verb{scale_colour_*()}.
 Defaults to \code{FALSE}, which keeps a constant line colour and varies only
 linetype across an \code{mpolyList}.}
@@ -119,6 +117,11 @@ Plot implicit polynomial varieties with \code{ggplot2}.
 \code{geom_variety()} extracts contour paths from a grid evaluation of the
 polynomial and, by default, projects those paths back onto \code{poly = 0} when
 that helps recover the intended zero set.
+
+For an \code{mpolyList}, \code{geom_variety()} maps linetype to the polynomial label
+and adds a linetype scale for parsed legend labels. Single-polynomial layers
+do not add their own linetype scale, which avoids replacing user scales in
+the common one-variety case.
 }
 \section{Aesthetics}{
  \code{\link[=geom_variety]{geom_variety()}} understands the following aesthetics.
@@ -148,11 +151,12 @@ manually:
 \examples{
 
 library("ggplot2")
+ex_n <- 51
 
 # 1) ellipse
 p1 <- mp("x^2 + 4 y^2 - 1")
 ggplot() +
-  geom_variety(poly = p1, xlim = c(-2, 2), ylim = c(-2, 2)) +
+  geom_variety(poly = p1, xlim = c(-2, 2), ylim = c(-2, 2), n = ex_n) +
   coord_equal()
 
 
@@ -161,7 +165,7 @@ ggplot() +
 ggplot() +
   geom_variety(
     poly = p1, xlim = c(-2, 2), ylim = c(-2, 2),
-    colour = "steelblue", linewidth = 0.5
+    n = ex_n, color = "steelblue", linewidth = 0.5
   ) +
   coord_equal() +
   theme_minimal()
@@ -171,7 +175,7 @@ ggplot() +
 # 2) folium of Descartes (singular variety)
 p2 <- mp("x^3 + y^3 - 3 x y")
 ggplot() +
-  geom_variety(poly = p2, xlim = c(-2, 3), ylim = c(-2, 3)) +
+  geom_variety(poly = p2, xlim = c(-2, 3), ylim = c(-2, 3), n = ex_n) +
   coord_equal()
 
 
@@ -179,7 +183,7 @@ ggplot() +
 # 3) "heart" curve (classic implicit heart)
 p3 <- mp("(x^2 + y^2 - 1)^3 - x^2 y^3")
 ggplot() +
-  geom_variety(poly = p3, xlim = c(-2, 2), ylim = c(-2, 2)) +
+  geom_variety(poly = p3, xlim = c(-2, 2), ylim = c(-2, 2), n = ex_n) +
   coord_equal() +
   theme(legend.position = "top")
 
@@ -189,14 +193,17 @@ ggplot() +
 p4 <- mp(c("x^2 + y^2 - 1", "x y - 0.25"))
 # by default, polynomials differ by linetype (not color)
 ggplot() +
-  geom_variety(poly = p4, xlim = c(-2, 2), ylim = c(-2, 2)) +
+  geom_variety(poly = p4, xlim = c(-2, 2), ylim = c(-2, 2), n = ex_n) +
   coord_equal()
 
 
 
 # with different colors (optional)
 ggplot() +
-  geom_variety(poly = p4, xlim = c(-2, 2), ylim = c(-2, 2), vary_colour = TRUE) +
+  geom_variety(
+    poly = p4, xlim = c(-2, 2), ylim = c(-2, 2),
+    n = ex_n, vary_color = TRUE
+  ) +
   coord_equal() +
   scale_colour_manual(values = c("steelblue", "firebrick"))
 
@@ -204,7 +211,10 @@ ggplot() +
 
 # customize linetypes and legend placement with ggplot2 scales/themes
 ggplot() +
-  geom_variety(poly = p4, xlim = c(-2, 2), ylim = c(-2, 2), vary_colour = TRUE) +
+  geom_variety(
+    poly = p4, xlim = c(-2, 2), ylim = c(-2, 2),
+    n = ex_n, vary_color = TRUE
+  ) +
   coord_equal() +
   scale_colour_manual(values = c("steelblue", "firebrick")) +
   scale_linetype_manual(values = c("solid", "22"), guide = "none") +
@@ -219,34 +229,42 @@ ggplot() +
 # geom_variety() suggests a negative shift when no contour is found
 p5 <- mp("x^2 + y^2 - 1")
 ggplot() +
-  geom_variety(poly = p5^2, xlim = c(-2, 2), ylim = c(-2, 2)) +
+  geom_variety(poly = p5^2, xlim = c(-2, 2), ylim = c(-2, 2), n = ex_n) +
   coord_equal()
 
 
 
 # use the suggested shift (your printed value may differ slightly)
 ggplot() +
-  geom_variety(poly = p5^2, xlim = c(-2, 2), ylim = c(-2, 2), shift = -0.001) +
+  geom_variety(
+    poly = p5^2, xlim = c(-2, 2), ylim = c(-2, 2),
+    n = ex_n, shift = -0.001
+  ) +
   coord_equal()
 
 
 
 # inspect the raw shifted level set versus the default projected recovery
+\dontrun{
 p6 <- mp("y^2 - x^2")
 ggplot() +
   geom_variety(
     poly = p6^2,
     xlim = c(-2, 2), ylim = c(-2, 2),
-    shift = -0.004, projection = "off"
+    n = ex_n, shift = -0.004, projection = "off"
   ) +
   coord_equal()
 
 ggplot() +
-  geom_variety(poly = p6^2, xlim = c(-2, 2), ylim = c(-2, 2), shift = -0.004) +
+  geom_variety(
+    poly = p6^2, xlim = c(-2, 2), ylim = c(-2, 2),
+    n = ex_n, shift = -0.004
+  ) +
   coord_equal()
+}
 
 
 }
 \seealso{
-\code{\link[ggplot2:geom_path]{ggplot2::geom_path()}}
+\code{\link[ggplot2:geom_path]{geom_path()}}
 }

@@ -73,16 +73,11 @@ get_custom_stan_code <- function(poly, windowed = FALSE, homo = TRUE) {
   if (is.mpoly(poly)) {
     # single-polynomial program: scalar g and scalar normalized distance
     poly <- canonicalize_mpoly(poly)
-    vars <- mpoly::vars(poly)
+    vars <- sort(mpoly::vars(poly))
     num_of_vars <- length(vars)
 
     # data block: lifted coefficients (+ optional box width w)
-    var_for_data_block <- mpoly::monomials(poly)
-    var_for_data_block <- lapply(var_for_data_block, reorder, varorder = vars)
-    var_for_data_block <- lapply(var_for_data_block, coef)
-    var_for_data_block <- unlist(var_for_data_block)
-    var_for_data_block <- get_listed_coeficients(var_for_data_block)
-    var_for_data_block <- names(var_for_data_block)
+    var_for_data_block <- names(stan_coefficients(poly, varorder = vars))
 
     data_block <- paste(
       sapply(var_for_data_block, function(x) paste("  real", x)),
@@ -106,13 +101,14 @@ get_custom_stan_code <- function(poly, windowed = FALSE, homo = TRUE) {
     }
     params_block <- paste0("parameters {\n", params_block, "\n }\n")
 
-    g <- coef_lift(poly)
+    g <- stan_coef_lift(poly, varorder = vars)
     g <- mpoly_to_stan(g)
 
     derivatives <- lapply(
       vars,
       helper_for_derivative_for_mpoly_stan_code,
-      poly = poly
+      poly = poly,
+      varorder = vars
     )
 
     derivative_names <- sapply(seq_along(vars), function(i) {
@@ -150,27 +146,21 @@ get_custom_stan_code <- function(poly, windowed = FALSE, homo = TRUE) {
     poly <- canonicalize_mpolylist(poly)
     poly <- sort_mpolylist_lexicographically(poly)
     n_eqs <- length(poly)
-    n_vars <- length(vars(poly))
+    n_vars <- length(mpoly::vars(poly))
 
-    vars <- vector("list", length(poly))
+    vars_by_poly <- vector("list", length(poly))
     for (i in seq_along(poly)) {
-      vars[[i]] <- vars(poly[[i]])
+      vars_by_poly[[i]] <- sort(mpoly::vars(poly[[i]]))
     }
 
     # extract and suffix coefficients per polynomial for Stan data block
     var_for_data_block <- vector("list", length(poly))
     for (i in seq_along(poly)) {
-      var_for_data_block[[i]] <- mpoly::monomials(poly[[i]])
-      var_for_data_block[[i]] <- lapply(
-        var_for_data_block[[i]],
-        reorder,
-        varorder = vars[[i]]
-      )
-      var_for_data_block[[i]] <- lapply(var_for_data_block[[i]], coef)
-      var_for_data_block[[i]] <- unlist(var_for_data_block[[i]])
-      var_for_data_block[[i]] <- get_listed_coeficients(var_for_data_block[[i]])
-      var_for_data_block[[i]] <- names(var_for_data_block[[i]])
-      var_for_data_block[[i]] <- paste0(var_for_data_block[[i]], "_", i)
+      var_for_data_block[[i]] <- names(stan_coefficients(
+        poly[[i]],
+        varorder = vars_by_poly[[i]],
+        suffix = i
+      ))
     }
 
     var_for_data_block <- unlist(var_for_data_block)
@@ -185,7 +175,7 @@ get_custom_stan_code <- function(poly, windowed = FALSE, homo = TRUE) {
     }
 
     data_block <- paste0("data {\n  real<lower=0> si;\n", data_block, "\n}\n")
-    vars_for_params <- unique(unlist(vars))
+    vars_for_params <- sort(unique(unlist(vars_by_poly)))
     if (windowed) {
       params_block <- paste(sapply(vars_for_params, function(var) {
         paste0("  real<lower=-", "w", ", upper=", "w", "> ", var, ";")
@@ -202,13 +192,18 @@ get_custom_stan_code <- function(poly, windowed = FALSE, homo = TRUE) {
     derivatives <- vector("list", length(poly))
 
     for (i in seq_along(poly)) {
-      g[[i]] <- helper_for_coef_lift_for_mpolylist(poly[[i]], i)
+      g[[i]] <- helper_for_coef_lift_for_mpolylist(
+        poly[[i]],
+        i,
+        varorder = vars_by_poly[[i]]
+      )
       g[[i]] <- mpoly_to_stan(g[[i]])
       derivatives_pre[[i]] <- lapply(
-        vars(poly),
+        sort(mpoly::vars(poly)),
         helper_for_derivative_for_mpolylist_stan_code,
         poly = poly[[i]],
-        i = i
+        i = i,
+        varorder = vars_by_poly[[i]]
       )
     }
 

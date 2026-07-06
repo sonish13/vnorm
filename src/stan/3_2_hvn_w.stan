@@ -1,5 +1,5 @@
 data {
-  real si;
+  real<lower=0> si;
   real b1;   real bx;   real by;   real bz;   real bx2;   real by2;   real bz2;   real bxy;   real bxz;   real byz;
   real w;
 }

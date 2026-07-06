@@ -18,6 +18,8 @@
 #' @param correct_p_coefficients If `TRUE`, normalize polynomial coefficients.
 #' @param correct_dp_coefficients If `TRUE`, normalize derivative coefficients.
 #' @param message If `TRUE`, print progress messages showing remaining samples.
+#' @param max_batches Maximum number of proposal batches before stopping with
+#'   an informative error.
 #'
 #' @return A matrix or tibble containing the accepted samples.
 #'
@@ -46,8 +48,7 @@
 #' rejection_sampler(50, p2, sd = c(0.05, 0.05), w = 1.5, homo = FALSE)
 #' }
 
-
-
+#' @export
 rejection_sampler <- function(n,
                               poly,
                               sd = .01,
@@ -58,7 +59,8 @@ rejection_sampler <- function(n,
                               homo = TRUE,
                               correct_p_coefficients = FALSE,
                               correct_dp_coefficients = FALSE,
-                              message = FALSE) {
+                              message = FALSE,
+                              max_batches = 1000L) {
   if (
     !is.numeric(n) || length(n) != 1L || !is.finite(n) ||
       n < 1 || n != as.integer(n)
@@ -93,6 +95,14 @@ rejection_sampler <- function(n,
   if (!is.logical(message) || length(message) != 1L || is.na(message)) {
     stop("`message` must be TRUE or FALSE.", call. = FALSE)
   }
+  if (
+    !is.numeric(max_batches) || length(max_batches) != 1L ||
+      !is.finite(max_batches) || max_batches < 1 ||
+      max_batches != as.integer(max_batches)
+  ) {
+    stop("`max_batches` must be a positive integer.", call. = FALSE)
+  }
+  max_batches <- as.integer(max_batches)
 
   n_vars <- length(vars)
   w <- rejection_normalize_window(w, vars)
@@ -247,9 +257,26 @@ rejection_sampler <- function(n,
 
   mat <- matrix(nrow = 0, ncol = n_vars, dimnames = list(NULL, vars))
   n_remaining <- n
+  batch <- 0L
 
   # rejection loop: propose uniformly in box, accept by kernel
   while (n_remaining > 0) {
+    batch <- batch + 1L
+    if (batch > max_batches) {
+      if (message) cat("\r", strrep(" ", 80), "\r", sep = "")
+      stop(
+        "rejection_sampler() accepted ",
+        n - n_remaining,
+        " of ",
+        n,
+        " requested draws after ",
+        max_batches,
+        " proposal batches; try enlarging `w`, increasing `sd`, ",
+        "or increasing `max_batches`.",
+        call. = FALSE
+      )
+    }
+
     if (message) cat("\r", strrep(" ", 80))
     if (message) {
       cat(

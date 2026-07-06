@@ -6,6 +6,19 @@ skip_if_no_cmdstan <- function() {
   }
 }
 
+stan_data_names <- function(code) {
+  data_block <- regmatches(
+    code,
+    regexpr("(?s)data \\{.*?\\n\\}", code, perl = TRUE)
+  )
+  matches <- regmatches(
+    data_block,
+    gregexpr("real(?:<[^>]+>)?\\s+[A-Za-z][A-Za-z0-9_]*", data_block, perl = TRUE)
+  )[[1]]
+  out <- sub(".*\\s+", "", matches)
+  setdiff(out, c("si", "w"))
+}
+
 test_that("Compiles model correctly for an mpoly object", {
   skip_if_no_cmdstan()
   p <- mp("x^2 + y^2 - 1")
@@ -188,4 +201,17 @@ test_that("get_custom_stan_code homo=FALSE for mpolyList models g directly", {
   expect_match(code, "vector\\[2\\] g")
   expect_false(grepl(" J =", code, fixed = TRUE))
   expect_match(code, "normal_lpdf\\(0\\.00 \\|g, si\\)")
+})
+
+test_that("custom Stan data names match coefficient data names", {
+  p <- mp("y x + x^2 - 1")
+  code <- vnorm:::get_custom_stan_code(p, windowed = FALSE, homo = TRUE)
+  expect_setequal(stan_data_names(code), names(vnorm:::get_coefficients_data(p)))
+
+  p_list <- mp(c("y x + x^2 - 1", "y - x"))
+  code_list <- vnorm:::get_custom_stan_code(p_list, windowed = FALSE, homo = TRUE)
+  expect_setequal(
+    stan_data_names(code_list),
+    names(vnorm:::get_coefficients_data(p_list))
+  )
 })

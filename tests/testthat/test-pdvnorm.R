@@ -53,6 +53,25 @@ test_that("pdvnorm supports matrix and data.frame input for mpolyList", {
   expect_true(all(is.finite(out_hetero)))
 })
 
+test_that("pdvnorm length-one mpolyList agrees with single mpoly", {
+  p <- mp("x^2 + y^2 - 1")
+  p_list <- structure(list(p), class = "mpolyList")
+  x <- rbind(c(1, 0), c(0.5, 0.5), c(2, -1))
+
+  expect_equal(
+    pdvnorm(x, p_list, sd = 0.1, homo = TRUE),
+    pdvnorm(x, p, sd = 0.1, homo = TRUE)
+  )
+  expect_equal(
+    pdvnorm(x, p_list, sd = 0.1, homo = FALSE),
+    pdvnorm(x, p, sd = 0.1, homo = FALSE)
+  )
+  expect_equal(
+    pdvnorm(x, p_list, sd = 0.1, homo = TRUE, log = TRUE),
+    pdvnorm(x, p, sd = 0.1, homo = TRUE, log = TRUE)
+  )
+})
+
 test_that("pdvnorm sd vector agrees with diagonal Sigma covariance", {
   p <- mp(c("x", "y"))
   x <- rbind(c(0, 0), c(1, 2), c(-1, 1))

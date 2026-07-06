@@ -38,6 +38,11 @@ A numeric scalar or vector containing the pseudo-density evaluated at
 Evaluate the variety normal pseudo-density in either the homoskedastic or
 heteroskedastic setting.
 }
+\details{
+A single \code{mpoly} is normalized as a one-dimensional normal kernel in
+the polynomial value, after optional homoskedastic gradient normalization.
+A length-one \code{mpolyList} is treated identically to the same single \code{mpoly}.
+}
 \examples{
 
 # m = 1 polynomial in n = 1 variable, 0d variety
@@ -93,7 +98,21 @@ pdvnorm(X, p, sd = c(1, 2, 3), homo = FALSE)
 \dontrun{
 
 library("ggplot2")
-library("ggfunction")
+
+geom_pdf <- function(fun, args, xlim, n = 201, ...) {
+  xs <- seq(xlim[1], xlim[2], length.out = n)
+  df <- data.frame(x = xs, density = do.call(fun, c(list(xs), args)))
+  geom_line(aes(x, density), data = df, inherit.aes = FALSE, ...)
+}
+
+geom_pdf_2d <- function(fun, args, xlim, ylim, n = 151, ...) {
+  grid <- expand.grid(
+    x = seq(xlim[1], xlim[2], length.out = n),
+    y = seq(ylim[1], ylim[2], length.out = n)
+  )
+  grid$density <- do.call(fun, c(list(as.matrix(grid[, c("x", "y")])), args))
+  geom_raster(aes(x, y, fill = density), data = grid, inherit.aes = FALSE, ...)
+}
 
 
 

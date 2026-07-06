@@ -12,8 +12,8 @@
 #' @param varorder A character vector specifying the variable order to pass to
 #'   [mpoly::as.function.mpoly()].
 #' @param n_correct The number of Newton correction iterations to use.
-#' @param al A numeric vector of length 2; the patch to do projective
-#'   calculations over.
+#' @param al A numeric vector of length 2; the deterministic patch to do
+#'   projective calculations over.
 #' @param tol A tolerance on the residual; a warning is issued if the magnitude
 #'   of the residual is larger than `tol`.
 #' @param tol_x A tolerance on subsequent step sizes.
@@ -218,7 +218,7 @@
 #' @export
 project_onto_variety <- function(
     x0, poly, dt = .01, varorder = sort(mpoly::vars(poly)),
-    n_correct = 2, al = rnorm(2),
+    n_correct = 2, al = c(1, 1),
     message = FALSE, tol = .Machine$double.eps^(1/2),
     gfunc, dgfunc, ddgfunc, bias = 0,
     adaptive = TRUE,
@@ -331,7 +331,6 @@ project_onto_variety <- function(
     stop("`x0` must be a finite numeric vector with one entry per variable.", call. = FALSE)
   }
 
-  ts <- seq(1, 0, -dt)
   vn <- c(x0, al[1], 0)
 
   Ha <- function(v, t) {
@@ -384,7 +383,7 @@ project_onto_variety <- function(
 
       if (err < error_tol) {
         # accept step and perform Newton corrections on the new time slice
-        vn <- v_euler
+        vn <- v_heun
         t <- t - h
 
         for (. in 1:n_correct) {
@@ -410,8 +409,12 @@ project_onto_variety <- function(
   } else {
     # fixed-step predictor + Newton-corrector path
     ts <- seq(t_start, t_end, -dt)
+    if (!identical(ts[length(ts)], t_end)) {
+      ts <- c(ts, t_end)
+    }
     for (i in 2:length(ts)) {
-      vn <- vn + solve(JHa(vn, t = ts[i - 1]), Ht(vn, t = ts[i - 1])) * dt
+      h <- ts[i - 1] - ts[i]
+      vn <- vn + solve(JHa(vn, t = ts[i - 1]), Ht(vn, t = ts[i - 1])) * h
       if (message) message(paste(round(vn, 5), collapse = " "))
 
       for (. in 1:n_correct) {
@@ -509,7 +512,7 @@ project_onto_variety_lagrange <- function(
     )$minimum
     xn <- stats::optim(
       c(x0, la0),
-      function(.) sum(dLf(.))^2,
+      function(.) sum(dLf(.)^2),
       method = method,
       ...
     )$par[seq_len(length(varorder))]

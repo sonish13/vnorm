@@ -13,8 +13,5 @@
 
 utils::globalVariables(c(
   "polynomial",
-  "group",
-  "coef",
-  "deriv",
-  "reorder"
+  "group"
 ))

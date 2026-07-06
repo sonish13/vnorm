@@ -40,7 +40,7 @@ test_that("geom_variety keeps a single default colour for mpolyList", {
   expect_equal(length(unique(built$data[[1]]$colour)), 1)
 })
 
-test_that("geom_variety supports scale_colour_manual with vary_colour", {
+test_that("geom_variety supports scale_colour_manual with vary_color", {
   poly_list <- mpolyList(mp("x^2 + y^2 - 1"), mp("y - x"))
   p <- NULL
   expect_no_warning(
@@ -49,13 +49,21 @@ test_that("geom_variety supports scale_colour_manual with vary_colour", {
         poly = poly_list,
         xlim = c(-2, 2),
         ylim = c(-2, 2),
-        vary_colour = TRUE
+        vary_color = TRUE
       ) +
       ggplot2::scale_colour_manual(values = c("steelblue", "tomato"))
   )
 
   built <- ggplot2::ggplot_build(p)
   expect_gt(length(unique(built$data[[1]]$colour)), 1)
+})
+
+test_that("geom_variety single-polynomial layers do not replace linetype scales", {
+  p <- ggplot() +
+    geom_variety(poly = mp("y - x"), xlim = c(-2, 2), ylim = c(-2, 2)) +
+    geom_variety(poly = mp("y + x"), xlim = c(-2, 2), ylim = c(-2, 2))
+
+  expect_no_warning(ggplot2::ggplot_build(p))
 })
 
 test_that("geom_variety handles xlim and ylim parameters", {

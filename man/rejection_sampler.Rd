@@ -15,7 +15,8 @@ rejection_sampler(
   homo = TRUE,
   correct_p_coefficients = FALSE,
   correct_dp_coefficients = FALSE,
-  message = FALSE
+  message = FALSE,
+  max_batches = 1000L
 )
 }
 \arguments{
@@ -44,6 +45,9 @@ distribution.}
 \item{correct_dp_coefficients}{If \code{TRUE}, normalize derivative coefficients.}
 
 \item{message}{If \code{TRUE}, print progress messages showing remaining samples.}
+
+\item{max_batches}{Maximum number of proposal batches before stopping with
+an informative error.}
 }
 \value{
 A matrix or tibble containing the accepted samples.

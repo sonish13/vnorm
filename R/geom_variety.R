@@ -6,6 +6,11 @@
 #' polynomial and, by default, projects those paths back onto `poly = 0` when
 #' that helps recover the intended zero set.
 #'
+#' For an `mpolyList`, `geom_variety()` maps linetype to the polynomial label
+#' and adds a linetype scale for parsed legend labels. Single-polynomial layers
+#' do not add their own linetype scale, which avoids replacing user scales in
+#' the common one-variety case.
+#'
 #' @section Aesthetics: [geom_variety()] understands the following aesthetics.
 #'   `x` and `y` are computed by the stat, so users typically do not map them
 #'   manually:
@@ -51,7 +56,7 @@
 #'   or when the raw contour is noticeably off the zero set. For shifted
 #'   repeated-factor cases, `geom_variety()` also prints a caution that the
 #'   recovered contour may still miss branches.
-#' @param vary_colour Logical. If `TRUE`, map colour to the polynomial label so
+#' @param vary_color Logical. If `TRUE`, map colour to the polynomial label so
 #'   users can control per-polynomial colours with `scale_colour_*()`.
 #'   Defaults to `FALSE`, which keeps a constant line colour and varies only
 #'   linetype across an `mpolyList`.
@@ -64,11 +69,12 @@
 #' @examples
 #'
 #' library("ggplot2")
+#' ex_n <- 51
 #'
 #' # 1) ellipse
 #' p1 <- mp("x^2 + 4 y^2 - 1")
 #' ggplot() +
-#'   geom_variety(poly = p1, xlim = c(-2, 2), ylim = c(-2, 2)) +
+#'   geom_variety(poly = p1, xlim = c(-2, 2), ylim = c(-2, 2), n = ex_n) +
 #'   coord_equal()
 #'
 #'
@@ -77,7 +83,7 @@
 #' ggplot() +
 #'   geom_variety(
 #'     poly = p1, xlim = c(-2, 2), ylim = c(-2, 2),
-#'     colour = "steelblue", linewidth = 0.5
+#'     n = ex_n, color = "steelblue", linewidth = 0.5
 #'   ) +
 #'   coord_equal() +
 #'   theme_minimal()
@@ -87,7 +93,7 @@
 #' # 2) folium of Descartes (singular variety)
 #' p2 <- mp("x^3 + y^3 - 3 x y")
 #' ggplot() +
-#'   geom_variety(poly = p2, xlim = c(-2, 3), ylim = c(-2, 3)) +
+#'   geom_variety(poly = p2, xlim = c(-2, 3), ylim = c(-2, 3), n = ex_n) +
 #'   coord_equal()
 #'
 #'
@@ -95,7 +101,7 @@
 #' # 3) "heart" curve (classic implicit heart)
 #' p3 <- mp("(x^2 + y^2 - 1)^3 - x^2 y^3")
 #' ggplot() +
-#'   geom_variety(poly = p3, xlim = c(-2, 2), ylim = c(-2, 2)) +
+#'   geom_variety(poly = p3, xlim = c(-2, 2), ylim = c(-2, 2), n = ex_n) +
 #'   coord_equal() +
 #'   theme(legend.position = "top")
 #'
@@ -105,14 +111,17 @@
 #' p4 <- mp(c("x^2 + y^2 - 1", "x y - 0.25"))
 #' # by default, polynomials differ by linetype (not color)
 #' ggplot() +
-#'   geom_variety(poly = p4, xlim = c(-2, 2), ylim = c(-2, 2)) +
+#'   geom_variety(poly = p4, xlim = c(-2, 2), ylim = c(-2, 2), n = ex_n) +
 #'   coord_equal()
 #'
 #'
 #'
 #' # with different colors (optional)
 #' ggplot() +
-#'   geom_variety(poly = p4, xlim = c(-2, 2), ylim = c(-2, 2), vary_colour = TRUE) +
+#'   geom_variety(
+#'     poly = p4, xlim = c(-2, 2), ylim = c(-2, 2),
+#'     n = ex_n, vary_color = TRUE
+#'   ) +
 #'   coord_equal() +
 #'   scale_colour_manual(values = c("steelblue", "firebrick"))
 #'
@@ -120,7 +129,10 @@
 #'
 #' # customize linetypes and legend placement with ggplot2 scales/themes
 #' ggplot() +
-#'   geom_variety(poly = p4, xlim = c(-2, 2), ylim = c(-2, 2), vary_colour = TRUE) +
+#'   geom_variety(
+#'     poly = p4, xlim = c(-2, 2), ylim = c(-2, 2),
+#'     n = ex_n, vary_color = TRUE
+#'   ) +
 #'   coord_equal() +
 #'   scale_colour_manual(values = c("steelblue", "firebrick")) +
 #'   scale_linetype_manual(values = c("solid", "22"), guide = "none") +
@@ -135,31 +147,39 @@
 #' # geom_variety() suggests a negative shift when no contour is found
 #' p5 <- mp("x^2 + y^2 - 1")
 #' ggplot() +
-#'   geom_variety(poly = p5^2, xlim = c(-2, 2), ylim = c(-2, 2)) +
+#'   geom_variety(poly = p5^2, xlim = c(-2, 2), ylim = c(-2, 2), n = ex_n) +
 #'   coord_equal()
 #'
 #'
 #'
 #' # use the suggested shift (your printed value may differ slightly)
 #' ggplot() +
-#'   geom_variety(poly = p5^2, xlim = c(-2, 2), ylim = c(-2, 2), shift = -0.001) +
+#'   geom_variety(
+#'     poly = p5^2, xlim = c(-2, 2), ylim = c(-2, 2),
+#'     n = ex_n, shift = -0.001
+#'   ) +
 #'   coord_equal()
 #'
 #'
 #'
 #' # inspect the raw shifted level set versus the default projected recovery
+#' \dontrun{
 #' p6 <- mp("y^2 - x^2")
 #' ggplot() +
 #'   geom_variety(
 #'     poly = p6^2,
 #'     xlim = c(-2, 2), ylim = c(-2, 2),
-#'     shift = -0.004, projection = "off"
+#'     n = ex_n, shift = -0.004, projection = "off"
 #'   ) +
 #'   coord_equal()
 #'
 #' ggplot() +
-#'   geom_variety(poly = p6^2, xlim = c(-2, 2), ylim = c(-2, 2), shift = -0.004) +
+#'   geom_variety(
+#'     poly = p6^2, xlim = c(-2, 2), ylim = c(-2, 2),
+#'     n = ex_n, shift = -0.004
+#'   ) +
 #'   coord_equal()
+#' }
 #'
 #'
 #' @export
@@ -208,8 +228,12 @@ stat_variety <- function(
   )
 }
 
-#' @rdname geom_variety
-#' @usage NULL
+#' ggplot2 stat object for variety contours
+#'
+#' `StatVariety` powers [stat_variety()] and [geom_variety()].
+#'
+#' @format A ggplot2 `Stat` ggproto object.
+#' @keywords internal
 #' @export
 StatVariety <- ggproto(
   "StatVariety",
@@ -315,8 +339,12 @@ StatVariety <- ggproto(
   }
 )
 
-#' @rdname geom_variety
-#' @usage NULL
+#' ggplot2 geom object for variety contours
+#'
+#' `GeomVariety` powers [geom_variety()].
+#'
+#' @format A ggplot2 `Geom` ggproto object.
+#' @keywords internal
 #' @export
 GeomVariety <- ggproto(
   "GeomVariety",
@@ -338,21 +366,28 @@ geom_variety <- function(
     position = "identity",
     ...,
     poly,
-    vary_colour = FALSE,
+    vary_color = FALSE,
     shift = 0,
     projection = c("auto", "on", "off"),
     na.rm = FALSE,
     show.legend = NA,
     inherit.aes = TRUE
 ) {
-  # default to linetype differences; colour mapping is opt-in via vary_colour
+  # default to linetype differences; colour mapping is opt-in via vary_color
   projection <- match.arg(projection)
   if (is.null(data)) {
     data <- ensure_nonempty_data
   }
 
-  default_mapping <- aes(group = after_stat(group), linetype = after_stat(polynomial))
-  if (isTRUE(vary_colour)) {
+  n_poly <- if (is.mpolyList(poly)) length(poly) else 1L
+  default_mapping <- aes(group = after_stat(group))
+  if (n_poly > 1L) {
+    default_mapping <- modifyList(
+      default_mapping,
+      aes(linetype = after_stat(polynomial))
+    )
+  }
+  if (isTRUE(vary_color)) {
     default_mapping <- modifyList(
       default_mapping,
       aes(colour = after_stat(polynomial))
@@ -383,16 +418,15 @@ geom_variety <- function(
     )
   )
 
-  n_poly <- if (is.mpolyList(poly)) length(poly) else 1L
-  out <- list(
-    layer_obj,
-    ggplot2::scale_linetype_discrete(
+  out <- list(layer_obj)
+  if (n_poly > 1L) {
+    out <- c(out, list(ggplot2::scale_linetype_discrete(
       name = NULL,
       labels = function(l) parse(text = l),
-      guide = if (isTRUE(vary_colour)) "none" else "legend"
-    )
-  )
-  if (isTRUE(vary_colour)) {
+      guide = if (isTRUE(vary_color)) "none" else "legend"
+    )))
+  }
+  if (isTRUE(vary_color)) {
     out <- c(out, list(ggplot2::guides(
       colour = ggplot2::guide_legend(
         title = NULL,
@@ -400,5 +434,5 @@ geom_variety <- function(
       )
     )))
   }
-  out
+  if (length(out) == 1L) out[[1]] else out
 }

@@ -28,10 +28,14 @@
 #'   see `stan()`.
 #' @param cores The number of CPU cores to distribute the chains across, see
 #'   `stan()`.
-#' @param warmup Number of warmup iterations in `stan()`.
+#' @param warmup Number of warmup iterations in `stan()`. By default this is
+#'   conservative and scales with the number of post-warmup draws per chain.
 #' @param inc_warmup If `TRUE`, the MCMC warmup steps are included in the
 #'   output.
 #' @param thin `stan()` `thin` parameter.
+#' @param adapt_delta,max_treedepth Conservative CmdStan sampling defaults.
+#'   Pass smaller values only when you are comfortable with the resulting
+#'   diagnostics.
 #' @param homo If `TRUE`, sampling is from a homoskedastic variety normal
 #'   distribution.
 #' @param verbose If `TRUE`, print additional progress messages.
@@ -54,13 +58,14 @@
 #' @param seed Optional integer seed passed to CmdStan's sampler for
 #'   reproducibility. Note that R's `set.seed()` does not control Stan's RNG.
 #' @name rvnorm
-#' @return Either (1) matrix whose rows are the individual draws from the
+#' @return Either (1) a data frame whose rows are the individual draws from the
 #'   distribution, (2) a [tbl_df-class] object with the draws along with
-#'   additional information, or (3) an object of class `stanfit`.
+#'   additional information, or (3) an object of class `CmdStanMCMC`.
 #' @examples
 #'
 #'
 #' library("tidyverse")
+#' library("mpoly")
 #' options("mc.cores" = parallel::detectCores() - 1)
 #'
 #' \dontrun{
@@ -338,8 +343,9 @@
 #' @export
 rvnorm <- function(
   n, poly, sd, output = "simple", Sigma = NULL, rejection = FALSE,
-  chains = 4L, warmup = max(500, floor(n / 2)), inc_warmup = FALSE,
-  thin = 1L, verbose = FALSE, cores = min(chains, getOption("mc.cores", 1L)),
+  chains = 4L, warmup = max(500, ceiling(n / chains / 2)), inc_warmup = FALSE,
+  thin = 1L, adapt_delta = .999, max_treedepth = 20L,
+  verbose = FALSE, cores = min(chains, getOption("mc.cores", 1L)),
   homo = TRUE, w, vars, numerator, denominator, refresh = 0L,
   code_only = FALSE, pre_compiled = TRUE, user_compiled = FALSE,
   show_messages = FALSE, seed = NULL, ...
@@ -357,6 +363,13 @@ rvnorm <- function(
   cores <- rvnorm_validate_positive_integer(cores, "cores")
   warmup <- rvnorm_validate_nonnegative_integer(warmup, "warmup")
   thin <- rvnorm_validate_positive_integer(thin, "thin")
+  if (
+    !is.numeric(adapt_delta) || length(adapt_delta) != 1L ||
+      !is.finite(adapt_delta) || adapt_delta <= 0 || adapt_delta >= 1
+  ) {
+    stop("`adapt_delta` must be a finite numeric scalar between 0 and 1.", call. = FALSE)
+  }
+  max_treedepth <- rvnorm_validate_positive_integer(max_treedepth, "max_treedepth")
   if (!is.logical(inc_warmup) || length(inc_warmup) != 1L || is.na(inc_warmup)) {
     stop("`inc_warmup` must be TRUE or FALSE.", call. = FALSE)
   }
@@ -434,6 +447,14 @@ rvnorm <- function(
     )
   }
   n_vars <- length(mpoly::vars(poly))
+  w_supplied <- !missing(w)
+  if (w_supplied) {
+    w_info <- rvnorm_normalize_window(w, mpoly::vars(poly))
+    w <- w_info$value
+    w_is_scalar <- w_info$scalar
+  } else {
+    w_is_scalar <- FALSE
+  }
   scale_info <- rvnorm_resolve_scale(
     poly = poly,
     sd = if (missing(sd)) NULL else sd,
@@ -451,6 +472,14 @@ rvnorm <- function(
     )
   }
 
+  if (w_supplied && !w_is_scalar && (pre_compiled || user_compiled)) {
+    if (isTRUE(verbose)) {
+      message("non-scalar `w` requires generated Stan code; falling back to regular rvnorm sampling")
+    }
+    pre_compiled <- FALSE
+    user_compiled <- FALSE
+  }
+
   if (isTRUE(verbose) && refresh == 0L) {
     refresh <- max(ceiling(n / 10), 1L)
   }
@@ -465,14 +494,18 @@ rvnorm <- function(
   }
 
   if (code_only) {
-    stan_code <- create_stan_code(poly, sigma_stan, n_eqs, w, homo)
+    stan_code <- if (w_supplied) {
+      create_stan_code(poly, sigma_stan, n_eqs, w, homo)
+    } else {
+      create_stan_code(poly, sigma_stan, n_eqs, homo = homo)
+    }
     return(stan_code)
   }
 
   if (user_compiled) {
     # look up a previously compiled user template from the internal cache
     model_name <- generate_model_name(
-      poly = poly, homo = homo, windowed = !missing(w)
+      poly = poly, homo = homo, windowed = w_supplied
     )
     compiled_stan_info <- get_compiled_stan_info()
     if (nrow(compiled_stan_info) == 0) {
@@ -493,7 +526,7 @@ rvnorm <- function(
 
     model <- cmdstan_model(model_path[1])
     stan_data <- get_coefficients_data(poly)
-    stan_data <- if (missing(w)) {
+    stan_data <- if (!w_supplied) {
       c(stan_data, "si" = sigma_stan)
     } else {
       c(stan_data, "w" = w, "si" = sigma_stan)
@@ -517,7 +550,7 @@ rvnorm <- function(
       if (homo) "vn" else "hvn",
       sep = "_"
     )
-    if (!missing(w)) {
+    if (w_supplied) {
       stan_file_name <- paste(stan_file_name, "w", sep = "_")
     }
 
@@ -537,13 +570,17 @@ rvnorm <- function(
     if (!model_has_usable_executable(model)) {
       poly <- poly_original
       output_needs_rewriting <- output_needs_rewriting_original
-      stan_code <- create_stan_code(poly, sigma_stan, n_eqs, w, homo, vars)
+      stan_code <- if (w_supplied) {
+        create_stan_code(poly, sigma_stan, n_eqs, w, homo, vars)
+      } else {
+        create_stan_code(poly, sigma_stan, n_eqs, homo = homo, vars = vars)
+      }
       stan_file <- write_stan_file(stan_code)
       model <- cmdstan_model(stan_file)
       stan_data <- list("si" = sigma_stan)
     } else {
       stan_data <- make_coefficients_data(poly, num_of_vars, deg)
-      stan_data <- if (missing(w)) {
+      stan_data <- if (!w_supplied) {
         c(stan_data, "si" = sigma_stan)
       } else {
         c(stan_data, "w" = w, "si" = sigma_stan)
@@ -551,7 +588,11 @@ rvnorm <- function(
     }
   } else {
     # fall back to generating and compiling a temporary Stan model
-    stan_code <- create_stan_code(poly, sigma_stan, n_eqs, w, homo, vars)
+    stan_code <- if (w_supplied) {
+      create_stan_code(poly, sigma_stan, n_eqs, w, homo, vars)
+    } else {
+      create_stan_code(poly, sigma_stan, n_eqs, homo = homo, vars = vars)
+    }
     stan_file <- write_stan_file(stan_code)
     model <- cmdstan_model(stan_file)
     stan_data <- list("si" = sigma_stan)
@@ -564,8 +605,8 @@ rvnorm <- function(
     iter_sampling = ceiling(n / chains),
     chains = chains,
     parallel_chains = cores,
-    adapt_delta = .999,
-    max_treedepth = 20L,
+    adapt_delta = adapt_delta,
+    max_treedepth = max_treedepth,
     thin = thin,
     save_warmup = inc_warmup,
     show_messages = show_messages,

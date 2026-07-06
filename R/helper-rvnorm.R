@@ -2,18 +2,20 @@ make_coefficients_data <- function(
     poly, num_of_vars, deg, basis = c("x", "y", "z")
   ) {
   # enumerate all monomials up to degree; zero-fill any not in poly
-  monos <- mpoly::basis_monomials(basis[seq_len(num_of_vars)], deg)
-
-  # single pass: reorder, extract coef name, convert to Stan name
-  stan_names <- vapply(monos, function(m) {
-    nm <- names(coef(reorder(m, varorder = basis)))
-    nm <- gsub("\\s+", "", nm)
-    if (nm == "1") return("b1")
-    paste0("b", gsub("\\^", "", nm))
-  }, character(1))
+  vars <- basis[seq_len(num_of_vars)]
+  monos <- mpoly::basis_monomials(vars, deg)
+  stan_names <- stan_coef_names(monos, varorder = basis)
 
   required_coefs <- as.list(stats::setNames(rep(0L, length(stan_names)), stan_names))
-  available_coef <- get_listed_coeficients(coef(poly))
+  available_coef <- stan_coefficients(poly, varorder = basis)
+  unknown_coefs <- setdiff(names(available_coef), stan_names)
+  if (length(unknown_coefs) > 0L) {
+    stop(
+      "Coefficient name(s) do not match the precompiled Stan template: ",
+      paste(unknown_coefs, collapse = ", "),
+      call. = FALSE
+    )
+  }
   required_coefs[names(available_coef)] <- available_coef
   required_coefs
 }
@@ -22,21 +24,17 @@ get_coefficients_data <- function(poly) {
   # collect named coefficients for either a single polynomial
   # or polynomial list
   if (is.mpoly(poly)) {
-    data <- get_listed_coeficients(coef(poly))
+    data <- stan_coefficients(poly, varorder = sort(mpoly::vars(poly)))
   } else if (is.mpolyList(poly)) {
     poly <- canonicalize_mpolylist(poly)
     poly <- sort_mpolylist_lexicographically(poly)
-    # suffix coefficient names with polynomial index (e.g. bx2_1, by_2)
-    convert_names <- function(term, i) {
-      term <- gsub("\\s+", "", term)
-      if (term == "1") return(paste0("b1_", i))
-      term <- gsub("\\^", "", term)
-      paste0("b", term, "_", i)
-    }
     coefs <- list()
     for (i in seq_along(poly)) {
-      coefs[[i]] <- coef(poly[[i]])
-      names(coefs[[i]]) <- sapply(names(coefs[[i]]), convert_names, i = i)
+      coefs[[i]] <- stan_coefficients(
+        poly[[i]],
+        varorder = sort(mpoly::vars(poly[[i]])),
+        suffix = i
+      )
     }
     coefs <- unlist(coefs)
     data <- as.list(coefs)
@@ -79,6 +77,49 @@ check_and_replace_vars <- function(p) {
   }
 
   list(polynomial = p, mapping = var_mapping)
+}
+
+rvnorm_normalize_window <- function(w, vars) {
+  check_bounds <- function(bounds, label) {
+    if (
+      !is.numeric(bounds) || length(bounds) != 2L ||
+        any(!is.finite(bounds)) || bounds[1] >= bounds[2]
+    ) {
+      stop(label, " must be a finite numeric interval `c(lower, upper)`.", call. = FALSE)
+    }
+    as.numeric(bounds)
+  }
+
+  if (is.numeric(w) && length(w) == 1L) {
+    if (!is.finite(w) || w <= 0) {
+      stop("Scalar `w` must be positive and finite.", call. = FALSE)
+    }
+    return(list(value = as.numeric(w), scalar = TRUE))
+  }
+
+  if (is.numeric(w) && length(w) == 2L) {
+    bounds <- check_bounds(w, "`w`")
+    out <- replicate(length(vars), bounds, simplify = FALSE)
+    names(out) <- vars
+    return(list(value = out, scalar = FALSE))
+  }
+
+  if (!is.list(w) || is.null(names(w)) || any(!nzchar(names(w)))) {
+    stop("`w` must be a positive scalar, a length-2 interval, or a named list.", call. = FALSE)
+  }
+
+  unknown_vars <- setdiff(names(w), vars)
+  if (length(unknown_vars) > 0L) {
+    stop(
+      "`w` contains bounds for unknown variable(s): ",
+      paste(unknown_vars, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  out <- lapply(names(w), function(var) check_bounds(w[[var]], paste0("`w$", var, "`")))
+  names(out) <- names(w)
+  list(value = out, scalar = FALSE)
 }
 
 rename_output_df <- function(df, replacement_list) {

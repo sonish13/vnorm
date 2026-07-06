@@ -14,7 +14,7 @@ project_onto_variety(
   dt = 0.01,
   varorder = sort(mpoly::vars(poly)),
   n_correct = 2,
-  al = rnorm(2),
+  al = c(1, 1),
   message = FALSE,
   tol = .Machine$double.eps^(1/2),
   gfunc,
@@ -74,12 +74,12 @@ matrix/data frame whose rows are points to be projected.}
 \item{dt}{The t-mesh size for the homotopy.}
 
 \item{varorder}{A character vector specifying the variable order to pass to
-\code{\link[mpoly:as-function]{mpoly::as.function.mpoly()}}.}
+\code{\link[mpoly:as.function.mpoly]{mpoly::as.function.mpoly()}}.}
 
 \item{n_correct}{The number of Newton correction iterations to use.}
 
-\item{al}{A numeric vector of length 2; the patch to do projective
-calculations over.}
+\item{al}{A numeric vector of length 2; the deterministic patch to do
+projective calculations over.}
 
 \item{message}{If \code{TRUE}, the user is issued messages on the algorithm's
 progress.}

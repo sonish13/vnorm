@@ -3,6 +3,10 @@
 #' Evaluate the variety normal pseudo-density in either the homoskedastic or
 #' heteroskedastic setting.
 #'
+#' @details A single `mpoly` is normalized as a one-dimensional normal kernel in
+#'   the polynomial value, after optional homoskedastic gradient normalization.
+#'   A length-one `mpolyList` is treated identically to the same single `mpoly`.
+#'
 #' @param x A numeric vector of length equal to the number of variables in
 #'   `poly`, or a numeric matrix/data frame with that many columns (one row per
 #'   evaluation point).
@@ -24,31 +28,28 @@
 #'
 #' @examples
 #'
-#' # m = 1 polynomial in n = 1 variable, 0d variety
+#' # m = 1 polynomial in n = 1 variable, 0d variety at x = 0
 #' p <- mp("x")
-#'
 #' pdvnorm(c(-1, 0, 1), poly = p, sd = 1)
 #' pdvnorm(c(-1, 0, 1), poly = p, sd = 1, log = TRUE)
 #'
 #'
 #'
-#' # m = 2 polynomials in n = 2 variables (square system), 0d variety
+#' # m = 2 polynomials in n = 2 variables (square system), 0d variety at (0, 0)
 #' p <- mp(c("x", "y"))
-#'
 #' X <- rbind(c(-.25, 0), c(1, 2), c(-1, 3))
 #' pdvnorm(X, poly = p, sd = 1)
 #'
 #'
 #'
-#' # m = 1 polynomial in n = 2 variables, 1d variety
+#' # m = 1 polynomial in n = 2 variables, 1d variety at unit circle
 #' p <- mp("x^2 + y^2 - 1")
-#'
-#' X <- rbind(c(-.25, 0), c(1, 2), c(-1, 3))
+#' X <- rbind(c(-.25, 0), c(1, 2), c(-1, 3), sqrt(2)/2 * c(1,1))
 #' pdvnorm(X, poly = p, sd = 1)
 #'
 #'
 #'
-#' # different dispersion forms
+#' # different ways to specify dispersion
 #' p <- mp(c("x", "y"))
 #' X <- rbind(c(0, 0), c(1, 2), c(-1, 3))
 #' pdvnorm(X, p, sd = 1)
@@ -80,8 +81,7 @@
 #' library("ggfunction")
 #'
 #'
-#'
-#' # m = 1 polynomial in n = 1 variable, 0d variety
+#' # m = 1 polynomial in n = 1 variable, 0d variety at x = 0
 #' p <- mp("x")
 #'
 #' ggplot() +
@@ -89,7 +89,7 @@
 #'
 #'
 #'
-#' # m = 2 polynomials in n = 2 variables (square system), 0d variety
+#' # m = 2 polynomials in n = 2 variables (square system), 0d variety at (0, 0)
 #' p <- mp(c("x", "y"))
 #'
 #' ggplot() +
@@ -101,7 +101,7 @@
 #'
 #'
 #'
-#' # m = 1 polynomial in n = 2 variables, 1d variety
+#' # m = 1 polynomial in n = 2 variables, 1d variety at unit circle
 #' p <- mp("x^2 + y^2 - 1")
 #'
 #' ggplot() +
@@ -320,6 +320,19 @@ pdvnorm <- function(x, poly, sd, homo = TRUE, log = FALSE, Sigma = NULL, ...) {
     }
     legacy_sigma <- dots$sigma
     legacy_sigma_supplied <- TRUE
+  }
+
+  if (is_multi && length(poly) == 1L) {
+    args <- list(
+      x = x,
+      poly = poly[[1]],
+      homo = homo,
+      log = log,
+      Sigma = Sigma
+    )
+    if (has_sd) args$sd <- sd
+    if (legacy_sigma_supplied) args$sigma <- legacy_sigma
+    return(do.call(pdvnorm, args))
   }
 
   if (is_uni) {

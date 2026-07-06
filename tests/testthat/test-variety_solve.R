@@ -34,6 +34,41 @@ test_that("variety_solve returns rounded posterior means using rvnorm samples", 
   expect_equal(unname(out), 0.1)
 })
 
+test_that("variety_solve treats a single mpoly as one equation", {
+  p <- mp("x^2 - 1")
+  fake_df <- data.frame(x = c(1.01, 0.99, 1.00), lp__ = c(0, 0, 0))
+
+  testthat::local_mocked_bindings(
+    rvnorm = function(...) fake_cmdstan_fit(fake_df),
+    .package = "vnorm"
+  )
+
+  out <- variety_solve(p, n = 3, sig_digit = 2)
+
+  expect_type(out, "double")
+  expect_named(out, "x")
+  expect_equal(unname(out), 1)
+})
+
+test_that("variety_solve honors vars when extracting draw columns", {
+  p <- mp(c("x - 1", "y + 2"))
+  fake_df <- data.frame(
+    x = c(1.001, 0.999),
+    y = c(-2.001, -1.999),
+    lp__ = c(0, 0)
+  )
+
+  testthat::local_mocked_bindings(
+    rvnorm = function(...) fake_cmdstan_fit(fake_df),
+    .package = "vnorm"
+  )
+
+  out <- variety_solve(p, n = 2, sig_digit = 2, vars = c("y", "x"))
+
+  expect_named(out, c("y", "x"))
+  expect_equal(unname(out), c(-2, 1))
+})
+
 test_that("variety_solve can return both stanfit and results", {
   p <- mp("x")
   fake_df <- data.frame(x = c(1.01, 0.99), lp__ = c(0, 0))

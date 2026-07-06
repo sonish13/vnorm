@@ -35,15 +35,15 @@ variety_solve(
 
 \item{show_message}{Logical; show Stan sampling messages (default: \code{FALSE}).}
 
-\item{stanfit}{Logical; if \code{TRUE}, return both the Stan fit and the solution
-(default: \code{FALSE}).}
+\item{stanfit}{Logical; if \code{TRUE}, return both the \code{CmdStanMCMC} fit and the
+solution (default: \code{FALSE}).}
 
 \item{...}{Additional arguments passed to \code{\link[=rvnorm]{rvnorm()}}.}
 }
 \value{
 If \code{stanfit = FALSE}, a named numeric vector of rounded posterior
-means. If \code{stanfit = TRUE}, a list with \code{stanfit} (Stan fit) and \code{results}
-(the vector).
+means. If \code{stanfit = TRUE}, a list with \code{stanfit} (a \code{CmdStanMCMC} object)
+and \code{results} (the vector).
 }
 \description{
 Estimates the solution of a zero-dimensional variety by sampling with

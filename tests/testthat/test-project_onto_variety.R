@@ -114,6 +114,19 @@ test_that("project_onto_variety supports fixed-step path with messages", {
   )
 })
 
+test_that("project_onto_variety fixed-step path reaches t_end", {
+  p <- mp("x^2 + y^2 - 1")
+  pf <- as.function(p, varorder = c("x", "y"), silent = TRUE)
+
+  expect_warning(
+    x_proj <- project_onto_variety(
+      c(1, 1), p, adaptive = FALSE, dt = 0.03, al = c(1, 1), tol = 1e-6
+    ),
+    NA
+  )
+  expect_lt(abs(pf(x_proj)), 1e-6)
+})
+
 test_that("lagrange method supports optim-based branch and tibble batch input", {
   p <- mp("x^2 + y^2 - 1")
   x0 <- c(1.15, 0.2)
@@ -127,6 +140,20 @@ test_that("lagrange method supports optim-based branch and tibble batch input", 
   out_tbl <- project_onto_variety_lagrange(pts_tbl, p, method = "newton")
   expect_true(tibble::is_tibble(out_tbl))
   expect_equal(dim(out_tbl), dim(pts_tbl))
+})
+
+test_that("lagrange optim branch minimizes sum of squared stationarity residuals", {
+  p <- mp("x^2 + y^2 - 1")
+  pf <- as.function(p, varorder = c("x", "y"), silent = TRUE)
+
+  expect_warning(
+    x_lag_bfgs <- project_onto_variety_lagrange(
+      c(-3, -3), p, method = "BFGS", maxit = 100, tol = 1e-4
+    ),
+    NA
+  )
+
+  expect_lt(abs(pf(x_lag_bfgs)), 1e-4)
 })
 
 test_that("gradient descent and newton methods cover line-search branches", {

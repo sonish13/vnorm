@@ -140,6 +140,21 @@ test_that("rejection_sampler validates n, output, windows, and scalar unif sd", 
   )
 })
 
+test_that("rejection_sampler errors promptly when proposal box misses variety", {
+  set.seed(20)
+  expect_error(
+    rejection_sampler(
+      n = 2,
+      poly = mp("x^2 + y^2 - 1"),
+      sd = 0.05,
+      w = list(x = c(10, 11), y = c(10, 11)),
+      max_batches = 2,
+      message = FALSE
+    ),
+    "accepted 0 of 2 requested draws after 2 proposal batches"
+  )
+})
+
 test_that("rejection_sampler validates matrix sd dimensions and definiteness", {
   p <- mp(c("x^2 + y^2 - 1", "y"))
   expect_error(

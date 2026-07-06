@@ -2,14 +2,11 @@
 # split out from rvnorm.R so coverage for rvnorm() can be assessed separately
 
 create_stan_code <- function(poly, sd, n_eqs, w, homo, vars) {
-  d <- get("deriv.mpoly", asNamespace("mpoly"))
-
   if (n_eqs == 1L) {
     if (!is.mpoly(poly)) poly <- mp(poly)
     if (missing(vars)) vars <- mpoly::vars(poly)
     n_vars <- length(vars)
-    reorder.mpoly <- get("reorder.mpoly", asNamespace("mpoly"))
-    poly <- reorder.mpoly(poly, varorder = sort(vars))
+    poly <- reorder(poly, varorder = sort(vars))
 
     g_string <- mpoly_to_stan(poly)
     if (homo) {
@@ -93,7 +90,7 @@ model {{
       printed_jac <- array("", dim = c(n_eqs, n_vars))
       for (i in seq_len(n_eqs)) {
         for (j in seq_len(n_vars)) {
-          printed_jac[i, j] <- mpoly_to_stan(d(poly[[i]], vars[j]))
+          printed_jac[i, j] <- mpoly_to_stan(deriv(poly[[i]], vars[j]))
         }
       }
 

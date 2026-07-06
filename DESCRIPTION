@@ -33,7 +33,6 @@ Suggests:
     vdiffr,
     purrr,
     ggdensity,
-    ggfunction,
     tidyverse,
     covr,
     here,

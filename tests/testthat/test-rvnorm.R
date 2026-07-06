@@ -233,6 +233,87 @@ test_that("rvnorm() pre_compiled path works with mocked package model", {
   expect_true(is.list(capture$args$data))
 })
 
+test_that("rvnorm() keeps scalar w on precompiled path", {
+  draws_df <- data.frame(
+    lp__ = c(-1, -2), x = c(0.1, 0.2), y = c(0.3, 0.4), check.names = FALSE
+  )
+  capture <- new.env(parent = emptyenv())
+  instantiate_called <- new.env(parent = emptyenv())
+  instantiate_called$flag <- FALSE
+
+  testthat::local_mocked_bindings(
+    cmdstan_model = function(...) stop("cmdstan_model should not be called"),
+    make_coefficients_data = function(...) list(fake_coef = 1),
+    .package = "vnorm"
+  )
+  testthat::local_mocked_bindings(
+    stan_package_model = function(...) {
+      instantiate_called$flag <- TRUE
+      fake_cmdstan_model(draws_df, capture = capture)
+    },
+    .package = "instantiate"
+  )
+
+  out <- rvnorm(
+    n = 2,
+    poly = mp("x^2 + y^2 - 1"),
+    sd = 0.05,
+    w = 1.5,
+    pre_compiled = TRUE,
+    chains = 1,
+    cores = 1
+  )
+
+  expect_true(instantiate_called$flag)
+  expect_true(is.data.frame(out))
+  expect_equal(capture$args$data$w, 1.5)
+})
+
+test_that("rvnorm() uses generated Stan for non-scalar w", {
+  draws_df <- data.frame(
+    lp__ = c(-1, -2), x = c(0.1, 0.2), y = c(0.3, 0.4), check.names = FALSE
+  )
+  capture <- new.env(parent = emptyenv())
+  instantiate_called <- new.env(parent = emptyenv())
+  instantiate_called$flag <- FALSE
+
+  testthat::local_mocked_bindings(
+    create_stan_code = function(poly, sd, n_eqs, w, homo, vars) {
+      capture$w <- w
+      "fake_stan_code"
+    },
+    write_stan_file = function(...) "fake.stan",
+    cmdstan_model = function(...) fake_cmdstan_model(draws_df, capture = capture),
+    .package = "vnorm"
+  )
+  testthat::local_mocked_bindings(
+    stan_package_model = function(...) {
+      instantiate_called$flag <- TRUE
+      stop("precompiled path should not be used")
+    },
+    .package = "instantiate"
+  )
+
+  expect_message(
+    out <- rvnorm(
+      n = 2,
+      poly = mp("x^2 + y^2 - 1"),
+      sd = 0.05,
+      w = list(x = c(-1.5, 1.5)),
+      pre_compiled = TRUE,
+      verbose = TRUE,
+      chains = 1,
+      cores = 1
+    ),
+    "non-scalar `w` requires generated Stan code"
+  )
+
+  expect_false(instantiate_called$flag)
+  expect_true(is.data.frame(out))
+  expect_equal(capture$w, list(x = c(-1.5, 1.5)))
+  expect_false("w" %in% names(capture$args$data))
+})
+
 test_that("rvnorm() falls back when pre-compiled model is unavailable", {
   draws_df <- data.frame(
     lp__ = c(-1, -2), x = c(0.1, 0.2), y = c(0.3, 0.4), check.names = FALSE
@@ -683,6 +764,57 @@ test_that("rvnorm() extra ... args are forwarded to Stan sampler", {
     pre_compiled = TRUE, chains = 1, cores = 1, init = 0.5
   )
   expect_equal(capture$args$init, 0.5)
+})
+
+test_that("rvnorm() forwards sampler control defaults and overrides", {
+  draws_df <- data.frame(
+    lp__ = seq_len(4), x = seq(0.1, 0.4, length.out = 4),
+    y = seq(0.2, 0.5, length.out = 4), check.names = FALSE
+  )
+  capture <- new.env(parent = emptyenv())
+
+  testthat::local_mocked_bindings(
+    create_stan_code = function(...) "fake_stan_code",
+    write_stan_file = function(...) "fake.stan",
+    cmdstan_model = function(...) fake_cmdstan_model(draws_df, capture = capture),
+    .package = "vnorm"
+  )
+
+  rvnorm(
+    n = 4, poly = mp(c("x^2 + y^2 - 1", "y")), sd = 0.05,
+    pre_compiled = TRUE, chains = 1, cores = 1
+  )
+  expect_equal(capture$args$adapt_delta, .999)
+  expect_equal(capture$args$max_treedepth, 20L)
+
+  rvnorm(
+    n = 4, poly = mp(c("x^2 + y^2 - 1", "y")), sd = 0.05,
+    pre_compiled = TRUE, chains = 1, cores = 1,
+    adapt_delta = .9, max_treedepth = 12
+  )
+  expect_equal(capture$args$adapt_delta, .9)
+  expect_equal(capture$args$max_treedepth, 12L)
+})
+
+test_that("rvnorm() default warmup scales with per-chain draws", {
+  draws_df <- data.frame(
+    lp__ = seq_len(4), x = seq(0.1, 0.4, length.out = 4),
+    y = seq(0.2, 0.5, length.out = 4), check.names = FALSE
+  )
+  capture <- new.env(parent = emptyenv())
+
+  testthat::local_mocked_bindings(
+    create_stan_code = function(...) "fake_stan_code",
+    write_stan_file = function(...) "fake.stan",
+    cmdstan_model = function(...) fake_cmdstan_model(draws_df, capture = capture),
+    .package = "vnorm"
+  )
+
+  rvnorm(
+    n = 10000, poly = mp(c("x^2 + y^2 - 1", "y")), sd = 0.05,
+    pre_compiled = TRUE, chains = 4, cores = 1
+  )
+  expect_equal(capture$args$iter_warmup, 1250)
 })
 
 test_that("rvnorm() show_messages parameter is forwarded", {

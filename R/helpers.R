@@ -1,5 +1,75 @@
-get_listed_coeficients <- function(coefs) {
-  # convert monomial names to Stan data names (e.g., x^2 y -> bx2y)
+stan_coef_name_from_term <- function(term, varorder) {
+  if (is.mpoly(term)) {
+    if (length(term) != 1L) {
+      stop("`term` must be a single monomial.", call. = FALSE)
+    }
+    term <- unclass(term)[[1]]
+  }
+
+  powers <- term[names(term) != "coef"]
+  if (length(powers) == 0L) return("b1")
+
+  missing_vars <- setdiff(names(powers), varorder)
+  if (length(missing_vars) > 0L) {
+    stop(
+      "Coefficient term contains variable(s) outside `varorder`: ",
+      paste(missing_vars, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  ordered_vars <- varorder[varorder %in% names(powers)]
+  pieces <- vapply(ordered_vars, function(var) {
+    power <- powers[[var]]
+    if (identical(unname(power), 1)) var else paste0(var, power)
+  }, character(1))
+
+  paste0("b", paste0(pieces, collapse = ""))
+}
+
+stan_coef_names <- function(poly, varorder = sort(mpoly::vars(poly)), suffix = NULL) {
+  if (is.mpoly(poly)) {
+    terms <- unclass(poly)
+  } else if (is.mpolyList(poly)) {
+    terms <- unlist(lapply(poly, unclass), recursive = FALSE)
+  } else {
+    stop("`poly` must be an mpoly or mpolyList object.", call. = FALSE)
+  }
+
+  out <- vapply(terms, stan_coef_name_from_term, character(1), varorder = varorder)
+  if (!is.null(suffix)) out <- paste0(out, "_", suffix)
+  out
+}
+
+stan_coefficients <- function(poly, varorder = sort(mpoly::vars(poly)), suffix = NULL) {
+  if (!is.mpoly(poly)) {
+    stop("`poly` must be an mpoly object.", call. = FALSE)
+  }
+
+  coefs <- vapply(unclass(poly), function(term) unname(term[["coef"]]), numeric(1))
+  names(coefs) <- stan_coef_names(poly, varorder = varorder, suffix = suffix)
+  as.list(coefs)
+}
+
+stan_coef_lift <- function(poly, varorder = sort(mpoly::vars(poly)), suffix = NULL) {
+  if (!is.mpoly(poly)) {
+    stop("`poly` must be an mpoly object.", call. = FALSE)
+  }
+
+  coef_names <- stan_coef_names(poly, varorder = varorder, suffix = suffix)
+  lifted <- unclass(poly)
+  for (i in seq_along(lifted)) {
+    lifted[[i]][["coef"]] <- 1
+    lifted[[i]] <- structure(
+      c(1, lifted[[i]]),
+      names = c(coef_names[[i]], names(lifted[[i]]))
+    )
+  }
+  structure(lifted, class = "mpoly")
+}
+
+get_listed_coefficients <- function(coefs) {
+  # Backward-compatible printed-name conversion for legacy internals/tests.
   convert_names <- function(term) {
     term <- gsub("\\s+", "", term)
     if (term == "1") return("b1")
@@ -12,16 +82,20 @@ get_listed_coeficients <- function(coefs) {
 
 mpoly_to_stan <- function(mpoly) {
   # print polynomial in Stan-compatible syntax and parseable legend labels
-  p <- get("print.mpoly", asNamespace("mpoly"))
-  result <- p(mpoly, stars = TRUE, silent = TRUE, plus_pad = 0L, times_pad = 0L)
+  result <- print(
+    mpoly,
+    stars = TRUE,
+    silent = TRUE,
+    plus_pad = 0L,
+    times_pad = 0L
+  )
   result <- gsub("[*]{2}", "^", result)
   result
 }
 
 mpolyList_to_stan <- function(mpolyList) {
   # print a polynomial list as a Stan vector expression payload
-  p <- get("print.mpolyList", asNamespace("mpoly"))
-  result <- p(
+  result <- print(
     mpolyList,
     silent = TRUE,
     stars = TRUE,
@@ -33,20 +107,20 @@ mpolyList_to_stan <- function(mpolyList) {
   result
 }
 
-get_derivative <- function(var, num_of_vars, deg, basis = c("x", "y", "z")) {
+get_derivative <- function(
+    var, num_of_vars, deg, basis = c("x", "y", "z"), suffix = NULL
+  ) {
   # construct symbolic derivative in Stan syntax for generated template models
-  d <- get("deriv.mpoly", asNamespace("mpoly"))
-
   num_coef <- mpoly::basis_monomials(basis[seq_len(num_of_vars)], deg)
   num_coef <- lapply(num_coef, reorder, varorder = basis)
-  num_coef <- lapply(num_coef, d, var = var)
-  num_coef <- lapply(num_coef, mpoly:::coef.mpoly)
+  num_coef <- lapply(num_coef, deriv, var = var)
+  num_coef <- lapply(num_coef, coef)
   num_coef <- unlist(num_coef)
   num_coef <- unname(num_coef)
 
   indeterminates <- mpoly::basis_monomials(basis[seq_len(num_of_vars)], deg)
   indeterminates <- lapply(indeterminates, reorder, varorder = basis)
-  indeterminates <- lapply(indeterminates, d, var = var)
+  indeterminates <- lapply(indeterminates, deriv, var = var)
   indeterminates <- lapply(indeterminates, function(item) {
     item[[1]][names(item[[1]]) == "coef"] <- 1
     item
@@ -56,11 +130,7 @@ get_derivative <- function(var, num_of_vars, deg, basis = c("x", "y", "z")) {
   indeterminates <- c(indeterminates)
 
   sym_coef <- mpoly::basis_monomials(basis[seq_len(num_of_vars)], deg)
-  sym_coef <- lapply(sym_coef, reorder, varorder = basis)
-  sym_coef <- lapply(sym_coef, mpoly:::coef.mpoly)
-  sym_coef <- unlist(sym_coef)
-  sym_coef <- get_listed_coeficients(sym_coef)
-  sym_coef <- names(sym_coef)
+  sym_coef <- stan_coef_names(sym_coef, varorder = basis, suffix = suffix)
 
   # pair numeric coefficients, symbolic names, and monomial terms for Stan output
   df_for_der <- data.frame(
